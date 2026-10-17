@@ -1,0 +1,502 @@
+[
+  {
+    "id": "crimson_sentinel",
+    "name": "Crimson Sentinel",
+    "archetype": "armored",
+    "model": "/assets/models/crimson-sentinel.glb",
+    "playstyle": "balanced tech fighter",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "solar_monk",
+    "name": "Solar Monk",
+    "archetype": "monk",
+    "model": "/assets/models/solar-monk.glb",
+    "playstyle": "fast striker / radiant kicks",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "titan_brute",
+    "name": "Titan Brute",
+    "archetype": "brute",
+    "model": "/assets/models/titan-brute.glb",
+    "playstyle": "heavy grappler / smash knockback",
+    "palette": {
+      "base": 16742475
+    }
+  },
+  {
+    "id": "skywarden",
+    "name": "Skywarden",
+    "archetype": "caped",
+    "model": "/assets/models/skywarden.glb",
+    "playstyle": "vertical control / aerial zoning",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "emerald_warden",
+    "name": "Emerald Warden",
+    "archetype": "zoner",
+    "model": "/assets/models/emerald-warden.glb",
+    "playstyle": "projectile trap specialist",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "shadow_shinobi",
+    "name": "Shadow Shinobi",
+    "archetype": "ninja",
+    "model": "/assets/models/shadow-shinobi.glb",
+    "playstyle": "rushdown ninja / burst attacks",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "street_brawler",
+    "name": "Street Brawler",
+    "archetype": "brawler",
+    "model": "/assets/models/street-brawler.glb",
+    "playstyle": "close-range boxer / throw specialist",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "arcane_scholar",
+    "name": "Arcane Scholar",
+    "archetype": "mage",
+    "model": "/assets/models/arcane-scholar.glb",
+    "playstyle": "book magic / projectile control",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "neon_cyborg",
+    "name": "Neon Cyborg",
+    "archetype": "cyborg",
+    "model": "/assets/models/neon-cyborg.glb",
+    "playstyle": "fast tech assassin / dash cancels",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "ironclad_marshal",
+    "name": "Ironclad Marshal",
+    "archetype": "tank",
+    "model": "/assets/models/ironclad-marshal.glb",
+    "playstyle": "defensive tank / parry guard",
+    "palette": {
+      "base": 16742475
+    }
+  },
+  {
+    "id": "wave_dancer",
+    "name": "Wave Dancer",
+    "archetype": "aquatic",
+    "model": "/assets/models/wave-dancer.glb",
+    "playstyle": "trident aerial specialist",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "ember_witch",
+    "name": "Ember Witch",
+    "archetype": "pyro",
+    "model": "/assets/models/ember-witch.glb",
+    "playstyle": "magic charge / pyro barrage",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "gearwright",
+    "name": "Gearwright",
+    "archetype": "engineer",
+    "model": "/assets/models/gearwright.glb",
+    "playstyle": "trap maker / tactical helper",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "neon_racer",
+    "name": "Neon Racer",
+    "archetype": "speedster",
+    "model": "/assets/models/neon-racer.glb",
+    "playstyle": "lightweight dash fighter",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "gravity_monk",
+    "name": "Gravity Monk",
+    "archetype": "gravity",
+    "model": "/assets/models/gravity-monk.glb",
+    "playstyle": "gravity manipulator / weird arcs",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "colossus",
+    "name": "Colossus",
+    "archetype": "colossus",
+    "model": "/assets/models/colossus.glb",
+    "playstyle": "long-range heavy / giant swings",
+    "palette": {
+      "base": 16742475
+    }
+  },
+  {
+    "id": "blink_rogue",
+    "name": "Blink Rogue",
+    "archetype": "rogue",
+    "model": "/assets/models/blink-rogue.glb",
+    "playstyle": "short teleports / burst damage",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "siren_archer",
+    "name": "Siren Archer",
+    "archetype": "archer",
+    "model": "/assets/models/siren-archer.glb",
+    "playstyle": "charged shots / angle control",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "heavy_gunner",
+    "name": "Heavy Gunner",
+    "archetype": "gunner",
+    "model": "/assets/models/heavy-gunner.glb",
+    "playstyle": "slow grenade launcher / knockback",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "frost_knight",
+    "name": "Frost Knight",
+    "archetype": "knight",
+    "model": "/assets/models/frost-knight.glb",
+    "playstyle": "freeze specialist / slide follow-ups",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "urban_jester",
+    "name": "Urban Jester",
+    "archetype": "trickster",
+    "model": "/assets/models/urban-jester.glb",
+    "playstyle": "mischief and stage tricks",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "circuit_mage",
+    "name": "Circuit Mage",
+    "archetype": "techmage",
+    "model": "/assets/models/circuit-mage.glb",
+    "playstyle": "beam / trap grid caster",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "stone_guardian",
+    "name": "Stone Guardian",
+    "archetype": "golem",
+    "model": "/assets/models/stone-guardian.glb",
+    "playstyle": "anchor defender / weight",
+    "palette": {
+      "base": 16742475
+    }
+  },
+  {
+    "id": "rocketette",
+    "name": "Rocketette",
+    "archetype": "jetpack",
+    "model": "/assets/models/rocketette.glb",
+    "playstyle": "jetpack aerial control",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "warden_of_blades",
+    "name": "Warden of Blades",
+    "archetype": "blade",
+    "model": "/assets/models/warden-of-blades.glb",
+    "playstyle": "multi-hit blade control",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "solar_vicar",
+    "name": "Solar Vicar",
+    "archetype": "cleric",
+    "model": "/assets/models/solar-vicar.glb",
+    "playstyle": "charged area burst / support",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "gearhound",
+    "name": "Gearhound",
+    "archetype": "mechbeast",
+    "model": "/assets/models/gearhound.glb",
+    "playstyle": "mobile grappler / thruster dives",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "phantom_baller",
+    "name": "Phantom Baller",
+    "archetype": "dancer",
+    "model": "/assets/models/phantom-baller.glb",
+    "playstyle": "aerial combo specialist",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "jungle_raider",
+    "name": "Jungle Raider",
+    "archetype": "raider",
+    "model": "/assets/models/jungle-raider.glb",
+    "playstyle": "territory control / hit and run",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "arc_blaster",
+    "name": "Arc Blaster",
+    "archetype": "blaster",
+    "model": "/assets/models/arc-blaster.glb",
+    "playstyle": "charged energy cannons",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "lunar_huntress",
+    "name": "Lunar Huntress",
+    "archetype": "hunting",
+    "model": "/assets/models/lunar-huntress.glb",
+    "playstyle": "anti-air / spear arcs",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "berserk_titan",
+    "name": "Berserk Titan",
+    "archetype": "berserker",
+    "model": "/assets/models/berserk-titan.glb",
+    "playstyle": "rage amplifier / heavy throws",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "cosmic_oracle",
+    "name": "Cosmic Oracle",
+    "archetype": "cosmic",
+    "model": "/assets/models/cosmic-oracle.glb",
+    "playstyle": "cinematic high-impact specials",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "mecha_pilot",
+    "name": "Mecha Pilot",
+    "archetype": "exosuit",
+    "model": "/assets/models/mecha-pilot.glb",
+    "playstyle": "balanced tech fighter / cockpit attacks",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "gadgeteer",
+    "name": "Gadgeteer",
+    "archetype": "tinkerer",
+    "model": "/assets/models/gadgeteer.glb",
+    "playstyle": "drones and traps",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "radiant_dervish",
+    "name": "Radiant Dervish",
+    "archetype": "spinning",
+    "model": "/assets/models/radiant-dervish.glb",
+    "playstyle": "spin multi-hits / redirects",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "titaness_vanguard",
+    "name": "Titaness Vanguard",
+    "archetype": "lancer",
+    "model": "/assets/models/titaness-vanguard.glb",
+    "playstyle": "shield lance / defensive pressure",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "alley_phantom",
+    "name": "Alley Phantom",
+    "archetype": "street",
+    "model": "/assets/models/alley-phantom.glb",
+    "playstyle": "mobility and stage control",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "clockwork_lady",
+    "name": "Clockwork Lady",
+    "archetype": "clockwork",
+    "model": "/assets/models/clockwork-lady.glb",
+    "playstyle": "timed traps / frame advantage",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "thorncaller",
+    "name": "Thorncaller",
+    "archetype": "nature",
+    "model": "/assets/models/thorncaller.glb",
+    "playstyle": "vine area denial",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "steel_navigator",
+    "name": "Steel Navigator",
+    "archetype": "pilot",
+    "model": "/assets/models/steel-navigator.glb",
+    "playstyle": "stage control / utility",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "electric_fox",
+    "name": "Electric Fox",
+    "archetype": "animal",
+    "model": "/assets/models/electric-fox.glb",
+    "playstyle": "fast hops / wall cling",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "phantom_general",
+    "name": "Phantom General",
+    "archetype": "commander",
+    "model": "/assets/models/phantom-general.glb",
+    "playstyle": "command buffs / slow heavy rush",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "oracle_knight",
+    "name": "Oracle Knight",
+    "archetype": "runeknight",
+    "model": "/assets/models/oracle-knight.glb",
+    "playstyle": "balanced rune fighter",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "pulse_runner",
+    "name": "Pulse Runner",
+    "archetype": "runner",
+    "model": "/assets/models/pulse-runner.glb",
+    "playstyle": "combo-extending mobility",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "sand_reaver",
+    "name": "Sand Reaver",
+    "archetype": "scourge",
+    "model": "/assets/models/sand-reaver.glb",
+    "playstyle": "scythe arcs / trap zoning",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "iron_bard",
+    "name": "Iron Bard",
+    "archetype": "bard",
+    "model": "/assets/models/iron-bard.glb",
+    "playstyle": "tempo-based buffs / debuffs",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "void_stalker",
+    "name": "Void Stalker",
+    "archetype": "assassin",
+    "model": "/assets/models/void-stalker.glb",
+    "playstyle": "single-hit stealth assassin",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "aurora_paladin",
+    "name": "Aurora Paladin",
+    "archetype": "paladin",
+    "model": "/assets/models/aurora-paladin.glb",
+    "playstyle": "hybrid defense / burst offense",
+    "palette": {
+      "base": 55807
+    }
+  },
+  {
+    "id": "twin_tinker",
+    "name": "Twin Tinker",
+    "archetype": "duo",
+    "model": "/assets/models/twin-tinker.glb",
+    "playstyle": "tag-assist duo / switch helpers",
+    "palette": {
+      "base": 55807
+    }
+  }
+]

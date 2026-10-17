@@ -1,0 +1,23 @@
+[
+  {
+    "id": "rainbow_road",
+    "name": "Rainbow Road Space Station",
+    "model": "/assets/stages/rainbow_road.glb",
+    "hdri": "/assets/envs/studio_small_03_1k.hdr",
+    "radius": 35
+  },
+  {
+    "id": "grand_archive",
+    "name": "The Grand Archive",
+    "model": "/assets/stages/grand_archive.glb",
+    "hdri": "/assets/envs/studio_small_03_1k.hdr",
+    "radius": 28
+  },
+  {
+    "id": "valley_of_ends",
+    "name": "Valley of the End Gorge",
+    "model": "/assets/stages/valley_of_ends.glb",
+    "hdri": "/assets/envs/studio_small_03_1k.hdr",
+    "radius": 40
+  }
+]

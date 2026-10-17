@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Browser Smash — 3D Fighter Prototype</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <canvas id="game-canvas" aria-label="3D fighting game"></canvas>
+  <main id="menu" class="menu">
+    <p class="eyebrow">THREE.JS COMBAT PROTOTYPE</p>
+    <h1>NEBULA <span>CLASH</span></h1>
+    <p class="subhead">Choose a fighter and enter the arena.</p>
+    <section class="panel">
+      <h2>Player 1 roster</h2>
+      <p id="selected-fighter">Player 1: Crimson Sentinel</p>
+      <div id="char-list" class="roster-grid"></div>
+    </section>
+    <section class="panel controls">
+      <label>Player 2
+        <select id="player-two"></select>
+      </label>
+      <label>Arena
+        <select id="map-select">
+          <option value="rainbow_road">Rainbow Road Space Station</option>
+          <option value="grand_archive">The Grand Archive</option>
+          <option value="valley_of_ends">Valley of the End Gorge</option>
+        </select>
+      </label>
+      <button id="start-match" class="primary">Start Match</button>
+      <p id="status" role="status">Loading roster…</p>
+    </section>
+  </main>
+  <aside id="hud" class="hud hidden">
+    <span>PLAYER 1 · A/D move · W jump</span>
+    <span>PLAYER 2 · J/L move · U jump</span>
+  </aside>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
