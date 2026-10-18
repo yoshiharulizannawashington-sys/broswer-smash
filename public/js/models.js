@@ -87,7 +87,11 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   const d={...(designs[archetype]||designs.warrior)};
   const look=looks[key];
   if(look) Object.assign(d,look);
-  const cloth=mat(d.body,.12,.72), armor=mat(d.armor,.72,.28), glow=mat(d.accent,.3,.2,d.accent), skin=mat(d.skin,.05,.78), dark=mat(0x10151d,.4,.42);
+  const cloth=mat(d.body,.10,.72),
+    armor=new THREE.MeshPhysicalMaterial({color:d.armor,metalness:.78,roughness:.27,clearcoat:.78,clearcoatRoughness:.16,envMapIntensity:1.15}),
+    glow=new THREE.MeshPhysicalMaterial({color:d.accent,metalness:.36,roughness:.2,clearcoat:.72,clearcoatRoughness:.12,emissive:d.accent,emissiveIntensity:1.0,envMapIntensity:1.1}),
+    skin=new THREE.MeshStandardMaterial({color:d.skin,metalness:.02,roughness:.64,envMapIntensity:.72}),
+    dark=new THREE.MeshStandardMaterial({color:0x10151d,metalness:.38,roughness:.38});
   // root origin is at the feet; torso and limbs are independently articulated.
   const pelvis=joint(g,[0,1.02,0]); part(pelvis,new THREE.BoxGeometry(.68,.38,.42),armor,[0,0,0]);
   const torso=joint(pelvis,[0,.28,0]); part(torso,new THREE.BoxGeometry(.9,.82,.48),cloth,[0,.28,0]);
@@ -108,9 +112,9 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     else { g.userData.rightArm=arm;g.userData.rightFore=fore;g.userData.rightLeg=leg;g.userData.rightShin=shin; }
   }
   const neck=joint(torso,[0,.72,0]); part(neck,new THREE.CylinderGeometry(.13,.16,.18,10),skin,[0,0,0]);
-  const head=joint(neck,[0,.24,0]); part(head,new THREE.SphereGeometry(.28,16,12),skin,[0,0,0],[.88,1.05,.82]);
+  const head=joint(neck,[0,.24,0]); part(head,new THREE.SphereGeometry(.28,24,18),skin,[0,0,0],[.88,1.05,.82]);
   if(d.head==='helmet') {
-    part(head,new THREE.SphereGeometry(.31,16,12),armor,[0,.04,0],[1,1,.94]);
+    part(head,new THREE.SphereGeometry(.31,24,18),armor,[0,.04,0],[1,1,.94]);
     part(head,new THREE.BoxGeometry(.38,.09,.08),glow,[0,.015,.245]);
     part(head,new THREE.BoxGeometry(.19,.1,.12),dark,[0,-.12,.22]);
   } else {
@@ -310,7 +314,7 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','weapon-library-spiderman-20261018');
+      url.searchParams.set('v','cinematic-fighter-polish-v2-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);});
