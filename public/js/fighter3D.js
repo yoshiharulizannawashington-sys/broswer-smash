@@ -444,6 +444,36 @@ export default class Fighter3D {
       }
     }
 
+    // Character-specific locomotion silhouettes: Spider-Man sprints low and springy,
+    // Thor carries a heavy weapon-ready stride, and Aang uses a light, balanced airbender run.
+    if(this.attackQueue.length===0&&!guard&&speed>.12&&!airborne){
+      const identity=this.identityKey||'';
+      const sprint=THREE.MathUtils.clamp(speed/10,0,1);
+      if(identity==='spider_man'){
+        u.torso.rotation.x=THREE.MathUtils.damp(u.torso.rotation.x,-.16-.22*sprint,9,dt);
+        u.leftArm.rotation.x=-.38+Math.sin(phase+Math.PI)*.22;
+        u.rightArm.rotation.x=-.48+Math.sin(phase)*.22;
+        u.leftArm.rotation.z=.18;u.rightArm.rotation.z=-.18;
+        u.leftLeg.rotation.x=Math.sin(phase)*.82;
+        u.rightLeg.rotation.x=-Math.sin(phase)*.82;
+        u.leftShin.rotation.x=Math.max(0,-Math.sin(phase))*.58;
+        u.rightShin.rotation.x=Math.max(0,Math.sin(phase))*.58;
+      }else if(identity==='thor'){
+        u.torso.rotation.x=-.04-.06*sprint;
+        u.leftArm.rotation.x=-.2+Math.sin(phase)*.2;
+        u.rightArm.rotation.x=-.48+Math.sin(phase+Math.PI)*.16;
+        u.rightArm.rotation.z=-.12;
+        u.leftLeg.rotation.x=Math.sin(phase)*.55;
+        u.rightLeg.rotation.x=-Math.sin(phase)*.55;
+      }else if(identity==='aang'){
+        u.torso.rotation.x=-.025;
+        u.leftArm.rotation.x=-.24+Math.sin(phase+Math.PI)*.18;
+        u.rightArm.rotation.x=-.24+Math.sin(phase)*.18;
+        u.leftArm.rotation.z=.14;u.rightArm.rotation.z=-.14;
+        u.leftLeg.rotation.x=Math.sin(phase)*.74;
+        u.rightLeg.rotation.x=-Math.sin(phase)*.74;
+      }
+    }
     if(this.attackQueue.length===0&&!guard){
       const identity=this.identityKey||'';
       if(identity==='spider_man'){
