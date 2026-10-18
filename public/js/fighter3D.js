@@ -30,6 +30,8 @@ export default class Fighter3D {
     this.roamMode = false;
     this.comboStep = 0;
     this.comboWindow = 0;
+    this.comboHitCount = 0;
+    this.comboHitFlash = 0;
     this.invulnerable = 0;
     this.runBlend = 0;
     this.moveBlend = 0;
@@ -43,7 +45,8 @@ export default class Fighter3D {
     this.dashCooldown = Math.max(0, this.dashCooldown - dt);
     this.dashTimer = Math.max(0, this.dashTimer - dt);
     this.comboWindow = Math.max(0, this.comboWindow - dt);
-    if (this.comboWindow <= 0) this.comboStep = 0;
+    this.comboHitFlash = Math.max(0, this.comboHitFlash - dt);
+    if (this.comboWindow <= 0) { this.comboStep = 0; this.comboHitCount = 0; }
     const inputs = inputHandler.getInputs();
     this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
@@ -117,29 +120,40 @@ export default class Fighter3D {
 
     if (i.attack && this.attackQueue.length === 0 && this.guardBreak <= 0) {
       const style = {
-        warrior:{reach:1.12,damage:1.12,windup:1,combo:.62,cooldown:.82},
-        ninja:{reach:1.28,damage:.86,windup:.72,combo:.48,cooldown:.68},
-        brawler:{reach:1.04,damage:1.32,windup:1.28,combo:.72,cooldown:1.02},
-        mage:{reach:1.18,damage:1.02,windup:1.08,combo:.66,cooldown:.9},
-        cyborg:{reach:1.22,damage:1.04,windup:.88,combo:.56,cooldown:.76}
-      }[this.archetype] || {reach:1,damage:1,windup:1,combo:.62,cooldown:.82};
+        warrior:{reach:1.65,damage:1.12,windup:1,combo:.82,cooldown:.72},
+        ninja:{reach:1.8,damage:.86,windup:.72,combo:.88,cooldown:.62},
+        brawler:{reach:1.5,damage:1.32,windup:1.18,combo:.86,cooldown:.88},
+        mage:{reach:1.72,damage:1.02,windup:1.02,combo:.84,cooldown:.78},
+        cyborg:{reach:1.7,damage:1.04,windup:.84,combo:.82,cooldown:.7}
+      }[this.archetype] || {reach:1.6,damage:1,windup:1,combo:.82,cooldown:.74};
       const heavy = !!i.run;
-      if (this.comboWindow <= 0) this.comboStep = 0;
+      const aerial = !this.isGrounded;
+      if (this.comboWindow <= 0) { this.comboStep = 0; this.comboHitCount = 0; }
       this.comboStep = (this.comboStep % 3) + 1;
       const finisher = this.comboStep === 3;
+      const launcher = finisher && !aerial && !heavy;
       this.comboWindow = style.combo;
       const baseDamage = heavy ? 17 : finisher ? 20 : 8 + this.comboStep;
+      const reach = aerial ? (finisher ? 4.0 : 3.05) : (finisher ? style.reach * 1.42 : style.reach);
       this.attackQueue.push({
-        kind: heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
-        total: (heavy || finisher ? .56 : .34) * style.windup,
+        kind: aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
+        total: (aerial ? (finisher ? .5 : .38) : (heavy || finisher ? .56 : .34)) * style.windup,
         t: 0,
-        start: (heavy || finisher ? .14 : .065) * style.windup,
-        end: (heavy || finisher ? .31 : .19) * style.windup,
-        damage: baseDamage * style.damage,
-        reach: style.reach,
-        kbs: (heavy || finisher ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1),
+        start: (aerial ? .08 : (heavy || finisher ? .14 : .065)) * style.windup,
+        end: (aerial ? (finisher ? .34 : .25) : (heavy || finisher ? .31 : .19)) * style.windup,
+        damage: baseDamage * style.damage * (aerial ? 1.12 : 1),
+        reach,
+        kbs: (heavy || finisher ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (aerial ? 1.12 : 1),
+        aerial,
+        launcher,
+        launchY: aerial ? (finisher ? 8.8 : 6.4) : (launcher ? 8.6 : 3.4),
+        comboStep: this.comboStep,
         hit: false
       });
+      const dirX = this.facing || (this.player ? 1 : -1);
+      const dirZ = this.facingZ || 0;
+      if (aerial) { this.velocity.x += dirX * (finisher ? 2.8 : 1.65); this.velocity.z += dirZ * (finisher ? 2.4 : 1.35); }
+      else if (launcher) { this.velocity.x += dirX * 1.2; this.velocity.y = Math.max(this.velocity.y, .9); }
       this.attackPose = 1;
     }
 
@@ -187,23 +201,27 @@ export default class Fighter3D {
         u.rightArm.rotation.z = 0;
       }
       if (this.attackPose > 0) {
-        const punch = Math.sin(Math.min(1, this.attackPose) * Math.PI);
+        const activeAttack=this.attackQueue[this.attackQueue.length-1];
+        const progress=activeAttack?THREE.MathUtils.clamp(activeAttack.t/activeAttack.total,0,1):Math.min(1,this.attackPose);
+        const punch=activeAttack?(progress<.24?-(progress/.24):progress<.62?((progress-.24)/.38):(1-progress)/.38):Math.sin(progress*Math.PI);
         const archetype = this.archetype || 'warrior';
         const combo = this.comboStep || 1;
         const slash = archetype === 'ninja' || combo === 3;
         const heavy = archetype === 'brawler' || combo === 3;
         const arc = archetype === 'mage';
         const mechanical = archetype === 'cyborg';
+        const aerialAttack=!!activeAttack?.aerial;
         // Anticipation and follow-through vary by fighter archetype and combo step.
-        u.rightArm.rotation.x = (heavy ? -1.9 : arc ? -1.15 : -1.5) * punch - 0.18;
+        u.rightArm.rotation.x = (heavy ? -2.0 : arc ? -1.15 : aerialAttack ? -1.72 : -1.5) * punch - 0.18;
         u.rightArm.rotation.z = (slash ? -0.62 : mechanical ? -0.12 : 0.08) * punch;
-        u.rightFore.rotation.x = (slash ? -0.9 : arc ? -0.25 : -0.68) * punch;
+        u.rightFore.rotation.x = (slash ? -1.0 : arc ? -0.25 : aerialAttack ? -1.08 : -0.68) * punch;
         u.rightFore.rotation.z = slash ? -0.3 * punch : 0;
         u.leftArm.rotation.x = -0.25 - (heavy ? 0.55 : arc ? 0.15 : 0.3) * punch;
         u.leftArm.rotation.z = (slash ? 0.45 : 0.18) * punch;
         u.leftFore.rotation.x = -0.25 - 0.25 * punch;
         u.torso.rotation.x = -(heavy ? 0.23 : 0.14) * punch;
-        u.torso.rotation.y = (slash ? 0.22 : mechanical ? 0.05 : -0.12) * punch * (combo % 2 ? 1 : -1);
+        u.torso.rotation.y = (slash ? 0.28 : mechanical ? 0.08 : -0.17) * punch * (combo % 2 ? 1 : -1);
+        if(aerialAttack){u.leftLeg.rotation.x=-.55-.18*punch;u.rightLeg.rotation.x=.62+.24*punch;u.leftShin.rotation.x=.25;u.rightShin.rotation.x=.3;u.pelvis.rotation.x=-.16-.09*punch;}
         if (heavy) {
           u.leftLeg.rotation.x = -0.35 * punch;
           u.rightLeg.rotation.x = 0.55 * punch;
@@ -255,8 +273,15 @@ export default class Fighter3D {
     const dir = new THREE.Vector3(this.facing, 0, this.facingZ);
     if (dir.lengthSq() < 0.01) dir.set(this.player ? 1 : -1, 0, 0);
     dir.normalize();
-    const pos = this.position.clone().add(dir.multiplyScalar(a.reach || (a.kind === 'heavy' ? 1.25 : 1.05))).add(new THREE.Vector3(0, 1.25, 0));
-    this.hitboxes.push({ pos, radius: a.kind === 'heavy' ? 1.3 : a.kind === 'slash' ? 1.25 : a.kind === 'grab' ? 1.05 : 1.15, damage: a.damage, kbs: a.kbs, lifetime: 0.15, hit: false });
+    const reach = a.reach || (a.kind === 'heavy' ? 1.45 : 1.2);
+    const height = a.aerial ? 1.32 : a.launcher ? 1.38 : 1.25;
+    const pos = this.position.clone().add(dir.multiplyScalar(reach)).add(new THREE.Vector3(0, height, 0));
+    this.hitboxes.push({
+      pos,
+      radius: a.aerial ? (a.comboStep===3 ? 1.8 : 1.55) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
+      damage: a.damage, kbs: a.kbs, launchY: a.launchY || 3.4, aerial: !!a.aerial,
+      launcher: !!a.launcher, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .18 : .15, hit: false
+    });
   }
 
   updateHitboxes(dt) {
@@ -274,12 +299,16 @@ export default class Fighter3D {
           const guarding = other.guardHeld && other.guardBreak <= 0;
           const damageScale = guarding ? 0.28 : 1;
           other.percent += h.damage * damageScale;
-          other.hitstun = guarding ? 0.1 : 0.28 + Math.min(0.8, other.percent / 180);
+          this.comboHitCount = (this.comboWindow > 0 && this.comboHitCount > 0) ? this.comboHitCount + 1 : 1;
+          this.comboHitFlash = .7;
+          this.comboWindow = Math.max(this.comboWindow, .82);
+          other.hitstun = guarding ? 0.1 : .3 + Math.min(1.05, other.percent / 165) + (h.aerial || h.launcher ? .12 : 0);
           other.guardBreak = guarding ? Math.max(other.guardBreak, 0.08) : other.guardBreak;
           const knockbackScale = guarding ? 0.25 : 1;
           other.velocity.x = this.facing * h.kbs * (0.035 + other.percent / 1200) * knockbackScale;
           other.velocity.z = this.facingZ * h.kbs * (0.035 + other.percent / 1200) * knockbackScale;
-          other.velocity.y = Math.max(other.velocity.y, guarding ? 1.2 : 3.4);
+          other.velocity.y = Math.max(other.velocity.y, guarding ? 1.2 : h.launchY);
+          if (h.aerial && !guarding) { other.velocity.x += this.facing * 1.1; other.velocity.y += .85; }
           other.isGrounded = false;
           window.spawnImpact?.(h.pos, guarding ? 3 : h.damage);
           remove = true;
