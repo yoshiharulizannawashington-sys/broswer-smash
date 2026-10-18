@@ -111,13 +111,15 @@ try {
           && state.finalValley.meshCount > 0
           && fighters.length === 2
           && fighters.every(f => f.model?.name?.startsWith('Blender fighter '))
-          && fighters.every(f => !!f.model?.userData?.equippedWeaponRight);
-      }, null, { timeout: 180_000, polling: 250 });
+          && fighters.every(f => !!f.model?.userData?.equippedWeaponRight)
+          && state.lastCharacter?.upright === true;
+      }, null, { timeout: 60_000, polling: 250 });
 
       const result = await page.evaluate(() => ({
         route: location.pathname,
         title: document.title,
         assets: window.__browserSmashAssets,
+        characterOrientation: window.__browserSmashAssets?.lastCharacter,
         fighters: (window.fighters || []).map(f => ({
           identity: f.identity,
           model: f.model?.name,
