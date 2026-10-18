@@ -2,6 +2,10 @@
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 import { GLTFLoader } from 'https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js';
 
+const runtimeAssetState = typeof window !== 'undefined'
+  ? (window.__browserSmashAssets ||= {})
+  : {};
+
 const mat = (color, metalness=.2, roughness=.48, emissive=0x000000) =>
   new THREE.MeshStandardMaterial({color, metalness, roughness, emissive, emissiveIntensity: emissive ? 1.1 : 0});
 
@@ -311,15 +315,25 @@ function loadCharacterModelLibrary(){
   if(!characterModelLibraryState.promise){
     characterModelLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_models.glb',import.meta.url);
-      url.searchParams.set('v','cinematic-combo-signature-v7-20261018');
+      url.searchParams.set('v','browser-smash-character-prefabs-v3-20261018');
+      runtimeAssetState.characters={status:'loading',url:url.href};
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
+        let meshCount=0;
         gltf.scene.traverse(node=>{
           if(node.name&&node.name.startsWith('character_'))prefabs.set(node.name,node);
+          if(node.isMesh)meshCount++;
         });
         characterModelLibraryState.prefabs=prefabs;
+        runtimeAssetState.characters={
+          status:prefabs.size>=57?'loaded':'partial',
+          count:prefabs.size,meshCount,url:url.href
+        };
         resolve(prefabs);
-      },undefined,reject);
+      },undefined,error=>{
+        runtimeAssetState.characters={status:'error',message:String(error?.message||error),url:url.href};
+        reject(error);
+      });
     });
   }
   return characterModelLibraryState.promise;
@@ -385,13 +399,25 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','blender-character-library-v3-20261018');
+      url.searchParams.set('v','browser-smash-weapons-v4-20261018');
+      runtimeAssetState.weapons={status:'loading',url:url.href};
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
-        gltf.scene.traverse(node=>{if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);});
+        let meshCount=0;
+        gltf.scene.traverse(node=>{
+          if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);
+          if(node.isMesh)meshCount++;
+        });
         weaponLibraryState.prefabs=prefabs;
+        runtimeAssetState.weapons={
+          status:prefabs.size>=68?'loaded':'partial',
+          count:prefabs.size,meshCount,url:url.href
+        };
         resolve(prefabs);
-      },undefined,reject);
+      },undefined,error=>{
+        runtimeAssetState.weapons={status:'error',message:String(error?.message||error),url:url.href};
+        reject(error);
+      });
     });
   }
   return weaponLibraryState.promise;
