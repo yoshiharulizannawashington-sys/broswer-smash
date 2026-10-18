@@ -18,7 +18,14 @@ export function createSmashRenderPipeline(canvas,scene){
  // tone-mapping/color-space shader chunks in the composer, which prevents all
  // 3D materials from drawing. Keep the composer-shaped API so gameplay code
  // remains unchanged while the arena and fighters render again.
- const composer={render(){renderer.render(scene,camera);}};
+ const composer={
+  render(){renderer.render(scene,camera);},
+  setSize(width,height){
+   renderer.setSize(width,height);
+   camera.aspect=width/Math.max(1,height);
+   camera.updateProjectionMatrix();
+  }
+ };
  const bloom={enabled:false};
  return {renderer,camera,composer,bloom,enableSSR(){return null;}};
 }
