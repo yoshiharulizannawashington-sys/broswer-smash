@@ -7,7 +7,27 @@ export function createFinalValley(THREE) {
   // Three-band toon ramp for anime-like rock and monument shading.
   const toonRamp = new THREE.DataTexture(new Uint8Array([48,48,48,255,94,94,94,255,164,164,164,255,246,246,246,255]),4,1,THREE.RGBAFormat);
   toonRamp.magFilter = THREE.NearestFilter; toonRamp.minFilter = THREE.NearestFilter; toonRamp.generateMipmaps = false; toonRamp.needsUpdate = true;
-  const toon = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp});
+  // Hand-painted mineral grain and fracture lines keep the cel-shaded surfaces from looking plastic.
+  const rockCanvas = document.createElement('canvas'); rockCanvas.width = 512; rockCanvas.height = 512;
+  const rockCtx = rockCanvas.getContext('2d');
+  rockCtx.fillStyle = '#d6d7ca'; rockCtx.fillRect(0,0,512,512);
+  for(let i=0;i<26000;i++){
+    const x=Math.random()*512,y=Math.random()*512,v=95+Math.random()*130;
+    rockCtx.fillStyle='rgba('+v+','+(v+Math.random()*7)+','+(v-4)+','+(.035+Math.random()*.13)+')';
+    rockCtx.fillRect(x,y,.5+Math.random()*2,.5+Math.random()*2);
+  }
+  for(let i=0;i<62;i++){
+    const x=Math.random()*512,y=Math.random()*512;
+    rockCtx.strokeStyle=i%3?'rgba(47,58,54,.12)':'rgba(225,224,207,.22)';
+    rockCtx.lineWidth=.5+Math.random()*1.5;
+    rockCtx.beginPath();rockCtx.moveTo(x,y);
+    rockCtx.lineTo(x+(Math.random()-.5)*45,y+4+Math.random()*24);
+    rockCtx.lineTo(x+(Math.random()-.5)*72,y+15+Math.random()*44);rockCtx.stroke();
+  }
+  const rockTexture=new THREE.CanvasTexture(rockCanvas);
+  rockTexture.colorSpace=THREE.SRGBColorSpace;rockTexture.wrapS=rockTexture.wrapT=THREE.RepeatWrapping;
+  rockTexture.repeat.set(2,2);rockTexture.anisotropy=8;
+  const toon = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp,map:rockTexture});
   // Prefer the Blender-exported GLB when it exists; keep the procedural scene as a no-download fallback.
   const blenderLoader = new GLTFLoader();
   const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url).href;
@@ -76,12 +96,46 @@ export function createFinalValley(THREE) {
   waterTexture.colorSpace = THREE.SRGBColorSpace;
   waterTexture.wrapS = waterTexture.wrapT = THREE.RepeatWrapping;
   waterTexture.repeat.set(1, 1.6);
-  riverMat.map = waterTexture; riverMat.needsUpdate = true;
+  // Fine moving normals create water glints without the old neon-blue flat strip.
+  const normalSize=128,normalData=new Uint8Array(normalSize*normalSize*4);
+  for(let y=0;y<normalSize;y++)for(let x=0;x<normalSize;x++){
+    const i=(y*normalSize+x)*4;
+    const nx=Math.sin(x*.19+Math.sin(y*.075)*1.8)*.17+Math.cos(y*.12-x*.04)*.1;
+    const ny=Math.cos(y*.16+x*.055)*.14+Math.sin(x*.07-y*.09)*.09;
+    normalData[i]=128+nx*120;normalData[i+1]=128+ny*120;normalData[i+2]=246;normalData[i+3]=255;
+  }
+  const waterNormal=new THREE.DataTexture(normalData,normalSize,normalSize,THREE.RGBAFormat);
+  waterNormal.wrapS=waterNormal.wrapT=THREE.RepeatWrapping;waterNormal.repeat.set(2,8);waterNormal.colorSpace=THREE.NoColorSpace;waterNormal.needsUpdate=true;
+  riverMat.map = waterTexture;riverMat.normalMap=waterNormal;riverMat.normalScale.set(.3,.24);
+  riverMat.roughness=.24;riverMat.clearcoat=.55;riverMat.clearcoatRoughness=.22;riverMat.side=THREE.DoubleSide;riverMat.needsUpdate = true;
+
+  // Thin translucent streaks give the waterfall a vertical flow and a soft anime-mist edge.
+  const fallCanvas=document.createElement('canvas');fallCanvas.width=128;fallCanvas.height=256;
+  const fallCtx=fallCanvas.getContext('2d');fallCtx.clearRect(0,0,128,256);
+  const fallGrad=fallCtx.createLinearGradient(0,0,128,0);
+  fallGrad.addColorStop(0,'rgba(174,192,189,0)');fallGrad.addColorStop(.2,'rgba(203,215,210,.38)');
+  fallGrad.addColorStop(.55,'rgba(232,238,228,.58)');fallGrad.addColorStop(.82,'rgba(174,196,193,.3)');fallGrad.addColorStop(1,'rgba(174,192,189,0)');
+  fallCtx.fillStyle=fallGrad;fallCtx.fillRect(0,0,128,256);
+  for(let i=0;i<72;i++){
+    const x=Math.random()*128,y=Math.random()*256;
+    fallCtx.strokeStyle='rgba(241,245,235,'+(.06+Math.random()*.24)+')';
+    fallCtx.lineWidth=.4+Math.random()*1.6;fallCtx.beginPath();fallCtx.moveTo(x,y);
+    fallCtx.lineTo(x+(Math.random()-.5)*2,y+8+Math.random()*44);fallCtx.stroke();
+  }
+  const fallTexture=new THREE.CanvasTexture(fallCanvas);
+  fallTexture.colorSpace=THREE.SRGBColorSpace;fallTexture.wrapS=fallTexture.wrapT=THREE.RepeatWrapping;
+  fallTexture.repeat.set(1,1.4);fallTexture.needsUpdate=true;
+  foamMat.map=fallTexture;foamMat.color.setHex(0xffffff);foamMat.side=THREE.DoubleSide;foamMat.opacity=.64;foamMat.needsUpdate=true;
 
   // Central waterfall and stone amphitheater establish the valley silhouette.
   add(new THREE.DodecahedronGeometry(1, 2), darkStone, 0, 15, -110, 25, 18, 8);
-  const centralFall = add(new THREE.PlaneGeometry(20, 28), foamMat, 0, 14, -100);
+  const centralFall = add(new THREE.PlaneGeometry(20, 28), foamMat, 0, 14, -99.7);
   centralFall.name = 'Central waterfall between Hashirama and Madara';
+  const waterfallRibbons=[];
+  for(let i=0;i<9;i++){
+    const ribbon=add(new THREE.PlaneGeometry(.5+(i%3)*.28,18+(i%4)*2),foamMat,-8.7+i*2.15,8.5+(i%3)*2.5,-99.4);
+    ribbon.material=foamMat;ribbon.userData.flow=(i%2?1:-1)*(.7+(i%4)*.15);waterfallRibbons.push(ribbon);
+  }
   const centralPool = add(new THREE.CircleGeometry(10, 48), riverMat, 0, .03, -84);
   centralPool.rotation.x = -Math.PI / 2;
   // A broken-stone bank makes the narrow river read as water between cliffs, not a giant blue floor.
@@ -227,7 +281,10 @@ export function createFinalValley(THREE) {
     group,
     obstacles,
     update(dt, time = 0) {
-      waterTexture.offset.y = (waterTexture.offset.y + dt * .12) % 1;
+      waterTexture.offset.y = (waterTexture.offset.y + dt * .035) % 1;
+      waterNormal.offset.y = (waterNormal.offset.y + dt * .11) % 1;
+      fallTexture.offset.y = (fallTexture.offset.y + dt * .24) % 1;
+      for(const ribbon of waterfallRibbons)ribbon.position.y+=Math.sin(time*1.5+ribbon.userData.flow)*dt*.025;
       river.position.y = .025 + Math.sin(time * 1.7) * .012;
       for (const p of mistPoints) {
         p.position.y += dt * (.25 + Math.sin(time + p.userData.phase) * .1);
