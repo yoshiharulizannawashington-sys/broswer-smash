@@ -118,9 +118,9 @@ export function addCinematicEnvironment(THREE, scene) {
     g.position.set((Math.random()-.5)*90,Math.random()*17-1,-35-Math.random()*38);
     g.userData.phase=Math.random()*Math.PI*2;g.userData.speed=.2+Math.random()*.45;glints.add(g);
   }
-  group.userData.update=(dt,time)=>{
+  group.userData.update=(dt,time,camera)=>{
     for(const g of glints.children){g.position.y+=Math.sin(time*g.userData.speed+g.userData.phase)*dt*.18;g.position.x+=Math.cos(time*.25+g.userData.phase)*dt*.12;}
-    sky.position.copy(scene.userData.cameraPosition||sky.position);
+    if(camera)sky.position.copy(camera.position);
   };
   return group;
 }
