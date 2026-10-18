@@ -71,7 +71,7 @@ def box(r,n,l,d,m,rot=(0,0,0)): return new_obj(r,n,'cube',l,d,m,rot)
 def cyl(r,n,l,rad,depth,m,rot=(0,0,0),verts=16): return new_obj(r,n,'cylinder',l,(rad,rad,depth),m,rot,vertices=verts)
 def cone(r,n,l,rad,depth,m,rot=(0,0,0),verts=12): return new_obj(r,n,'cone',l,(rad,rad,depth),m,rot,vertices=verts)
 def sphere(r,n,l,d,m): return new_obj(r,n,'sphere',l,d,m)
-def ico(r,n,l,d,m): return new_obj(r,n,'ico',l,d,m)
+def ico(r,n,l,d,m,**kwargs): return new_obj(r,n,'ico',l,d,m,**kwargs)
 def torus(r,n,l,rad,minor,m,rot=(0,0,0)):
     return new_obj(r,n,'torus',l,(rad,rad,rad),m,rot,major_segments=32)
 
