@@ -82,40 +82,40 @@ for(const x of [-4.2,4.2]){const p=new THREE.Mesh(new THREE.BoxGeometry(.8,9,.9)
 const lintel=new THREE.Mesh(new THREE.BoxGeometry(9.2,.9,1),alienStone);lintel.position.y=9;gate.add(lintel);
 const gateCore=new THREE.Mesh(new THREE.OctahedronGeometry(1.35,2),alienGlow);gateCore.position.set(0,4.7,.1);gate.add(gateCore);
 const dust=new THREE.Group();scene.add(dust);for(let i=0;i<130;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(.025+Math.random()*.035,5,5),new THREE.MeshBasicMaterial({color:0xb6eaff,transparent:true,opacity:.48}));p.position.set((Math.random()-.5)*42,Math.random()*12-1,(Math.random()-.5)*25);p.userData.speed=.15+Math.random()*.45;dust.add(p);}
-const input=new InputManager();window.fighters=[];const effects=[],projectiles=[],impactRings=[];let clockDelta=1/60,remaining=105,started=false,practice=false,exploration=false,accumulator=0;
+const input=new InputManager();window.fighters=[];const effects=[],projectiles=[],impactRings=[],signatureMoves=[];let clockDelta=1/60,remaining=105,started=false,practice=false,exploration=false,accumulator=0;
 const combatCallout=document.createElement('div');combatCallout.setAttribute('aria-live','polite');Object.assign(combatCallout.style,{position:'fixed',left:'50%',top:'23%',zIndex:'7',pointerEvents:'none',opacity:'0',transform:'translateX(-50%)',font:'1000 clamp(22px,4vw,42px)/1 system-ui,sans-serif',letterSpacing:'.12em',textAlign:'center',whiteSpace:'nowrap',textShadow:'0 3px 0 #06111d,0 0 18px currentColor,0 0 34px #00131e',WebkitTextStroke:'1px #05111b',maxWidth:'96vw'});document.body.appendChild(combatCallout);window.showCombatCallout=(label,color='#a8f6ff')=>{combatCallout.textContent=label;combatCallout.style.color=color;combatCallout.animate([{opacity:0,transform:'translate(-50%,8px) scale(.82)'},{opacity:1,transform:'translate(-50%,0) scale(1.04)',offset:.18},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.62},{opacity:0,transform:'translate(-50%,-12px) scale(1.02)'}],{duration:760,easing:'cubic-bezier(.16,1,.3,1)',fill:'forwards'});};
 const allRoster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"]];const roster=[["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","aang","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
 // Signature specials use distinct attack silhouettes and balance values instead of recolored generic bolts.
 const SPECIAL_MOVES={
 superman:{label:'HEAT VISION',type:'beam',color:0xff372e,damage:18,speed:39,cooldown:.86,stun:.48,knockback:5.8},
 iron_man_tony_stark:{label:'REPULSOR BLAST',type:'beam',color:0x36eaff,damage:14,speed:34,cooldown:.72,stun:.34,knockback:4.5},
-hulk_bruce_banner:{label:'THUNDERCLAP',type:'shockwave',color:0xffa64b,damage:23,speed:19,cooldown:1.25,stun:.64,knockback:9.5},
+hulk_bruce_banner:{label:'THUNDERCLAP',type:'shockwave',color:0xffa64b,damage:23,speed:19,cooldown:1.25,stun:.64,knockback:9.5,behavior:'shockwave',radius:6.4},
 green_lantern_hal_jordan:{label:'CONSTRUCT BOLT',type:'construct',color:0x55ff95,damage:16,speed:27,cooldown:.88,stun:.42,knockback:5.4},
 wonder_woman:{label:'AMAZON LASSO',type:'lasso',color:0xffd76c,damage:13,speed:31,cooldown:.9,stun:.78,knockback:2.7},
 professor_x_charles_xavier:{label:'PSIONIC PULSE',type:'psychic',color:0xb5a0ff,damage:11,speed:22,cooldown:1.05,stun:.95,knockback:2.1},
-the_flash_barry_allen:{label:'SPEED FORCE STRIKE',type:'lightning',color:0xffdf52,damage:17,speed:43,cooldown:.68,stun:.3,knockback:5.1},
+the_flash_barry_allen:{label:'SPEED FORCE STRIKE',type:'lightning',color:0xffdf52,damage:17,speed:43,cooldown:.68,stun:.3,knockback:5.1,behavior:'dashStrike',dashSpeed:47,range:18},
 aquaman:{label:'TIDAL TRIDENT',type:'water',color:0x4adfff,damage:17,speed:25,cooldown:.92,stun:.44,knockback:6.2},
 doctor_strange:{label:'ELDRITCH BIND',type:'magic',color:0xffa54d,damage:15,speed:23,cooldown:.92,stun:.8,knockback:3.7},
 arnold_schwarzenegger:{label:'CYBERNETIC CANNON',type:'bullet',color:0xff6c52,damage:19,speed:37,cooldown:1.05,stun:.4,knockback:7},
 goku:{label:'KAMEHAMEHA',type:'beam',color:0x4b9dff,damage:22,speed:31,cooldown:1.12,stun:.52,knockback:8.2},
 naruto_uzumaki:{label:'RASENSHURIKEN',type:'spinning',color:0x55bfff,damage:19,speed:28,cooldown:.9,stun:.5,knockback:7.2},
 vegeta:{label:'GALICK GUN',type:'beam',color:0xc06bff,damage:22,speed:32,cooldown:1.1,stun:.52,knockback:8.4},
-saitama:{label:'SERIOUS PUNCH',type:'shockwave',color:0xffe4a2,damage:27,speed:24,cooldown:1.32,stun:.46,knockback:12},
+saitama:{label:'SERIOUS PUNCH',type:'shockwave',color:0xffe4a2,damage:27,speed:24,cooldown:1.32,stun:.46,knockback:12,behavior:'shockwave',radius:7.8},
 l_death_note_style:{label:'DEATH NOTE HEX',type:'psychic',color:0xd4d6e0,damage:8,speed:18,cooldown:1.35,stun:1.05,knockback:1.2},
-all_might:{label:'DETROIT SMASH',type:'shockwave',color:0xffdf78,damage:25,speed:22,cooldown:1.2,stun:.55,knockback:10.5},
+all_might:{label:'DETROIT SMASH',type:'shockwave',color:0xffdf78,damage:25,speed:22,cooldown:1.2,stun:.55,knockback:10.5,behavior:'shockwave',radius:7.1},
 edward_elric:{label:'ALCHEMY SPIKE',type:'earth',color:0xff765f,damage:16,speed:25,cooldown:.88,stun:.48,knockback:5.6},
-levi_ackerman:{label:'THUNDER SPEAR',type:'blade',color:0xe5f1ff,damage:17,speed:35,cooldown:.76,stun:.35,knockback:5.5},
+levi_ackerman:{label:'THUNDER SPEAR',type:'blade',color:0xe5f1ff,damage:17,speed:35,cooldown:.76,stun:.35,knockback:5.5,behavior:'dashStrike',dashSpeed:37,range:14},
 mario:{label:'FIREBALL',type:'fireball',color:0xff632d,damage:13,speed:23,cooldown:.72,stun:.36,knockback:3.9},
 luigi:{label:'POLTERGUST BURST',type:'wind',color:0x9dff9b,damage:11,speed:20,cooldown:.82,stun:.62,knockback:2.2},
 kratos:{label:'LEVIATHAN AXE',type:'frost',color:0x8ee6ff,damage:21,speed:26,cooldown:1.05,stun:.54,knockback:8},
 link:{label:'HERO ARROW',type:'arrow',color:0xffdc78,damage:15,speed:38,cooldown:.75,stun:.3,knockback:4.7},
 master_chief:{label:'PLASMA GRENADE',type:'grenade',color:0x6effb0,damage:20,speed:18,cooldown:1.1,stun:.6,knockback:8.8},
-thor:{label:'STORMBREAKER LIGHTNING',type:'lightning',color:0x7be6ff,damage:23,speed:34,cooldown:1.08,stun:.55,knockback:9.1},
-aang:{label:'AIR SCOOTER',type:'wind',color:0xb7fff0,damage:12,speed:27,cooldown:.72,stun:.36,knockback:4.2},
+thor:{label:'STORMBREAKER LIGHTNING',type:'lightning',color:0x7be6ff,damage:23,speed:34,cooldown:1.08,stun:.55,knockback:9.1,behavior:'thunderStrike',range:34},
+aang:{label:'AIR SCOOTER',type:'wind',color:0xb7fff0,damage:12,speed:27,cooldown:.72,stun:.36,knockback:4.2,behavior:'airScooter',dashSpeed:23,range:9.5,lift:5.2},
 madara_uchiha:{label:'GREAT FIRE ANNIHILATION',type:'fireball',color:0xff4b2e,damage:22,speed:25,cooldown:1.12,stun:.55,knockback:8.7},
 hashirama_senju:{label:'WOOD DRAGON',type:'wood',color:0x78d18a,damage:18,speed:22,cooldown:1.05,stun:.75,knockback:4.8},
 lord_voldemort:{label:'AVADA KEDAVRA',type:'curse',color:0x55ff86,damage:20,speed:32,cooldown:1.12,stun:.7,knockback:7.4},
-sasuke_uchiha:{label:'CHIDORI',type:'lightning',color:0x78d8ff,damage:20,speed:33,cooldown:.95,stun:.42,knockback:7.2},
+sasuke_uchiha:{label:'CHIDORI',type:'lightning',color:0x78d8ff,damage:20,speed:33,cooldown:.95,stun:.42,knockback:7.2,behavior:'dashStrike',dashSpeed:39,range:15.5},
 edna_mode:{label:'FASHION EMERGENCY GADGET',type:'gadget',color:0xff5ca8,damage:9,speed:25,cooldown:.8,stun:.38,knockback:2.8},
 captain_jack_sparrow:{label:'PIRATE PISTOL',type:'bullet',color:0xffd39a,damage:14,speed:40,cooldown:.9,stun:.32,knockback:4.5},
 spider_man:{label:'WEB SNARE',type:'web',color:0xf5fbff,damage:8,speed:29,cooldown:.68,stun:1,knockback:1}
@@ -126,8 +126,8 @@ const player=spawn(fighterDisplay(playerType),-12,fighterArchetype(playerType),t
 const combatItems=createCombatItems(THREE,scene,(fighter,item)=>{window.spawnImpact?.(fighter.position.clone().add(new THREE.Vector3(0,1,0)),8);const status=$('#status');if(status)status.textContent=fighter.name.toUpperCase()+' PICKED UP '+item.label;});
 const ai={getInputs(){if(exploration)return {left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,shield:false,parry:false,ascend:false,descend:false,flightToggle:false};const dx=player.position.x-cpu.position.x,dz=player.position.z-cpu.position.z,dist=Math.hypot(dx,dz);if(cpu.canFly&&(player.flightMode||player.position.y>3&&dist<11))cpu.flightMode=true;cpu.aiTimer-=clockDelta;const attack=dist<2.1&&cpu.aiTimer<=0;if(attack)cpu.aiTimer=.8+Math.random()*.55;const incoming=dist<4.0&&player.attackQueue.some(a=>!a.hit&&a.t<a.start&&a.start-a.t<.17);const parry=incoming&&cpu.parryCooldown<=0&&Math.random()<.07;const shield=incoming&&!parry;return {left:dx< -1.1,right:dx>1.1,up:dz< -1.1,down:dz>1.1,run:dist>5,sprint:dist>8,jump:!cpu.flightMode&&player.position.y>2.6&&cpu.position.y<1.5,ascend:cpu.flightMode&&player.position.y>cpu.position.y+1.0,descend:cpu.flightMode&&player.position.y<cpu.position.y-2.3,dodge:false,attack:attack&&Math.random()>.32&&!shield,special:attack&&Math.random()>.58&&!shield,shield,parry,flightToggle:false};}};
 function burst(pos,color=0x58eaff,count=18,power=5){const group=new THREE.Group();for(let i=0;i<count;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.025+Math.random()*.065,6,5),new THREE.MeshBasicMaterial({color,transparent:true}));m.position.copy(pos);m.userData.v=new THREE.Vector3((Math.random()-.5)*power,Math.random()*power*.8,(Math.random()-.5)*power*.4);group.add(m);}scene.add(group);effects.push({group,t:0,life:.55});bloom.strength=.95;}
-window.spawnImpact=(pos,intensity=5)=>{
- const color=intensity>10?0xff9a37:0x60eaff;
+window.spawnImpact=(pos,intensity=5,impactColor=null)=>{
+ const color=impactColor??(intensity>10?0xff9a37:0x60eaff);
  burst(pos,color,24,7);
  // Expanding emissive shock rings make melee hits readable at a glance.
  for(let i=0;i<2;i++){
@@ -137,6 +137,149 @@ window.spawnImpact=(pos,intensity=5)=>{
   scene.add(mesh);impactRings.push({mesh,t:0,life:.3+i*.08,max:1.8+Math.min(1.2,intensity*.035)});
  }
  smashCamera.impact(Math.min(.9,intensity*.045));
+};
+function applySignatureHit(owner,target,profile,kind='dashStrike'){
+ if(!owner||!target||target.model?.visible===false||target.invulnerable>0)return false;
+ const guarded=target.guardHeld&&target.guardBreak<=0;
+ const damage=Number(profile.damage)||12;
+ target.percent+=damage*(guarded?.32:1);
+ target.hitstun=guarded?.12:(Number(profile.stun)||.42);
+ const away=target.position.clone().sub(owner.position);
+ away.y=0;
+ if(away.lengthSq()<.001)away.set(owner.facing||1,0,owner.facingZ||0);
+ away.normalize();
+ const force=(Number(profile.knockback)||5)*(guarded?.24:1);
+ target.velocity.x=away.x*force;
+ target.velocity.z=away.z*force;
+ target.velocity.y=guarded?1.0:(kind==='shockwave'?Math.max(3.2,force*.36):Math.max(2.5,force*.26));
+ target.isGrounded=false;
+ window.spawnImpact?.(target.position.clone().add(new THREE.Vector3(0,1.15,0)),damage,profile.color||0x79e9ff);
+ if(!guarded&&owner.comboWindow>0)owner.comboHitCount=Math.max(owner.comboHitCount,1);
+ return true;
+}
+window.performSignatureMove=(owner,profile)=>{
+ if(!owner||!profile?.behavior)return false;
+ const target=(window.fighters||[]).find(f=>f!==owner&&f.model?.visible!==false);
+ const facing=new THREE.Vector3(owner.facing,0,owner.facingZ);
+ if(facing.lengthSq()<.001)facing.set(owner.player?1:-1,0,0);
+ facing.normalize();
+ owner.attackPose=1;
+ const behavior=profile.behavior;
+ if(behavior==='shockwave'){
+   const outer=new THREE.Mesh(new THREE.TorusGeometry(.78,.145,10,48),new THREE.MeshBasicMaterial({color:profile.color||0xffc05d,transparent:true,opacity:.95,emissive:profile.color||0xffc05d,emissiveIntensity:1.7,depthWrite:false}));
+   const inner=new THREE.Mesh(new THREE.TorusGeometry(.46,.065,8,40),new THREE.MeshBasicMaterial({color:0xfff2ca,transparent:true,opacity:.9,emissive:0xffe6a0,emissiveIntensity:1.1,depthWrite:false}));
+   for(const mesh of [outer,inner]){mesh.position.copy(owner.position);mesh.position.y=.12;mesh.rotation.x=Math.PI/2;scene.add(mesh);}
+   signatureMoves.push({kind:'shockwave',owner,profile,age:0,life:.48,radius:profile.radius||6,origin:owner.position.clone(),direction:facing.clone(),outer,inner,hitTargets:new Set()});
+   owner.velocity.x+=facing.x*1.5;owner.velocity.z+=facing.z*1.5;owner.velocity.y=Math.max(owner.velocity.y,1.1);
+   burst(owner.position.clone().add(new THREE.Vector3(0,.18,0)),profile.color||0xffb764,28,4.8);
+   window.spawnImpact?.(owner.position.clone().add(new THREE.Vector3(0,.18,0)),12,profile.color||0xffb764);
+   return true;
+ }
+ if(behavior==='thunderStrike'){
+   if(!target||owner.position.distanceTo(target.position)>((profile.range)||34))return false;
+   const strikePoint=target.position.clone().add(new THREE.Vector3(0,.5,0));
+   const group=new THREE.Group();scene.add(group);
+   const lightningMaterial=new THREE.LineBasicMaterial({color:profile.color||0x88e9ff,transparent:true,opacity:1});
+   const hotMaterial=new THREE.LineBasicMaterial({color:0xf3fdff,transparent:true,opacity:.95});
+   for(let bolt=0;bolt<5;bolt++){
+     const side=(Math.random()-.5)*1.8;
+     const points=[];
+     points.push(strikePoint.clone().add(new THREE.Vector3(side,8+Math.random()*2,(Math.random()-.5)*1.2)));
+     for(let step=1;step<6;step++){
+       const t=step/6;
+       points.push(new THREE.Vector3(strikePoint.x+side*(1-t)+(Math.random()-.5)*1.4,strikePoint.y+(8+Math.random()*2)*(1-t),strikePoint.z+(Math.random()-.5)*1.6));
+     }
+     points.push(strikePoint.clone());
+     const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),bolt===0?hotMaterial:lightningMaterial);
+     group.add(line);
+   }
+   const marker=new THREE.Mesh(new THREE.TorusGeometry(1.2,.1,8,32),new THREE.MeshBasicMaterial({color:profile.color||0x88e9ff,transparent:true,opacity:.88,emissive:profile.color||0x88e9ff,emissiveIntensity:1.5}));
+   marker.rotation.x=Math.PI/2;marker.position.copy(strikePoint);group.add(marker);
+   signatureMoves.push({kind:'thunderStrike',owner,target,profile,age:0,life:.48,visual:group});
+   applySignatureHit(owner,target,profile,'thunderStrike');
+   burst(strikePoint,profile.color||0x88e9ff,34,7.2);
+   return true;
+ }
+ if(behavior==='dashStrike'||behavior==='airScooter'){
+   const dashTarget=target&&owner.position.distanceTo(target.position)<(profile.range||15)+4?target:null;
+   let direction=facing.clone();
+   if(dashTarget){
+     const d=dashTarget.position.clone().sub(owner.position);d.y=0;
+     if(d.lengthSq()>.01)direction=d.normalize();
+   }
+   const origin=owner.position.clone();
+   const meshColor=profile.color||0x72dfff;
+   const trailMaterial=new THREE.LineBasicMaterial({color:meshColor,transparent:true,opacity:.85});
+   const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([origin.clone().add(new THREE.Vector3(0,1.0,0)),origin.clone().add(new THREE.Vector3(0,1.0,0))]),trailMaterial);
+   line.frustumCulled=false;scene.add(line);
+   let ring=null;
+   if(behavior==='airScooter'){
+     ring=new THREE.Mesh(new THREE.TorusGeometry(.62,.11,8,32),new THREE.MeshBasicMaterial({color:meshColor,transparent:true,opacity:.78,emissive:meshColor,emissiveIntensity:1.4,depthWrite:false}));
+     ring.rotation.x=Math.PI/2;scene.add(ring);
+     owner.velocity.y=Math.max(owner.velocity.y,profile.lift||4.8);
+   }
+   owner.invulnerable=Math.max(owner.invulnerable,behavior==='dashStrike'?.08:0);
+   owner.isGrounded=false;
+   signatureMoves.push({kind:behavior,owner,target:dashTarget,profile,age:0,life:behavior==='airScooter'?.44:.42,range:profile.range||14,speed:profile.dashSpeed||(behavior==='airScooter'?22:38),traveled:0,direction:direction.clone(),origin,trail:line,ring,hit:false,lastBurst:0});
+   return true;
+ }
+ return false;
+};
+window.updateSignatureMoves=(dt)=>{
+ for(let i=signatureMoves.length-1;i>=0;i--){
+   const move=signatureMoves[i];move.age+=dt;
+   const profile=move.profile,owner=move.owner;
+   let remove=move.age>=move.life;
+   if(move.kind==='shockwave'){
+     const t=Math.min(1,move.age/move.life),radius=move.radius*t;
+     const scale=radius/.78;
+     move.outer.scale.setScalar(Math.max(.08,scale));move.inner.scale.setScalar(Math.max(.08,scale*.78));
+     move.outer.material.opacity=.95*(1-t);move.inner.material.opacity=.9*(1-t);
+     for(const other of (window.fighters||[])){
+       if(other===owner||move.hitTargets.has(other)||other.model?.visible===false)continue;
+       const offset=other.position.clone().sub(move.origin);const horizontal=Math.hypot(offset.x,offset.z);
+       const facingDot=(offset.x*move.direction.x+offset.z*move.direction.z)/(horizontal||1);
+       if(horizontal<=radius+(other.hurtboxRadius||.7)&&Math.abs(offset.y)<3.5&&facingDot>-.38){
+         move.hitTargets.add(other);applySignatureHit(owner,other,profile,'shockwave');
+       }
+     }
+   }else if(move.kind==='thunderStrike'){
+     move.visual.traverse(node=>{if(node.material)node.material.opacity=Math.max(0,1-move.age/move.life);});
+     if(move.visual.children[0])move.visual.children[0].geometry.computeBoundingSphere();
+   }else if(move.kind==='dashStrike'||move.kind==='airScooter'){
+     const target=move.target&&move.target.model?.visible!==false?move.target:null;
+     if(target&&!move.hit){
+       const toTarget=target.position.clone().sub(owner.position);toTarget.y=0;
+       if(toTarget.length()<2.6){move.hit=applySignatureHit(owner,target,profile,move.kind);if(move.hit)remove=true;}
+       else if(move.traveled<move.range){
+         const direction=toTarget.lengthSq()>.01?toTarget.normalize():move.direction;
+         const step=Math.min(move.speed*dt,move.range-move.traveled,Math.max(.25,owner.position.distanceTo(target.position)-1.65));
+         owner.position.addScaledVector(direction,step);move.direction.copy(direction);move.traveled+=step;
+         owner.velocity.x=direction.x*move.speed*.18;owner.velocity.z=direction.z*move.speed*.18;
+       }
+     }else if(!target&&move.traveled<move.range){
+       const step=Math.min(move.speed*dt,move.range-move.traveled);
+       owner.position.addScaledVector(move.direction,step);move.traveled+=step;
+     }
+     if(move.traveled>=move.range)remove=true;
+     if(move.trail){
+       const end=owner.position.clone().add(new THREE.Vector3(0,1.0,0));
+       move.trail.geometry.setFromPoints([move.origin.clone().add(new THREE.Vector3(0,1.0,0)),end]);
+       move.trail.geometry.computeBoundingSphere();
+       move.trail.material.opacity=Math.max(0,1-move.age/move.life);
+     }
+     if(move.ring){move.ring.position.copy(owner.position);move.ring.position.y+=.7;move.ring.rotation.z+=dt*10;move.ring.material.opacity=Math.max(0,.82-move.age/move.life);}
+     if(move.age>=move.lastBurst+.065){burst(owner.position.clone().add(new THREE.Vector3(0,1.15,0)),profile.color||0x78ddff,5,1.4);move.lastBurst=move.age;}
+   }
+   if(remove){
+     if(move.outer){scene.remove(move.outer);move.outer.geometry.dispose();move.outer.material.dispose();}
+     if(move.inner){scene.remove(move.inner);move.inner.geometry.dispose();move.inner.material.dispose();}
+     if(move.visual){scene.remove(move.visual);move.visual.traverse(node=>{node.geometry?.dispose();if(node.material){if(Array.isArray(node.material))node.material.forEach(material=>material.dispose());else node.material.dispose();}});}
+     if(move.trail){scene.remove(move.trail);move.trail.geometry?.dispose();move.trail.material?.dispose();}
+     if(move.ring){scene.remove(move.ring);move.ring.geometry?.dispose();move.ring.material?.dispose();}
+     signatureMoves.splice(i,1);
+   }
+ }
 };
 window.beginWebSwing=(fighter)=>{
  if(!fighter?.canWebSwing||fighter.webSwinging)return;
@@ -668,7 +811,7 @@ function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=
 function updateHud(){$('#p1bar').style.width=Math.max(0,100-player.percent*.72)+'%';$('#p2bar').style.width=Math.max(0,100-cpu.percent*.72)+'%';const seconds=Math.ceil(remaining);$('#timer').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');const energy=Math.max(0,Math.min(100,(1-player.specialCooldown/.82)*100));const ef=$('#energyFill'),eh=$('#energyHUD');if(ef)ef.style.width=energy+'%';if(eh){eh.classList.toggle('ready',player.specialCooldown<=0);eh.style.opacity=exploration?'0':'1';}const combo=$('#comboNotice');if(combo){const show=player.comboHitCount>=2&&player.comboWindow>0;if(show){combo.textContent=player.comboStep===3?'AIR / GROUND FINISHER · '+player.comboHitCount+' HITS':player.comboHitCount+' HIT COMBO';combo.classList.add('show');}else combo.classList.remove('show');}}
 const clock=new THREE.Clock();
 function frame(){requestAnimationFrame(frame);const elapsed=Math.min(clock.getDelta(),.05);clockDelta=elapsed;accumulator+=elapsed;
-while(accumulator>=1/60){input.update();if(started){player.simulate(1/60,input);cpu.simulate(1/60,ai);resolveArenaCollision(player);if(!exploration)resolveArenaCollision(cpu);if(!practice&&!exploration)remaining=Math.max(0,remaining-1/60);if(!exploration&&cpu.percent>=140)finish('VICTORY · '+fighterDisplay(playerType).toUpperCase());else if(!exploration&&player.percent>=140)finish('DEFEAT · '+fighterDisplay(cpuType).toUpperCase());else if(!exploration&&remaining<=0)finish(player.percent<=cpu.percent?'TIME UP · YOU WIN':'TIME UP · CPU WINS');updateHud();}accumulator-=1/60;}
+while(accumulator>=1/60){input.update();if(started){player.simulate(1/60,input);cpu.simulate(1/60,ai);window.updateSignatureMoves?.(1/60);resolveArenaCollision(player);if(!exploration)resolveArenaCollision(cpu);if(!practice&&!exploration)remaining=Math.max(0,remaining-1/60);if(!exploration&&cpu.percent>=140)finish('VICTORY · '+fighterDisplay(playerType).toUpperCase());else if(!exploration&&player.percent>=140)finish('DEFEAT · '+fighterDisplay(cpuType).toUpperCase());else if(!exploration&&remaining<=0)finish(player.percent<=cpu.percent?'TIME UP · YOU WIN':'TIME UP · CPU WINS');updateHud();}accumulator-=1/60;}
 
 combatItems.update(elapsed,[player,cpu],started&&!exploration,mapSelect?.value||'valley');
 for(const f of window.fighters)animateHumanFighter(f,elapsed);
