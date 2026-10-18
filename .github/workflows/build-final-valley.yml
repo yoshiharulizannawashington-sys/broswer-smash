@@ -10,6 +10,7 @@ on:
     paths:
       - "assets/blender/final_valley_scene.py"
       - "assets/blender/character_weapons.py"
+      - "assets/blender/character_models.py"
       - ".github/workflows/build-final-valley.yml"
   workflow_dispatch:
 
@@ -39,6 +40,7 @@ jobs:
           mkdir -p public/assets
           blender --background --factory-startup --python assets/blender/final_valley_scene.py
           blender --background --factory-startup --python assets/blender/character_weapons.py
+          blender --background --factory-startup --python assets/blender/character_models.py
 
       - name: Validate Blender file and GLB structure
         run: |
@@ -48,6 +50,8 @@ jobs:
           glb = pathlib.Path("public/assets/final_valley.glb")
           weapons_blend = pathlib.Path("assets/blender/character_weapons.blend")
           weapons_glb = pathlib.Path("public/assets/character_weapons.glb")
+          characters_blend = pathlib.Path("assets/blender/character_models.blend")
+          characters_glb = pathlib.Path("public/assets/character_models.glb")
           assert blend.is_file() and blend.stat().st_size > 100_000, "Missing/empty .blend export"
           assert blend.read_bytes()[:7] == b"BLENDER", "Output is not a Blender project"
           data = glb.read_bytes()
@@ -83,6 +87,25 @@ jobs:
           print(f"Weapon prefabs found: {sum(1 for name in weapon_nodes if name.startswith('weapon_'))}")
           print(f"Weapon Blender library: {weapons_blend.stat().st_size/1024/1024:.1f} MiB")
           print(f"Weapon GLB: {weapons_glb.stat().st_size/1024/1024:.1f} MiB; {len(wdoc['meshes'])} meshes; {len(wdoc['materials'])} materials")
+          assert characters_blend.is_file() and characters_blend.stat().st_size > 100_000, "Missing/empty character .blend export"
+          assert characters_blend.read_bytes()[:7] == b"BLENDER", "Character output is not a Blender project"
+          cdata = characters_glb.read_bytes()
+          assert len(cdata) > 100_000, "Missing/empty character GLB"
+          cmagic, cversion, clength = struct.unpack_from("<4sII", cdata, 0)
+          assert cmagic == b"glTF" and cversion == 2 and clength == len(cdata), "Invalid character GLB header"
+          cjson_len, cjson_type = struct.unpack_from("<II", cdata, 12)
+          assert cjson_type == 0x4E4F534A, "Character GLB has no JSON chunk"
+          cdoc = json.loads(cdata[20:20+cjson_len].decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+          assert len(cdoc.get("meshes", [])) >= 300, "Character GLB missing detailed character geometry"
+          assert len(cdoc.get("materials", [])) >= 20, "Character GLB missing individualized materials"
+          char_nodes = {node.get("name", "") for node in cdoc.get("nodes", [])}
+          for key in ("superman", "iron_man_tony_stark", "thor", "aang", "madara_uchiha", "spider_man"):
+              assert "character_" + key in char_nodes, f"Missing character model prefab: {key}"
+              for joint in ("torso", "pelvis", "head", "leftArm", "rightArm", "leftFore", "rightFore", "leftLeg", "rightLeg", "leftShin", "rightShin"):
+                  assert "joint_" + key + "_" + joint in char_nodes, f"Missing articulated joint {joint} on {key}"
+          print(f"Character Blender library: {characters_blend.stat().st_size/1024/1024:.1f} MiB")
+          print(f"Character GLB: {characters_glb.stat().st_size/1024/1024:.1f} MiB; {len(cdoc['meshes'])} meshes; {len(cdoc['materials'])} materials")
+          print(f"Character prefabs found: {sum(1 for name in char_nodes if name.startswith('character_'))}")
           PY
 
       - name: Commit generated assets
@@ -94,6 +117,8 @@ jobs:
           cp public/assets/final_valley.glb /tmp/browser-smash-exports/final_valley.glb
           cp assets/blender/character_weapons.blend /tmp/browser-smash-exports/character_weapons.blend
           cp public/assets/character_weapons.glb /tmp/browser-smash-exports/character_weapons.glb
+          cp assets/blender/character_models.blend /tmp/browser-smash-exports/character_models.blend
+          cp public/assets/character_models.glb /tmp/browser-smash-exports/character_models.glb
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
@@ -101,7 +126,9 @@ jobs:
             cp /tmp/browser-smash-exports/final_valley.glb public/assets/final_valley.glb
             cp /tmp/browser-smash-exports/character_weapons.blend assets/blender/character_weapons.blend
             cp /tmp/browser-smash-exports/character_weapons.glb public/assets/character_weapons.glb
-            git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb
+            cp /tmp/browser-smash-exports/character_models.blend assets/blender/character_models.blend
+            cp /tmp/browser-smash-exports/character_models.glb public/assets/character_models.glb
+            git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb assets/blender/character_models.blend public/assets/character_models.glb
             if git diff --cached --quiet; then
               echo "Generated assets are already up to date."
               exit 0
