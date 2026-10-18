@@ -38,7 +38,7 @@ jobs:
           const root = readFileSync('index.html', 'utf8');
           const page = readFileSync('public/index.html', 'utf8');
           const input = readFileSync('public/js/InputManager.js', 'utf8');
-          const version = 'cinematic-fighter-polish-v2-20261018';
+          const version = 'signature-combat-specials-v3-20261018';
 
           const launchMatch = main.match(/const roster=(\[\[[\s\S]*?\]\]);const dlcRoster/);
           const allMatch = main.match(/const allRoster=(\[\[[\s\S]*?\]\]);const roster/);
@@ -69,5 +69,6 @@ jobs:
             assert.ok(html.includes('value="Spider-Man"'), name + ' character selector is missing Spider-Man');
           }
           assert.ok(input.includes('smash_input.js?v=' + version), 'InputManager cache is stale');
+          for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB SNARE'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
           console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
           NODE
