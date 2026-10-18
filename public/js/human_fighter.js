@@ -1,5 +1,5 @@
 // Rigged human fighters with original archetype-specific armor, weapons, and readable combat motion.
-import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+import * as THREE from 'three';
 
 const MODEL_URL='https://threejs.org/examples/models/gltf/Soldier.glb';
 // Tripo exports can be dropped into public/models/characters/<character_slug>.glb.
