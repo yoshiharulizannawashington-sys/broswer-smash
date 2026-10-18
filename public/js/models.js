@@ -306,6 +306,77 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
 }
 
 
+const characterModelLibraryState={promise:null,prefabs:null};
+function loadCharacterModelLibrary(){
+  if(!characterModelLibraryState.promise){
+    characterModelLibraryState.promise=new Promise((resolve,reject)=>{
+      const url=new URL('../assets/character_models.glb',import.meta.url);
+      url.searchParams.set('v','blender-character-library-v1-20261018');
+      new GLTFLoader().load(url.href,gltf=>{
+        const prefabs=new Map();
+        gltf.scene.traverse(node=>{
+          if(node.name&&node.name.startsWith('character_'))prefabs.set(node.name,node);
+        });
+        characterModelLibraryState.prefabs=prefabs;
+        resolve(prefabs);
+      },undefined,reject);
+    });
+  }
+  return characterModelLibraryState.promise;
+}
+
+/** Swap the procedural startup body with the matching editable Blender prefab. */
+export async function upgradeCharacterWithBlenderModel(fighter){
+  const oldModel=fighter?.model;
+  if(!oldModel||!oldModel.userData)return false;
+  const key=characterWeaponKey(fighter.identity||fighter.name);
+  let prefabs;
+  try{
+    prefabs=await loadCharacterModelLibrary();
+  }catch(error){
+    console.warn('Blender character GLB unavailable; keeping procedural character.',error);
+    await equipCharacterWeapons(fighter).catch(()=>false);
+    return false;
+  }
+  if(fighter.model!==oldModel)return false;
+  const template=prefabs.get('character_'+key);
+  if(!template){
+    await equipCharacterWeapons(fighter).catch(()=>false);
+    return false;
+  }
+  const avatar=template.clone(true);
+  avatar.name='Blender fighter '+(fighter.identity||fighter.name);
+  avatar.position.copy(oldModel.position);
+  avatar.rotation.copy(oldModel.rotation);
+  avatar.scale.copy(oldModel.scale);
+  avatar.userData={...avatar.userData,
+    identity:fighter.identity||fighter.name,
+    archetype:fighter.archetype,
+    characterScale:Number(template.userData.characterScale)||Number(oldModel.userData.characterScale)||1,
+    visualScale:Number(oldModel.userData.visualScale)||1,
+    blenderRigVersion:template.userData.rigVersion||'bs-articulated-v1'
+  };
+  const parts=['pelvis','torso','head','leftArm','rightArm','leftFore','rightFore','leftLeg','rightLeg','leftShin','rightShin'];
+  for(const partName of parts){
+    const joint=avatar.getObjectByName('joint_'+key+'_'+partName);
+    if(joint)avatar.userData[partName]=joint;
+  }
+  if(!avatar.userData.rightArm||!avatar.userData.rightFore||!avatar.userData.torso||!avatar.userData.pelvis){
+    console.warn('Incomplete Blender rig for '+key+'; keeping procedural model.');
+    await equipCharacterWeapons(fighter).catch(()=>false);
+    return false;
+  }
+  const parent=oldModel.parent;
+  if(!parent)return false;
+  avatar.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+  parent.add(avatar);
+  parent.remove(oldModel);
+  fighter.model=avatar;
+  fighter.position=avatar.position;
+  await equipCharacterWeapons(fighter).catch(error=>console.warn('Weapon reattachment after Blender model swap:',error));
+  return true;
+}
+
 const weaponLibraryState={promise:null,prefabs:null};
 function characterWeaponKey(identity){
   return String(identity||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
