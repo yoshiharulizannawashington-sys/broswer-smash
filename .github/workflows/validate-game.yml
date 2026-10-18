@@ -85,7 +85,7 @@ jobs:
           assert.ok(main.includes('window.performSignatureMove'), 'Character signature move system is missing');
           assert.ok(main.includes('window.updateSignatureMoves'), 'Signature movement updates are missing');
           assert.ok(fighter.includes('ODM-style cross cuts'), 'Individual combo choreography is missing');
-          for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB SNARE'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
+          for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB ZIP STRIKE'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
           console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
           NODE
       - name: Install Playwright and Chromium for runtime testing
