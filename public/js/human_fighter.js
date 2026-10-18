@@ -97,7 +97,22 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   const idle=find('idle')||gltf.animations[0]&&mixer.clipAction(gltf.animations[0]);
   const walk=find('walk'),run=find('run'),jump=find('jump','fall'),punch=find('punch','attack','swing'),hit=find('hit','damage','hurt');
   if(idle){idle.play();idle.enabled=true;}
-  root.userData.humanMixer=mixer;root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.hitAction=hit;root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;
+  // Capture rig joints so locomotion-only GLBs still get readable combat motion.
+  const joints={};
+  root.traverse(o=>{
+    if(!o.isBone)return;
+    const n=o.name.toLowerCase().replace(/[^a-z]/g,'');
+    const side=n.includes('left')||n.startsWith('l')?'L':n.includes('right')||n.startsWith('r')?'R':'';
+    if(/arm|shoulder|upperarm|forearm|hand/.test(n)&&side){
+      const key=(/hand/.test(n)?'hand':/forearm|lowerarm/.test(n)?'forearm':/upperarm|arm/.test(n)?'arm':'shoulder')+side;
+      joints[key] ||= {bone:o,base:o.rotation.clone()};
+    }
+    if(/spine|chest|hips/.test(n))joints.torso ||= {bone:o,base:o.rotation.clone()};
+    if(/head|neck/.test(n))joints.head ||= {bone:o,base:o.rotation.clone()};
+    if(/upperleg|thigh|upleg/.test(n)&&side)joints['leg'+side] ||= {bone:o,base:o.rotation.clone()};
+  });
+  root.userData.proceduralJoints=joints;
+  root.userData.humanMixer=mixer;root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.hitAction=hit;root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;root.userData.proceduralAttackTime=0;
   addArmor(root,archetype);
   const previous=fighter.model,parent=previous.parent;
   if(parent){parent.add(root);parent.remove(previous);}else if(window.__smashScene)window.__smashScene.add(root);
@@ -113,7 +128,24 @@ export function animateHumanFighter(fighter,dt){
   const attacking=(fighter.attackQueue?.length||0)>0;
   const gear=root.userData.armorGear;
   const attackStarted=attacking&&!root.userData.wasAttacking;
-  if(attackStarted)root.userData.attackLock=.34;
+  if(attackStarted){root.userData.attackLock=.34;root.userData.proceduralAttackTime=.34;}
+  root.userData.proceduralAttackTime=Math.max(0,root.userData.proceduralAttackTime-dt);
+  // Overlay a short, weighty punch/slash while preserving each rig's bind pose.
+  const joints=root.userData.proceduralJoints||{};
+  const phase=root.userData.proceduralAttackTime>0?1-root.userData.proceduralAttackTime/.34:0;
+  const strike=root.userData.proceduralAttackTime>0?Math.sin(Math.min(1,phase)*Math.PI):0;
+  const hitReact=fighter.hitstun>0?Math.min(1,fighter.hitstun/.38):0;
+  for(const [key,j] of Object.entries(joints)){
+    j.bone.rotation.copy(j.base);
+    if(key==='armR')j.bone.rotation.x+=strike*-.95-hitReact*.22;
+    if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12;
+    if(key==='handR')j.bone.rotation.x+=strike*-.18;
+    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12;
+    if(key==='forearmL')j.bone.rotation.x+=strike*-.12;
+    if(key==='torso')j.bone.rotation.x+=strike*.14-hitReact*.22;
+    if(key==='head')j.bone.rotation.x+=hitReact*.16;
+    if(key==='legL'||key==='legR')j.bone.rotation.x+=airborne?-.16:0;
+  }
   root.userData.wasAttacking=attacking;
   root.userData.attackLock=Math.max(0,root.userData.attackLock-dt);
   if(gear){
