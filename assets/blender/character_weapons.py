@@ -337,6 +337,7 @@ WEAPONS = {
 'aquaman':('Aquaman · Atlantean trident','trident',None,0xb68c43,0x53c6c2,0x195747),
 'doctor_strange':('Doctor Strange · spell rings','spellrings',None,0xb88f48,0xffb652,0x5c272a),
 'thor':('Thor · Mjolnir','hammer',None,0xaeb7c3,0x79c8ff,0x513321),
+'aang':('Aang · airbending glider staff','staff',None,0x9f7944,0x83d8ff,0xc27b31),
 'goku':('Goku · ki focus','ki_orb',None,0xc3b4a1,0xff8b2a,0x285e9c),
 'naruto_uzumaki':('Naruto · kunai','knife','ki_orb',0x97a3af,0x48aaff,0x262930),
 'vegeta':('Vegeta · energy gauntlet','energy_gauntlet',None,0xe2e4e8,0x3caaff,0x1a3b69),
