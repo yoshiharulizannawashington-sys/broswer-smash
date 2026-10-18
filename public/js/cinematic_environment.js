@@ -183,11 +183,11 @@ export function addCinematicEnvironment(THREE, scene) {
     cloudGroup.children.forEach((cloud)=>{cloud.material.color.setHex(isFinalValley?0x9aa9a3:0xffffff);cloud.material.opacity=cloud.userData.baseOpacity*(isFinalValley?.62:1);});
     const ridgeColors=isFinalValley?[0x4f605c,0x3b4d4a,0x293b3b]:[0x39465b,0x26364a,0x18283c];
     ridgeMatters.forEach((material,index)=>material.color.setHex(ridgeColors[index]));
-    floatingIslands.visible=!isFinalValley;
-    city.visible=!isFinalValley;
-    sciFiBeacon.visible=!isFinalValley;
-    broadleafForest.visible=!isFinalValley;
-    glints.visible=!isFinalValley;
+    floatingIslands.visible=key==='valley';
+    city.visible=key==='valley';
+    sciFiBeacon.visible=key==='valley';
+    broadleafForest.visible=key==='valley';
+    glints.visible=key==='valley';
   };
   group.userData.setMap('valley');
   group.userData.update=(dt,time,camera)=>{
