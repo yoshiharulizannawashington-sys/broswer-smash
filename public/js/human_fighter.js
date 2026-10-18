@@ -2,6 +2,23 @@
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 
 const MODEL_URL='https://threejs.org/examples/models/gltf/Soldier.glb';
+// Tripo exports can be dropped into public/models/characters/<character_slug>.glb.
+// Prefer a character-specific rigged GLB; use the shared sample rig only as a fallback.
+function characterSlug(fighter, archetype='warrior'){
+  return String(fighter?.identity||fighter?.name||archetype)
+    .normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+async function loadCharacterModel(fighter, archetype, GLTFLoader){
+  const slug=characterSlug(fighter,archetype);
+  const urls=[`/models/characters/${slug}.glb`,MODEL_URL];
+  let lastError;
+  for(const url of urls){
+    try{
+      return await new Promise((resolve,reject)=>new GLTFLoader().load(url,resolve,undefined,reject));
+    }catch(error){lastError=error;if(url===MODEL_URL)break;}
+  }
+  throw lastError||new Error('No character model could be loaded.');
+}
 let loaderPromise;
 async function getLoader(){
   if(!loaderPromise) loaderPromise=import('https://esm.sh/three@0.152.2/examples/jsm/loaders/GLTFLoader.js');
@@ -68,7 +85,7 @@ function addArmor(root, archetype){
 }
 export async function upgradeFighterModel(fighter,archetype='warrior'){
   const {GLTFLoader}=await getLoader();
-  const gltf=await new Promise((resolve,reject)=>new GLTFLoader().load(MODEL_URL,resolve,undefined,reject));
+  const gltf=await loadCharacterModel(fighter,archetype,GLTFLoader);
   const root=gltf.scene;root.scale.setScalar(1.45);root.rotation.y=Math.PI;
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material=o.material.clone();if(o.material.color)o.material.color.lerp(new THREE.Color((palettes[archetype]||palettes.warrior).main),.19);if('roughness' in o.material)o.material.roughness=Math.min(.72,Math.max(.3,o.material.roughness??.5));}}});
   root.position.copy(fighter.position);
