@@ -62,8 +62,8 @@ export function createFinalValley(THREE) {
   const green = toon(0x42634b);
   const riverMat = new THREE.MeshPhysicalMaterial({
     color: 0x4a7883, roughness: .42, metalness: .04,
-    transparent: false, opacity: 1,
-    emissive: 0x0b2228, emissiveIntensity: .04
+    transparent: true, opacity: .72, depthWrite: false,
+    emissive: 0x0b2228, emissiveIntensity: .025
   });
   const foamMat = new THREE.MeshBasicMaterial({ color: 0xa8c2c4, transparent: true, opacity: .48, depthWrite: false });
   const statueMat = toon(0x858b84);
@@ -82,9 +82,8 @@ export function createFinalValley(THREE) {
   };
   const rng = (() => { let seed = 948271; return () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }; })();
 
-  // Broad, gently broken stone clearing. The fighter collision plane stays level at y=0.
-  const clearingMat = toon(0x70786a);
-  add(new THREE.CircleGeometry(57, 64), clearingMat, 0, -.018, -30, 1, 1, 1).rotation.x = -Math.PI / 2;
+  // The main ground remains continuous underneath the valley; no raised circular platform.
+  // The battle space is a shallow river crossing over the same ground plane as the surrounding banks.
 
   // Long river and two textured waterfall curtains.
   const river = add(new THREE.PlaneGeometry(9, 136, 1, 1), riverMat, 0, .025, -48);
@@ -117,6 +116,24 @@ export function createFinalValley(THREE) {
   waterNormal.wrapS=waterNormal.wrapT=THREE.RepeatWrapping;waterNormal.repeat.set(2,8);waterNormal.colorSpace=THREE.NoColorSpace;waterNormal.needsUpdate=true;
   riverMat.map = waterTexture;riverMat.normalMap=waterNormal;riverMat.normalScale.set(.3,.24);
   riverMat.roughness=.24;riverMat.clearcoat=.55;riverMat.clearcoatRoughness=.22;riverMat.side=THREE.DoubleSide;riverMat.needsUpdate = true;
+
+  // Riverbed stones remain visible through the thin, shallow water.
+  const riverBed = new THREE.Group(); riverBed.name='Visible shallow riverbed'; group.add(riverBed);
+  const riverBedMats=[toonFlat(0x62685f),toonFlat(0x7a7a6c),toonFlat(0x4f5b58),toonFlat(0x8a8879)];
+  const riverBedRocks=[];
+  for(let i=0;i<115;i++){
+    const x=(rng()-.5)*7.2,z=-112+rng()*130;
+    const rock=add(new THREE.DodecahedronGeometry(.62+rng()*.7,1),riverBedMats[i%riverBedMats.length],x,-.015+rng()*.02,z,.55+rng()*.95,.08+rng()*.09,.5+rng()*.95,riverBed);
+    rock.rotation.y=rng()*Math.PI;rock.rotation.x=(rng()-.5)*.1;riverBedRocks.push(rock);
+  }
+  // Low-contrast rings break up the water surface and reinforce the shallow flow.
+  const ripples=[];
+  for(let i=0;i<26;i++){
+    const rippleMaterial=new THREE.MeshBasicMaterial({color:0xd0dbd4,transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide});
+    const ripple=new THREE.Mesh(new THREE.RingGeometry(.22,.34,24),rippleMaterial);
+    ripple.rotation.x=-Math.PI/2;ripple.position.set((rng()-.5)*6.8,.031,-111+rng()*127);
+    ripple.userData.phase=rng();ripple.userData.width=.7+rng()*1.4;group.add(ripple);ripples.push(ripple);
+  }
 
   // Thin translucent streaks give the waterfall a vertical flow and a soft anime-mist edge.
   const fallCanvas=document.createElement('canvas');fallCanvas.width=128;fallCanvas.height=256;
@@ -158,14 +175,14 @@ export function createFinalValley(THREE) {
   for (const side of [-1, 1]) {
     // Layered cliff masses frame the river without blocking the combat clearing.
     for (let i = 0; i < 6; i++) {
-      const x = side * (26 + rng() * 12);
-      const z = -84 + i * 15 + (rng() - .5) * 7;
-      const h = 14 + rng() * 19;
+      const x = side * (43 + rng() * 8);
+      const z = -124 + i * 20 + (rng() - .5) * 9;
+      const h = 25 + rng() * 21;
       const cliff = add(new THREE.DodecahedronGeometry(1, 2), i % 2 ? darkStone : stone,
-        x, h * .42, z, 7 + rng() * 6, h, 9 + rng() * 5);
+        x, h * .53, z, 8 + rng() * 6, h, 12 + rng() * 6);
       cliff.rotation.set((rng() - .5) * .12, rng() * Math.PI, (rng() - .5) * .16);
-      add(new THREE.DodecahedronGeometry(1, 1), moss, x - side * 2, h * .86, z + 1,
-        5 + rng() * 4, 1.4, 5 + rng() * 4);
+      add(new THREE.DodecahedronGeometry(1, 1), moss, x - side * 1.2, h * 1.3, z + 1,
+        6 + rng() * 5, 1.1, 7 + rng() * 5);
     }
     // Waterfall sheets sit against the rear cliff, with foamy broken edges.
     const fall = add(new THREE.PlaneGeometry(10, 22, 1, 1), foamMat, side * 21, 11, -97);
@@ -250,6 +267,31 @@ export function createFinalValley(THREE) {
   // Canonical orientation: Madara on the left, Hashirama on the right.
   makeStatue(-36,-76,1,'madara');
   makeStatue(36,-76,-1,'hashirama');
+
+
+  // Tall, layered canyon faces run along both sides, enclosing the arena instead of leaving it in open space.
+  const canyonWallMaterial=toon(0x69746d);canyonWallMaterial.side=THREE.DoubleSide;
+  const strataMaterial=toonFlat(0x58635d);
+  for(const side of [-1,1]){
+    const positions=[],indices=[],segments=30;
+    for(let i=0;i<=segments;i++){
+      const z=-136+i*6.2, x=side*(50+(rng()-.5)*4);
+      const top=36+Math.sin(i*.63+side)*7+Math.sin(i*.21)*8+rng()*9;
+      positions.push(x,0,z, x,top,z);
+      if(i<segments){const n=i*2;indices.push(n,n+1,n+2,n+1,n+3,n+2);}
+    }
+    const wallGeometry=new THREE.BufferGeometry();
+    wallGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    wallGeometry.setIndex(indices);wallGeometry.computeVertexNormals();
+    const wall=new THREE.Mesh(wallGeometry,canyonWallMaterial);
+    wall.name=side<0?'West cliff wall':'East cliff wall';wall.castShadow=true;wall.receiveShadow=true;group.add(wall);
+    // Horizontal broken ledges catch light and help show the scale of the canyon.
+    for(let i=0;i<18;i++){
+      const z=-128+i*10.2+(rng()-.5)*2,y=6+rng()*24,x=side*(48.3+rng()*1.4);
+      const ledge=add(new THREE.BoxGeometry(2.1,.26,6.5+rng()*5),strataMaterial,x,y,z,1,1,1);
+      ledge.rotation.y=(rng()-.5)*.22;
+    }
+  }
 
   // A subtle worn combat circle gives the free-roam environment a deliberate fighting-game stage.
   const combatRing=new THREE.Mesh(
@@ -359,6 +401,11 @@ export function createFinalValley(THREE) {
     update(dt, time = 0) {
       waterTexture.offset.y = (waterTexture.offset.y + dt * .035) % 1;
       waterNormal.offset.y = (waterNormal.offset.y + dt * .11) % 1;
+      for(const ripple of ripples){
+        const cycle=(time*.14+ripple.userData.phase)%1;
+        const scale=ripple.userData.width*(.7+cycle*2.1);
+        ripple.scale.set(scale,scale,1);ripple.material.opacity=.12*(1-cycle);
+      }
       fallTexture.offset.y = (fallTexture.offset.y + dt * .24) % 1;
       for(const cloud of mistBillboards)cloud.position.y+=Math.sin(time*.65+cloud.userData.phase)*dt*.045;
       for(const ribbon of waterfallRibbons)ribbon.position.y+=Math.sin(time*1.5+ribbon.userData.flow)*dt*.025;
