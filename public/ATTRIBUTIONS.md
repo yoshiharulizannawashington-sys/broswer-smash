@@ -8,6 +8,6 @@ glTF Sample Models (Khronos Group) — permissive sample models
 - Fox (2.0) — https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0/Fox
 - CesiumMan (2.0) — https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0/CesiumMan
 
-All procedural characters and UI code in this repo are original and created for this demo.
+All procedural characters and UI code currently included in this repo are original and created for this demo.
 
-No copyrighted characters or proprietary assets (Disney, Marvel, DC, Nickelodeon, or real-world celebrities) have been included.
+No third-party Superman or Goku character model files are currently bundled. Candidate model pages and their listed license information are documented in public/models/characters/README.md. A listing's uploader-selected license does not necessarily grant rights to the underlying copyrighted character. Verify permission for your intended use before redistributing or publishing a build.
