@@ -90,7 +90,7 @@ jobs:
           NODE
       - name: Install Playwright and Chromium for runtime testing
         run: |
-          npm install --no-save playwright
+          npm install --no-save playwright three@0.152.2
           npx playwright install --with-deps chromium
       - name: Smoke-test actual game render and Blender GLB loading
         timeout-minutes: 6
