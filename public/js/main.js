@@ -6,9 +6,11 @@ import InputManager from './InputManager.js';
 import Fighter3D from './fighter3D.js';
 import { makeProceduralCharacter } from './models.js';
 import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js';
+import { addCinematicEnvironment } from './cinematic_environment.js';
 const $=s=>document.querySelector(s);
 const canvas=$('#gl');const scene=new THREE.Scene();scene.background=new THREE.Color(0x111b30);scene.fog=new THREE.FogExp2(0x253448,.012);
 const {renderer,camera,composer,bloom,enableSSR}=createSmashRenderPipeline(canvas,scene);
+const cinematicEnvironment=addCinematicEnvironment(THREE,scene);
 const smashCamera=new SmashCamera(camera,{height:12,trailing:18,minHeight:10,maxHeight:22});
 scene.add(new THREE.HemisphereLight(0x9ecfff,0x191421,1.5));
 const sun=new THREE.DirectionalLight(0xffaa44,2.8);sun.position.set(-18,7,-20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-24;sun.shadow.camera.right=24;sun.shadow.camera.top=24;sun.shadow.camera.bottom=-24;scene.add(sun);const rim=new THREE.DirectionalLight(0x218cff,2.5);rim.position.set(10,7,-12);scene.add(rim);
@@ -64,6 +66,7 @@ function frame(){requestAnimationFrame(frame);const elapsed=Math.min(clock.getDe
 while(accumulator>=1/60){input.update();if(started){player.simulate(1/60,input);cpu.simulate(1/60,ai);if(!practice&&!exploration)remaining=Math.max(0,remaining-1/60);if(!exploration&&cpu.percent>=140)finish('VICTORY · '+fighterNames[playerType].toUpperCase());else if(!exploration&&player.percent>=140)finish('DEFEAT · '+fighterNames[cpuType].toUpperCase());else if(!exploration&&remaining<=0)finish(player.percent<=cpu.percent?'TIME UP · YOU WIN':'TIME UP · CPU WINS');updateHud();}accumulator-=1/60;}
 
 for(const f of window.fighters)animateHumanFighter(f,elapsed);
+cinematicEnvironment.userData.update(elapsed,clock.elapsedTime,camera);
 for(const p of dust.children){p.position.y+=p.userData.speed*elapsed;p.position.x+=Math.sin(p.position.y)*elapsed*.15;if(p.position.y>12)p.position.y=-1;}
 for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];p.life-=elapsed;p.group.position.addScaledVector(p.velocity,elapsed);p.group.rotation.x+=elapsed*4;p.group.rotation.y+=elapsed*7;const target=p.owner===player?cpu:player;if(p.group.position.distanceTo(target.position.clone().add(new THREE.Vector3(0,1.1,0)))<.95){const guarded=target.guardHeld&&target.guardBreak<=0;target.percent+=p.damage*(guarded?.3:1);target.hitstun=guarded?.1:.42;target.velocity.x=p.velocity.x/17*(guarded?1.5:6);target.velocity.z=p.velocity.z/17*(guarded?1.5:6);target.velocity.y=guarded?1.2:3.8;target.isGrounded=false;burst(p.group.position,p.color,guarded?12:32,guarded?3:8);scene.remove(p.group);projectiles.splice(i,1);continue;}if(p.life<=0||Math.abs(p.group.position.x)>22||Math.abs(p.group.position.z)>12){scene.remove(p.group);projectiles.splice(i,1);}}
 for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.t+=elapsed;for(const p of e.group.children){p.position.addScaledVector(p.userData.v,elapsed);p.userData.v.y-=7*elapsed;p.scale.setScalar(Math.max(.01,1-e.t/e.life));}if(e.t>=e.life){scene.remove(e.group);e.group.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();});effects.splice(i,1);}}
