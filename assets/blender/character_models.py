@@ -211,6 +211,9 @@ def rig_name(key, part):
 def create_character(key, data, index):
     display,archetype,style,primary_hex,secondary_hex,accent_hex,skin_hex,dark_hex,hair_hex,scale=data
     root=empty("character_"+key,None,(index%8*5.0,0,-(index//8)*7.0))
+    # Character shapes are authored Y-up to match Three.js joint coordinates. Pre-rotate the
+    # Blender root so Blender's Z-up -> glTF Y-up export conversion cancels that axis change.
+    root.rotation_euler.x=math.pi/2
     root["identity"]=display;root["characterScale"]=scale;root["rigVersion"]="bs-articulated-v1"
     primary=mat(key+" Suit",primary_hex,.12,.46,0,.25)
     secondary=mat(key+" Armor",secondary_hex,.72,.28,0,.65)
