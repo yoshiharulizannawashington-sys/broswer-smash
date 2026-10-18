@@ -148,7 +148,7 @@ window.spawnProjectile=(owner,options={})=>{
  const core=new THREE.Mesh(coreGeometry,new THREE.MeshBasicMaterial({color,wireframe:webShot}));
  if(ballistic){core.position.z=-.14;const tip=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.16),new THREE.MeshBasicMaterial({color:0xfff3d5}));tip.position.z=-.47;group.add(tip);}
  group.add(core);
- if(!ballistic&&!webShot{
+ if(!ballistic&&!webShot){
    const shell=new THREE.Mesh(new THREE.SphereGeometry(.48,16,12),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.23,blending:THREE.AdditiveBlending,depthWrite:false}));group.add(shell);
    for(let i=0;i<3;i++){const orbit=new THREE.Mesh(new THREE.TorusGeometry(.45+i*.1,.025,6,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9}));orbit.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);group.add(orbit);}
  }
