@@ -5,6 +5,7 @@ import SmashCamera from './SmashCamera.js';
 import InputManager from './InputManager.js';
 import Fighter3D from './fighter3D.js';
 import { makeProceduralCharacter } from './models.js';
+import { createFinalValley } from './arenas/final_valley.js';
 import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js';
 import { addCinematicEnvironment } from './cinematic_environment.js';
 const $=s=>document.querySelector(s);
@@ -89,12 +90,13 @@ for(const [key,select] of Object.entries(characterSelects)){if(select){populateR
 function fighterTypeRefresh(){const labels=document.querySelectorAll('.fighter .name');if(labels[0])labels[0].textContent='P1 · '+fighterDisplay(playerType).toUpperCase();if(labels[1])labels[1].textContent=fighterDisplay(cpuType).toUpperCase()+' · CPU';}
 fighterTypeRefresh();
 const mapDecor=new THREE.Group();scene.add(mapDecor);
+const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;
 const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
 // Replace the old five generic labels with the full original 50-character roster.
 function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
 
 const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · IMPERIAL HANGAR',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · SHINOBI CLIFFS',sky:0x17233c,fog:0x42556a,floor:0x3d5149,platform:0x34453e,ringA:0x2fc9ff,ringB:0xffa05c,light:0xffd4a2,sun:0xffb86d,density:.007},tournament:{label:'WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'STARK TOWER · MANHATTAN ROOFTOP',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · BIFROST BRIDGE',sky:0x191b43,fog:0x46436e,floor:0x635b77,platform:0x37354f,ringA:0x39e8ff,ringB:0xffd06b,light:0xffd7a1,sun:0xffb7a2,density:.004}};
-function applyMap(key){const t=mapThemes[key]||mapThemes.valley;scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+function applyMap(key){const t=mapThemes[key]||mapThemes.valley;scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
   // The continuous high-detail grass material is the terrain surface; keep map landmarks on it without a flat low-poly patch.\n  // Each region gets an identifiable landmark rather than a circular fighting pad.
   if(key==='volcano'){addProp(new THREE.ConeGeometry(10,23,7),mat(0x292124,.15,.96),-32,8,-38,1,1,1);addProp(new THREE.ConeGeometry(4,1.2,7),new THREE.MeshBasicMaterial({color:0xff5a1e}),-32,19,-38,1,1,1);}
   if(key==='ice'){const citadel=addProp(new THREE.CylinderGeometry(5,8,18,6),mat(0x456c85,.35,.32),-34,9,-35);for(let i=0;i<6;i++)addProp(new THREE.ConeGeometry(1.2,7,5),mat(0xbdefff,.25,.2),-39+i*2,19,-35);}
@@ -118,11 +120,6 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;scene.background
    for(let i=0;i<14;i++){const a=i*Math.PI*2/14;const rib=addProp(new THREE.BoxGeometry(1.4,25,.7),darkPanel,Math.cos(a)*24,29+Math.sin(a)*24,-105);rib.rotation.z=-a;}
    addProp(new THREE.TorusGeometry(5.7,.42,8,40),laserMat,10,38,-72,1,1,1).rotation.x=Math.PI/2;
    for(let i=0;i<8;i++){const col=addProp(new THREE.BoxGeometry(4,12,4),darkPanel,-28+i*8,6,-38);addProp(new THREE.BoxGeometry(4.1,.2,4.1),laserMat,col.position.x,12.2,-38);}
- } else if(key==='finalvalley'){
-   const cliffMat=mat(0x596d75,.12,.94),waterMat=new THREE.MeshStandardMaterial({color:0x278ac0,metalness:.35,roughness:.22,emissive:0x063b66,emissiveIntensity:.6});
-   for(const side of [-1,1]){const cliff=addProp(new THREE.DodecahedronGeometry(1,2),cliffMat,side*34,14,-46,18,19,8);cliff.rotation.z=side*.08;for(let i=0;i<5;i++)addProp(new THREE.ConeGeometry(2,7,5),cliffMat,side*(24+i*5),25+(i%2)*4,-48+i*5,1,1,1);}
-   addProp(new THREE.PlaneGeometry(36,85),waterMat,0,.05,-58,1,1,1).rotation.x=-Math.PI/2;
-   landmark(-52,-74,1.4);landmark(53,-72,1.4);
  } else if(key==='tournament'){
    const tileMat=mat(0xe2d4b6,.05,.85),trimMat=mat(0x5a3b29,.25,.65);
    addProp(new THREE.BoxGeometry(24,.55,20),trimMat,0,.15,-12);
@@ -152,13 +149,13 @@ const arenaCollision={
  ice:[[-34,-35,9],[95,-75,12]],
  neon:[[0,-100,12]],
  deathstar:[[10,-80,8],[-28,-38,3],[-20,-38,3],[-12,-38,3],[-4,-38,3],[4,-38,3],[12,-38,3],[20,-38,3],[28,-38,3]],
- finalvalley:[[-34,-46,13],[34,-46,13],[-52,-74,10],[53,-72,10]],
+ finalvalley:[],
  tournament:[[-15,-20,1.2],[-15,-4,1.2],[15,-20,1.2],[15,-4,1.2]],
  starktower:[[0,-58,10],[-55,-75,4],[-47,-83,4],[-39,-91,4],[-31,-75,4],[25,-83,4],[33,-91,4]],
  asgard:[[-10,-78,2.2],[-10,-66,2.2],[-10,-54,2.2],[-10,-42,2.2],[-10,-30,2.2],[-10,-18,2.2],[-10,-6,2.2],[10,-78,2.2],[10,-66,2.2],[10,-54,2.2],[10,-42,2.2],[10,-30,2.2],[10,-18,2.2],[10,-6,2.2]]
 };
 function resolveArenaCollision(fighter){
- const key=mapSelect?.value||'valley', obstacles=arenaCollision[key]||[];
+ const key=mapSelect?.value||'valley', obstacles=[...(arenaCollision[key]||[]),...(key==='finalvalley'?finalValleyArena.obstacles:[])];
  for(const [ox,oz,radius] of obstacles){
   const dx=fighter.position.x-ox,dz=fighter.position.z-oz,d=Math.hypot(dx,dz);
   const min=radius+(fighter.hurtboxRadius||.7);
@@ -181,6 +178,7 @@ while(accumulator>=1/60){input.update();if(started){player.simulate(1/60,input);
 
 for(const f of window.fighters)animateHumanFighter(f,elapsed);
 cinematicEnvironment.userData.update(elapsed,clock.elapsedTime,camera);
+finalValleyArena.update(elapsed,clock.elapsedTime);
 for(const p of dust.children){p.position.y+=p.userData.speed*elapsed;p.position.x+=Math.sin(p.position.y)*elapsed*.15;if(p.position.y>12)p.position.y=-1;}
 for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];p.life-=elapsed;p.group.position.addScaledVector(p.velocity,elapsed);p.group.rotation.x+=elapsed*4;p.group.rotation.y+=elapsed*7;const target=p.owner===player?cpu:player;if(p.group.position.distanceTo(target.position.clone().add(new THREE.Vector3(0,1.1,0)))<.95){const guarded=target.guardHeld&&target.guardBreak<=0;target.percent+=p.damage*(guarded?.3:1);target.hitstun=guarded?.1:.42;target.velocity.x=p.velocity.x/17*(guarded?1.5:6);target.velocity.z=p.velocity.z/17*(guarded?1.5:6);target.velocity.y=guarded?1.2:3.8;target.isGrounded=false;burst(p.group.position,p.color,guarded?12:32,guarded?3:8);scene.remove(p.group);projectiles.splice(i,1);continue;}if(p.life<=0||Math.abs(p.group.position.x)>320||Math.abs(p.group.position.z)>320){scene.remove(p.group);projectiles.splice(i,1);}}
 for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.t+=elapsed;for(const p of e.group.children){p.position.addScaledVector(p.userData.v,elapsed);p.userData.v.y-=7*elapsed;p.scale.setScalar(Math.max(.01,1-e.t/e.life));}if(e.t>=e.life){scene.remove(e.group);e.group.traverse(o=>{o.geometry?.dispose();if(o.material)o.material.dispose();});effects.splice(i,1);}}
