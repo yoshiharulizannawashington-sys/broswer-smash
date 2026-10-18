@@ -12,10 +12,10 @@ export default class SmashInputHandler {
   left:!!(this.keys.ArrowLeft||this.keys.KeyA||lx<-.5),right:!!(this.keys.ArrowRight||this.keys.KeyD||lx>.5),
   up:!!(this.keys.ArrowUp||this.keys.KeyW||ly<-.5),down:!!(this.keys.ArrowDown||this.keys.KeyS||ly>.5),
   run:!!(this.keys.ShiftLeft||this.keys.ShiftRight),sprint:!!(this.keys.ShiftLeft||this.keys.ShiftRight),
-  jump:this.consumeBuffer('Space')||!!gp?.buttons?.[3]?.pressed,
+  jump:this.consumeBuffer('Space')||!!gp?.buttons?.[2]?.pressed,
   attack:this.consumeBuffer('KeyJ')||!!this.keys.ArrowUp&&this.consumeBuffer('KeyZ')||!!gp?.buttons?.[0]?.pressed,
   special:this.consumeBuffer('KeyK')||!!gp?.buttons?.[1]?.pressed,
-  dodge:this.consumeBuffer('KeyQ')||!!this.keys.KeyQ,shield:!!this.keys.KeyE,
-  grab:!!this.keys.KeyU,analogX:lx,analogY:gp?.axes?.[1]||0
+  dodge:this.consumeBuffer('ShiftLeft')||this.consumeBuffer('ShiftRight')||this.consumeBuffer('KeyQ')||!!gp?.buttons?.[6]?.pressed,shield:!!gp?.buttons?.[6]?.pressed||!!this.keys.KeyE,
+  grab:!!this.keys.KeyU||!!gp?.buttons?.[4]?.pressed,analogX:lx,analogY:gp?.axes?.[1]||0
  };}
 }
