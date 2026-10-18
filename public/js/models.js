@@ -276,6 +276,8 @@ export async function equipCharacterWeapons(fighter){
   if(rightTemplate){
     const weapon=rightTemplate.clone(true);
     const kind=rightTemplate.userData.kind||'sword';
+    model.userData.weaponKind=kind;
+    model.userData.weaponLabel=rightTemplate.userData.display_name||key;
     weapon.name='Equipped '+(rightTemplate.userData.display_name||key);
     weapon.position.set(0,-.39,.065);
     weapon.scale.setScalar(weaponSize(kind));
@@ -283,6 +285,7 @@ export async function equipCharacterWeapons(fighter){
     rightMount.add(weapon);
     model.userData.equippedWeaponRight=weapon;
   }else{
+    model.userData.weaponKind='unarmed';
     console.warn('No signature weapon prefab for',key);
   }
   const leftTemplate=prefabs.get('weapon_'+key+'_left');
