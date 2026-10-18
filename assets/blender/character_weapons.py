@@ -238,6 +238,16 @@ def make_knife(r,mats):
     cone(r,'Sharp taper',(0,0,.53),.08,.16,steel)
     return r
 
+def make_axe(r,mats):
+    steel,gold,wood,glow,dark=mats
+    cyl(r,'Axe haft',(0,0,.38),.052,.82,wood,verts=12)
+    cyl(r,'Haft collar',(0,0,.08),.075,.07,gold)
+    ico(r,'Axe cheek',(.21,0,.73),(.2,.09,.36),dark)
+    ico(r,'Broad axe blade',(.34,0,.79),(.31,.1,.43),steel)
+    cone(r,'Axe blade point',(.58,0,.72),.14,.38,steel,(0,math.pi/2,0),8)
+    box(r,'Engraved blade channel',(.35,-.105,.77),(.21,.025,.045),gold)
+    return r
+
 def make_club(r,mats):
     steel,gold,wood,glow,dark=mats
     cyl(r,'Wooden handle',(0,0,.15),.065,.5,wood,verts=10)
@@ -286,6 +296,7 @@ def build_kind(root, kind, mats):
         return make_gauntlet(root,mats,kind)
     if kind in ('trident','staff','wand'):
         return make_staff(root,mats,kind)
+    if kind=='axe': return make_axe(root,mats)
     if kind=='whip': return make_whip(root,mats)
     if kind=='war_fan': return make_fan(root,mats)
     if kind=='shield': return make_shield(root,mats)
@@ -408,9 +419,9 @@ for index,key in enumerate(keys):
     text_obj.data.materials.append(mat('Warm labels',(0.9,.78,.55),.12,.55))
 
 # Scene camera and lights for inspecting all the library models inside Blender.
-bpy.ops.object.camera_add(location=(0,25,18))
+bpy.ops.object.camera_add(location=(0,-28,18))
 camera=bpy.context.object;camera.name='Weapon gallery camera'
-direction=__import__('mathutils').Vector((0,-10,-12))-camera.location
+direction=__import__('mathutils').Vector((0,0,-12))-camera.location
 camera.rotation_euler=direction.to_track_quat('-Z','Y').to_euler()
 camera.data.lens=38
 bpy.context.scene.camera=camera
