@@ -153,7 +153,12 @@ def cyl(name, loc, radius, depth, mat, verts=8):
 # Broad playable clearing and river channel.
 bpy.ops.mesh.primitive_cylinder_add(vertices=96, radius=57, depth=.5, location=game_to_blender((0,-.28,-30)))
 finish(bpy.context.object, 'Continuous valley floor · flush to game plane', stone, (0,-.28,-30))
-box('Central river', (0,.02,-48), (8.5,.06,136), water)
+box('Central shallow river surface', (0,.022,-48), (8.5,.045,136), water)
+# Pebbles sit slightly below the shallow water surface.
+for i in range(140):
+    x=(random.random()-.5)*7.6
+    z=-112+random.random()*128
+    ico('Visible riverbed pebble', (x,-.012,z), (random.uniform(.18,.8),.045,random.uniform(.22,.95)), [stone,shadow,moss][i%3], 1)
 
 # Layered cliff walls, waterfall curtains and pools frame the arena.
 for side in (-1,1):
@@ -166,6 +171,19 @@ for side in (-1,1):
     box('Side waterfall sheet', (side*21,11,-97), (10,22,.16), foam)
     cyl('Side waterfall basin', (side*21,.02,-85), 7, .08, water, 32)
 
+
+# Continuous cliff faces make the play space feel enclosed by the canyon.
+box('West canyon wall', (-52,31,-52), (8,62,174), shadow)
+box('East canyon wall', (52,31,-52), (8,62,174), shadow)
+box('Rear canyon wall', (0,32,-132), (108,64,9), stone)
+for side in (-1,1):
+    for i in range(25):
+        z=-132+i*6.8
+        y=8+random.random()*39
+        x=side*(47+random.random()*5)
+        ledge=box('Layered fractured cliff ledge', (x,y,z), (2.4,random.uniform(.35,1.3),random.uniform(4,9)), stone if i%3 else moss)
+        ledge.rotation_euler[1]=(random.random()-.5)*.16
+
 # Two original giant shinobi guardian statues, built from editable primitives.
 def guardian(x, mirror):
     z = -76
@@ -177,13 +195,13 @@ def guardian(x, mirror):
     box('Face plate', (x,12,z+1.72), (2.1,1,.28), stone)
     box('Shoulder mantle', (x,10,z), (5.8,2.1,2.4), statue)
     arm = cyl('Left arm', (x-3*mirror,8.2,z), .75, 5.4, statue, 7)
-    arm.rotation_euler[2] = -.3*mirror
+    arm.rotation_euler[1] = math.pi/2 + .3*mirror
     arm = cyl('Right arm', (x+3*mirror,8.2,z), .75, 5.4, statue, 7)
-    arm.rotation_euler[2] = .3*mirror
+    arm.rotation_euler[1] = math.pi/2 - .3*mirror
     box('Left leg', (x-1.2,2.8,z), (1.3,4.6,1.6), shadow)
     box('Right leg', (x+1.2,2.8,z), (1.3,4.6,1.6), shadow)
-    box('Raised stone blade', (x+6.2*mirror,17.2,z), (.55,8,.7), shadow)
-    box('Blade rune', (x+6.5*mirror,17,z+.38), (.12,5.5,.08), rune)
+    box('Raised hand-seal silhouette', (x+5.6*mirror,16.8,z), (.85,1.0,.7), statue)
+    box('Stone finger detail', (x+5.6*mirror,18.0,z+.2), (.18,2.1,.18), statue)
     for side in (-1,1):
         box('Eye rune', (x+side*.52,12.4,z+1.92), (.16,.14,.05), rune)
 
@@ -252,7 +270,12 @@ cam.data.lens = 42
 bpy.context.scene.camera = cam
 scene = bpy.context.scene
 scene.render.engine = 'CYCLES'
-scene.cycles.samples = 24
+scene.cycles.samples = 48
+scene.view_settings.view_transform = 'AgX'
+try:
+    scene.view_settings.look = 'AgX - Medium High Contrast'
+except Exception:
+    pass
 scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100
