@@ -178,7 +178,26 @@ function populateRoster(select, selected){if(!select)return;select.replaceChildr
 
 const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · BRIEFING ROOM & THRONE ROOM',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x35484b,fog:0x73817b,floor:0x68746a,platform:0x536158,ringA:0x879f94,ringB:0xa88978,light:0xd2d6c9,sun:0xb6c2c5,density:.007},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'STARK TOWER · HELIPAD, PENTHOUSE & ELEVATOR',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x8cb1d2,fog:0x9eb3c0,floor:0xc1b99f,platform:0x77776e,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.003},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
 function applyFloorFootprint(){const key=mapSelect?.value||'valley';const footprint=key==='starktower'?.17:key==='deathstar'?.18:1;floor.scale.set(footprint,1,footprint);}
-function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootprint();for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);sun.intensity=key==='finalvalley'?2.55:2.8;rim.intensity=key==='finalvalley'?1.55:2.5;rim.color.setHex(key==='finalvalley'?0x8eaaa0:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0xbac8bf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x4a4a40:0x191421);hemisphere.intensity=key==='finalvalley'?1.75:1.5;renderer.toneMappingExposure=key==='finalvalley'?1.0:1.08;if(key==='finalvalley'){sun.position.set(-32,38,20);rim.position.set(18,22,-36);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootprint();for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);sun.intensity=key==='finalvalley'?3.0:2.8;rim.intensity=key==='finalvalley'?1.85:2.5;rim.color.setHex(key==='finalvalley'?0x8eaaa0:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0xbac8bf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x4a4a40:0x191421);hemisphere.intensity=key==='finalvalley'?1.75:1.5;renderer.toneMappingExposure=key==='finalvalley'?1.12:1.08;if(key==='finalvalley'){sun.position.set(27,36,-54);rim.position.set(25,24,-82);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+  if(key==='finalvalley'){
+    const skyCanvas=document.createElement('canvas');skyCanvas.width=1024;skyCanvas.height=512;
+    const skyCtx=skyCanvas.getContext('2d');
+    const skyGrad=skyCtx.createLinearGradient(0,0,0,512);
+    skyGrad.addColorStop(0,'#18253e');skyGrad.addColorStop(.34,'#536d83');skyGrad.addColorStop(.60,'#cc9a8a');skyGrad.addColorStop(.78,'#f5bd91');skyGrad.addColorStop(1,'#6f7780');
+    skyCtx.fillStyle=skyGrad;skyCtx.fillRect(0,0,1024,512);
+    for(let i=0;i<520;i++){
+      const y=50+Math.random()*370,x=Math.random()*1024,w=28+Math.random()*180;
+      skyCtx.strokeStyle='rgba(255,221,197,'+(.025+Math.random()*.075)+')';skyCtx.lineWidth=.7+Math.random()*4;
+      skyCtx.beginPath();skyCtx.moveTo(x,y);skyCtx.lineTo(x+w,y+(Math.random()-.5)*15);skyCtx.stroke();
+    }
+    const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;skyTexture.wrapS=THREE.RepeatWrapping;skyTexture.wrapT=THREE.ClampToEdgeWrapping;
+    const skyDome=addProp(new THREE.SphereGeometry(280,48,28),new THREE.MeshBasicMaterial({map:skyTexture,side:THREE.BackSide,depthWrite:false,fog:false}),0,0,0);
+    skyDome.renderOrder=-20;skyDome.frustumCulled=false;skyDome.castShadow=false;skyDome.receiveShadow=false;
+    const sunDisk=addProp(new THREE.SphereGeometry(6.3,32,20),new THREE.MeshBasicMaterial({color:0xffdda6,fog:false}),27,28,-124);
+    sunDisk.castShadow=false;sunDisk.receiveShadow=false;
+    const sunHalo=addProp(new THREE.SphereGeometry(10.5,32,20),new THREE.MeshBasicMaterial({color:0xffa76c,transparent:true,opacity:.18,depthWrite:false,fog:false}),27,28,-124);
+    sunHalo.castShadow=false;sunHalo.receiveShadow=false;sunHalo.renderOrder=-10;
+  }
   // The continuous high-detail grass material is the terrain surface; keep map landmarks on it without a flat low-poly patch.\n  // Each region gets an identifiable landmark rather than a circular fighting pad.
   if(key==='volcano'){addProp(new THREE.ConeGeometry(10,23,7),mat(0x292124,.15,.96),-32,8,-38,1,1,1);addProp(new THREE.ConeGeometry(4,1.2,7),new THREE.MeshBasicMaterial({color:0xff5a1e}),-32,19,-38,1,1,1);}
   if(key==='ice'){const citadel=addProp(new THREE.CylinderGeometry(5,8,18,6),mat(0x456c85,.35,.32),-34,9,-35);for(let i=0;i<6;i++)addProp(new THREE.ConeGeometry(1.2,7,5),mat(0xbdefff,.25,.2),-39+i*2,19,-35);}
@@ -235,7 +254,19 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
      addProp(new THREE.BoxGeometry(1.0,2.8,1.1),stationMat,x,1.5,-39.4);
      addProp(new THREE.BoxGeometry(1.4,.22,1.15),starSteel,x,2.9,-39.4);
    }
-} else if(key==='tournament'){
+  // Walkable connector between the Imperial briefing room and the Emperor's throne chamber.
+  const corridor=mat(0x333d4b,.58,.48),wallPanel=mat(0x525e6d,.72,.32),doorGlow=new THREE.MeshBasicMaterial({color:0x8ecbdf});
+  addProp(new THREE.BoxGeometry(40,.2,7),corridor,0,-.06,-31);
+  for(let i=0;i<14;i++){const x=-19+i*2.9;addProp(new THREE.BoxGeometry(.15,.12,6.8),wallPanel,x,.09,-31);}
+  for(const z of [-48.1,-14.0])addProp(new THREE.BoxGeometry(35,10,.3),wallPanel,-38,5,z);
+  for(const z of [-42.3,-20.0])addProp(new THREE.BoxGeometry(.3,10,11.6),wallPanel,-20.3,5,z);
+  addProp(new THREE.BoxGeometry(.3,10,34),wallPanel,-55.7,5,-31);
+  for(let i=0;i<9;i++){const x=-53+i*3.75;addProp(new THREE.BoxGeometry(2.1,4.8,.08),darkPanel,x,4,-47.88);addProp(new THREE.BoxGeometry(1.5,.08,.08),doorGlow,x,6.5,-47.82);}
+  for(const z of [-42.0,-20.0])addProp(new THREE.BoxGeometry(.3,10,9.4),wallPanel,20.4,5,z);
+  addProp(new THREE.BoxGeometry(.3,10,38),wallPanel,57.6,5,-32);
+  for(const x of [21.7,56.3])addProp(new THREE.BoxGeometry(3.1,10,.25),wallPanel,x,5,-50.8);
+  for(let i=0;i<10;i++){const x=23+i*3.5;addProp(new THREE.BoxGeometry(1.8,4.6,.08),darkPanel,x,4,-50.7);addProp(new THREE.BoxGeometry(1.35,.08,.08),doorGlow,x,6.1,-50.63);}
+  } else if(key==='tournament'){
    const tileMat=mat(0xe2d4b6,.05,.85),trimMat=mat(0x5a3b29,.25,.65);
    addProp(new THREE.BoxGeometry(24,.55,20),trimMat,0,.15,-12);
    addProp(new THREE.BoxGeometry(22,.22,18),tileMat,0,.52,-12);
@@ -244,11 +275,84 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
    for(const x of [-15,15])for(const z of [-20,-4]){addProp(new THREE.CylinderGeometry(.5,.7,5,8),trimMat,x,2.5,z);addProp(new THREE.SphereGeometry(.65,10,8),new THREE.MeshBasicMaterial({color:0xffd16c}),x,5.3,z);}
    for(let i=0;i<7;i++)addProp(new THREE.BoxGeometry(2.8,3.5,1.4),mat(i%2?0x526e88:0x9b6553),-21+i*7,1.75,-38);
  } else if(key==='starktower'){
-   const glass=mat(0x192e4c,.8,.22),steel=mat(0x69798d,.7,.28),arc=new THREE.MeshBasicMaterial({color:0x36dfff});
-   const tower=addProp(new THREE.BoxGeometry(15,48,12),glass,0,24,-58);tower.rotation.y=.08;
-   for(let y=5;y<47;y+=4){addProp(new THREE.BoxGeometry(15.3,.12,12.3),steel,0,y,-58);addProp(new THREE.BoxGeometry(15.4,.08,.08),arc,0,y+1,-51.8);}
-   addProp(new THREE.ConeGeometry(1.2,12,6),steel,0,54,-58);
-   for(let i=0;i<14;i++){const x=-55+i*8,h=8+(i*13%17);addProp(new THREE.BoxGeometry(5,h,5),glass,x,h/2-1,-75-(i%3)*8);for(let y=2;y<h;y+=3)addProp(new THREE.BoxGeometry(3,.12,.08),arc,x,y,-72-(i%3)*8);}
+   // Elevated Stark Tower rooftop: helipad, connected penthouse, open living room, visible glass elevator.
+   const glass=mat(0x172d49,.78,.2),steel=mat(0x74849a,.76,.25),darkSteel=mat(0x202a39,.6,.38);
+   const arc=new THREE.MeshBasicMaterial({color:0x36dfff});
+   const heliPaint=new THREE.MeshBasicMaterial({color:0xe8f1fa});
+   const windowGlass=new THREE.MeshPhysicalMaterial({color:0x8bc9ed,metalness:.18,roughness:.12,transparent:true,opacity:.19,side:THREE.DoubleSide,depthWrite:false});
+   const wood=mat(0x5c4637,.08,.75),sofa=mat(0x3c485a,.08,.84),cushion=mat(0x8794a1,.03,.9);
+   const warmLight=new THREE.MeshStandardMaterial({color:0xffd3a0,emissive:0xff8b48,emissiveIntensity:1.05});
+   const plant=mat(0x2e6349,.02,.9),rug=mat(0x253a4d,.04,.98);
+   // Continuous rooftop keeps the run from the pad to the penthouse fully walkable.
+   addProp(new THREE.BoxGeometry(75,.55,58),darkSteel,0,-.29,-24);
+   addProp(new THREE.BoxGeometry(73,.07,56),glass,0,.015,-24);
+   // Helipad ring and H markings.
+   addProp(new THREE.CylinderGeometry(10.8,10.8,.055,64),mat(0x111a28,.35,.6),-11,.075,-24);
+   const padRing=addProp(new THREE.TorusGeometry(9.3,.13,10,64),heliPaint,-11,.12,-24);padRing.rotation.x=Math.PI/2;
+   addProp(new THREE.BoxGeometry(.62,.035,5.2),heliPaint,-11,.12,-24);
+   addProp(new THREE.BoxGeometry(4.2,.035,.62),heliPaint,-11,.12,-24);
+   addProp(new THREE.BoxGeometry(.62,.035,2.5),heliPaint,-12.8,.12,-24);
+   addProp(new THREE.BoxGeometry(.62,.035,2.5),heliPaint,-9.2,.12,-24);
+   for(let i=0;i<32;i++){const a=i*Math.PI*2/32;addProp(new THREE.SphereGeometry(.13,8,6),i%4===0?warmLight:arc,-11+Math.cos(a)*11.1,.14,-24+Math.sin(a)*11.1);}
+   for(let z=-49;z<=1;z+=10){addProp(new THREE.BoxGeometry(.15,.7,.15),steel,-36,.32,z);addProp(new THREE.BoxGeometry(.15,.7,.15),steel,36,.32,z);}
+   // Low glass skybridge to the penthouse, set into the same roof plane.
+   addProp(new THREE.BoxGeometry(20,.22,5.8),glass,10,.04,-24);
+   for(const side of [-1,1])addProp(new THREE.BoxGeometry(20,.55,.18),steel,10,.36,-24+side*2.8);
+   for(const x of [2,8,14,20])addProp(new THREE.BoxGeometry(.14,.04,5.3),arc,x,.18,-24);
+   // Penthouse glazing: roofless and with an open front entrance so players can move inside.
+   addProp(new THREE.BoxGeometry(39,.4,36),darkSteel,35,-.19,-24);
+   addProp(new THREE.BoxGeometry(37,.06,34),glass,35,.04,-24);
+   addProp(new THREE.BoxGeometry(37,.85,.25),steel,35,.43,-41.65);
+   addProp(new THREE.BoxGeometry(37,.28,.25),steel,35,13.5,-41.65);
+   for(let i=0;i<=8;i++){const x=16.5+i*4.625;addProp(new THREE.BoxGeometry(.13,13,.25),steel,x,7,-41.65);}
+   for(let i=0;i<8;i++)addProp(new THREE.BoxGeometry(4.45,12.3,.07),windowGlass,18.8+i*4.625,7,-41.55);
+   addProp(new THREE.BoxGeometry(.22,12,33),windowGlass,53.9,7,-24);
+   for(let z=-40;z<=-8;z+=8)addProp(new THREE.BoxGeometry(.25,13,.22),steel,53.9,7,z);
+   addProp(new THREE.BoxGeometry(.25,13,36),steel,54.2,7,-24);
+   // Famous glass elevator, visible from the roof/living room: shaft ribs and split door panels.
+   for(const x of [15.8,20.2])for(const z of [-26.2,-21.8])addProp(new THREE.BoxGeometry(.18,9,.18),steel,x,4.5,z);
+   addProp(new THREE.BoxGeometry(4.4,.18,.18),steel,18,9,-24);
+   addProp(new THREE.BoxGeometry(4.4,.18,.18),steel,18,.18,-24);
+   addProp(new THREE.BoxGeometry(.12,8.5,.12),arc,15.6,4.45,-24);
+   addProp(new THREE.BoxGeometry(.12,8.5,.12),arc,20.4,4.45,-24);
+   addProp(new THREE.BoxGeometry(4.15,8.5,.05),windowGlass,18,4.45,-26.2);
+   addProp(new THREE.BoxGeometry(4.15,8.5,.05),windowGlass,18,4.45,-21.8);
+   addProp(new THREE.BoxGeometry(1.35,7.2,.12),steel,17.2,4.1,-21.7);
+   addProp(new THREE.BoxGeometry(1.35,7.2,.12),steel,18.8,4.1,-21.7);
+   addProp(new THREE.BoxGeometry(2.8,.12,2.8),steel,18,.12,-24);
+   addProp(new THREE.BoxGeometry(.35,1.7,.12),arc,20.65,1.7,-21.35);
+   addProp(new THREE.BoxGeometry(.18,.62,.12),warmLight,20.65,1.85,-21.35);
+   // Furnished living room with sectional sofa, coffee table, lounge chair, plant pots and bar.
+   addProp(new THREE.BoxGeometry(13,.035,9),rug,33,.085,-31);
+   addProp(new THREE.BoxGeometry(8.8,.6,1.35),sofa,32,.47,-28.7);
+   addProp(new THREE.BoxGeometry(8.8,1.15,.42),sofa,32,1.12,-28.15);
+   for(const x of [27.7,36.3])addProp(new THREE.BoxGeometry(.55,1.05,1.35),cushion,x,.78,-28.7);
+   for(const x of [29.4,32,34.6])addProp(new THREE.BoxGeometry(2.35,.12,1.02),cushion,x,.8,-28.8);
+   addProp(new THREE.BoxGeometry(5.2,.22,2.1),wood,32,.48,-33.5);
+   addProp(new THREE.BoxGeometry(5.05,.08,1.95),steel,32,.63,-33.5);
+   for(const x of [30,34])addProp(new THREE.CylinderGeometry(.07,.07,.45,10),steel,x,.23,-33.5);
+   addProp(new THREE.BoxGeometry(2.35,.45,2.1),sofa,43,.43,-30);
+   addProp(new THREE.BoxGeometry(2.35,.9,.28),sofa,43,.91,-29.1);
+   addProp(new THREE.BoxGeometry(1.45,.48,1.15),wood,43,.42,-26.6);
+   addProp(new THREE.CylinderGeometry(.08,.08,.38,10),steel,43,.2,-26.6);
+   addProp(new THREE.BoxGeometry(9,.72,1.3),wood,44,.56,-14.5);
+   addProp(new THREE.BoxGeometry(9.1,.1,1.4),steel,44,.96,-14.5);
+   for(const x of [41,44,47]){addProp(new THREE.CylinderGeometry(.32,.34,.13,12),sofa,x,.5,-12.7);addProp(new THREE.CylinderGeometry(.06,.06,.5,10),steel,x,.24,-12.7);}
+   for(const x of [41,44,47]){addProp(new THREE.CylinderGeometry(.055,.055,1.5,8),steel,x,12.7,-14.5);addProp(new THREE.SphereGeometry(.28,12,8),warmLight,x,11.9,-14.5);}
+   for(const x of [22,49]){
+     addProp(new THREE.CylinderGeometry(.56,.62,.65,12),wood,x,.33,-12.5);
+     for(let leaf=0;leaf<5;leaf++){const leafMesh=addProp(new THREE.ConeGeometry(.18,1.8,6),plant,x+Math.sin(leaf*1.25)*.38,1.35,-12.5+Math.cos(leaf*1.25)*.38);leafMesh.rotation.z=Math.sin(leaf*1.25)*.3;}
+   }
+   // Manhattan city canyon: layered skyscrapers and hundreds of warm/cool office window strips.
+   for(let i=0;i<48;i++){
+     const x=-108+i*4.55,z=-82-(i%6)*10,h=8+((i*17)%37),w=2.2+(i%4)*.72;
+     addProp(new THREE.BoxGeometry(w,h,w),glass,x,h/2-2,z);
+     for(let y=3;y<h-1;y+=3.1)for(const offset of [-.55,.55])addProp(new THREE.BoxGeometry(.1,.85,.045),i%3===0?warmLight:arc,x+offset*w*.45,y,z+w/2+.035);
+     if(i%5===0)addProp(new THREE.ConeGeometry(.45,4,5),steel,x,h+1,z);
+   }
+   addProp(new THREE.BoxGeometry(6,42,5),glass,-2,19,-119);
+   addProp(new THREE.ConeGeometry(1.1,13,6),steel,-2,46,-119);
+   for(let row=0;row<5;row++)addProp(new THREE.BoxGeometry(6.1,.09,5.1),arc,-2,5+row*7,-119);
  } else if(key==='asgard'){
    // Civilian-level Asgard plaza and living city; enormous polished-gold palace rises behind it.
    const gold=mat(0xd7aa42,.78,.2),lightGold=mat(0xf3d77d,.84,.18),marble=mat(0xaaa59b,.32,.5),stone=mat(0x6d777d,.22,.64),roof=mat(0x81746b,.5,.42);
@@ -350,6 +454,19 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
      addProp(new THREE.BoxGeometry(3.1,8,.16),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide}),x,11.5,-72+(i%2)*21);
      addProp(new THREE.ConeGeometry(.16,1.5,4),gold,x,7.2,-72+(i%2)*21);
    }
+   // Hand-laid flagstone joints, warm sconces and extra candle pools for the Great Hall nave.
+   const flagstoneLine=mat(0x76716a,.02,.98);
+   for(let x=-22;x<=22;x+=4)addProp(new THREE.BoxGeometry(.045,.025,90),flagstoneLine,x,.006,-32);
+   for(let z=-76;z<=10;z+=6)addProp(new THREE.BoxGeometry(46,.025,.045),flagstoneLine,0,.006,z);
+   for(let i=0;i<7;i++){
+     const z=-70+i*12;
+     for(const side of [-1,1]){
+       const x=side*18.2;
+       addProp(new THREE.BoxGeometry(.6,1.7,.35),gold,x,4.8,z);
+       addProp(new THREE.SphereGeometry(.2,10,8),candle,x,5.8,z);
+       addProp(new THREE.SphereGeometry(.1,8,6),new THREE.MeshBasicMaterial({color:0xfff0ba}),x,6.0,z);
+     }
+   }
 } 
  $status.textContent=t.label+' · ROUND 01';localStorage.setItem('browserSmashMap',key);}
 // Lightweight arena collision proxies keep fighters from walking through major landmarks while preserving free-roam movement.
@@ -358,10 +475,10 @@ const arenaCollision={
  volcano:[[-32,-38,12],[-90,-65,11]],
  ice:[[-34,-35,9],[95,-75,12]],
  neon:[[0,-100,12]],
- deathstar:[[10,-80,8],[-38,-31,7.4],[39,-39,5.2],[-28,-48,2],[ -48,-31,1.8],[-28,-14,1.8],[-48,-14,1.8],[21,-24,2.3]],
+ deathstar:[[10,-80,8]],
  finalvalley:[],
  tournament:[[-15,-20,1.2],[-15,-4,1.2],[15,-20,1.2],[15,-4,1.2]],
- starktower:[[20,-24,2.4],[37,-28,3.7],[40,-22,2.5],[49,-16,2.8]],
+ starktower:[],
  asgard:[[-10,-78,2.2],[-10,-66,2.2],[-10,-54,2.2],[-10,-42,2.2],[-10,-30,2.2],[-10,-18,2.2],[-10,-6,2.2],[10,-78,2.2],[10,-66,2.2],[10,-54,2.2],[10,-42,2.2],[10,-30,2.2],[10,-18,2.2],[10,-6,2.2]],
  hogwarts:[[-20,-32,1.1],[20,-32,1.1]]
 };
