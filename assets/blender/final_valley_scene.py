@@ -119,6 +119,11 @@ statue = material('Ancient statue stone', (.45,.49,.45), .9, .015, texture=rock_
 rune = material('Old mineral inlay', (.22,.43,.44), .48, .1, .18)
 hair_stone = material('Carved hair shadow', (.20,.25,.25), .96, .01, texture=dark_rock_texture, normal=rock_normal)
 
+def game_to_blender(point):
+    # Game coordinates are X, Y-up, Z; Blender scenes are X, Y, Z-up.
+    x, y, z = point
+    return (x, -z, y)
+
 def finish(obj, name, mat, loc, scale=None):
     obj.name = name
     obj.location = game_to_blender(loc)
@@ -129,9 +134,12 @@ def finish(obj, name, mat, loc, scale=None):
     if obj.type == 'MESH':
         for p in obj.data.polygons:
             p.use_smooth = False
-        bevel = obj.modifiers.new('Tiny bevels', 'BEVEL')
-        bevel.width = .08
-        bevel.segments = 1
+        # Bevel only stage slabs and architectural edges; keep rock silhouettes crisp.
+        lower = name.lower()
+        if any(token in lower for token in ('plinth','ledge','mantle','plate','wall','floor')):
+            bevel = obj.modifiers.new('Small worn edge bevel', 'BEVEL')
+            bevel.width = .045
+            bevel.segments = 1
     return obj
 
 def ico(name, loc, scale, mat, sub=1):
@@ -276,8 +284,8 @@ try:
     scene.view_settings.look = 'AgX - Medium High Contrast'
 except Exception:
     pass
-scene.render.resolution_x = 1280
-scene.render.resolution_y = 720
+scene.render.resolution_x = 2560
+scene.render.resolution_y = 1440
 scene.render.resolution_percentage = 100
 
 # Objects are placed in Blender Z-up coordinates through game_to_blender().
