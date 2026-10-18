@@ -311,7 +311,7 @@ function loadCharacterModelLibrary(){
   if(!characterModelLibraryState.promise){
     characterModelLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_models.glb',import.meta.url);
-      url.searchParams.set('v','cinematic-combo-signature-v6-20261018');
+      url.searchParams.set('v','cinematic-combo-signature-v7-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{
@@ -385,7 +385,7 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','blender-character-library-v2-20261018');
+      url.searchParams.set('v','blender-character-library-v3-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);});
