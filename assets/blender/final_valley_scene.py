@@ -9,6 +9,9 @@ import bpy, math, random, os
 from mathutils import Vector
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(OUT_DIR, '..', '..'))
+PUBLIC_ASSET_DIR = os.path.join(ROOT_DIR, 'public', 'assets')
+os.makedirs(PUBLIC_ASSET_DIR, exist_ok=True)
 random.seed(948271)
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
@@ -164,5 +167,5 @@ scene.render.resolution_percentage = 100
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_DIR,'final_valley.blend'))
 bpy.ops.object.select_all(action='SELECT')
 bpy.context.view_layer.objects.active = None
-bpy.ops.export_scene.gltf(filepath=os.path.join(OUT_DIR,'final_valley.glb'), export_format='GLB', export_apply=True, export_yup=True)
-print('Saved Final Valley .blend and .glb to', OUT_DIR)
+bpy.ops.export_scene.gltf(filepath=os.path.join(PUBLIC_ASSET_DIR,'final_valley.glb'), export_format='GLB', export_apply=True, export_yup=True)
+print('Saved editable .blend to', OUT_DIR, 'and game-ready GLB to', PUBLIC_ASSET_DIR)
