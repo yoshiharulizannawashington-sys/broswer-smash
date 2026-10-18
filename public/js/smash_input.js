@@ -17,7 +17,7 @@ export default class SmashInputHandler {
   webSwing:!!this.keys.KeyG,
   attack:this.consumeBuffer('KeyJ')||!!this.keys.ArrowUp&&this.consumeBuffer('KeyZ')||!!gp?.buttons?.[0]?.pressed,
   special:this.consumeBuffer('KeyK')||!!gp?.buttons?.[1]?.pressed,
-  dodge:this.consumeBuffer('ShiftLeft')||this.consumeBuffer('ShiftRight')||this.consumeBuffer('KeyQ')||!!gp?.buttons?.[6]?.pressed,shield:!!gp?.buttons?.[6]?.pressed||!!this.keys.KeyE,
+  dodge:this.consumeBuffer('ShiftLeft')||this.consumeBuffer('ShiftRight')||this.consumeBuffer('KeyQ')||!!gp?.buttons?.[6]?.pressed,shield:!!gp?.buttons?.[6]?.pressed||!!this.keys.KeyE,parry:this.consumeBuffer('KeyE'),
   grab:!!this.keys.KeyU||!!gp?.buttons?.[4]?.pressed,analogX:lx,analogY:gp?.axes?.[1]||0
  };}
 }
