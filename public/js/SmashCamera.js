@@ -2,7 +2,7 @@
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 
 export default class SmashCamera {
-  constructor(camera, { height = 12, trailing = 18, minHeight = 10, maxHeight = 22 } = {}) {
+  constructor(camera, { height = 12, trailing = 18, minHeight = 10, maxHeight = 38 } = {}) {
     this.camera = camera;
     this.baseHeight = height;
     this.baseTrailing = trailing;
@@ -36,12 +36,14 @@ export default class SmashCamera {
     const midZ = (a.position.z + b.position.z) * 0.5;
     const distance = Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z);
     const spread = THREE.MathUtils.clamp(distance / 9, 0, 1);
-    const height = THREE.MathUtils.clamp(this.baseHeight + spread * 7, this.minHeight, this.maxHeight) * this.zoom;
+    const altitude = Math.max(a.position.y || 0, b.position.y || 0);
+    const altitudeLift = THREE.MathUtils.clamp(altitude * .72, 0, 34);
+    const height = THREE.MathUtils.clamp(this.baseHeight + spread * 7 + altitudeLift, this.minHeight, this.maxHeight) * this.zoom;
     const trailing = (this.baseTrailing + spread * 9) * this.zoom;
     const forward = mode === 'over-p1';
     const targetX = forward ? a.position.x - a.facing * 5.0 : midX;
     const targetZ = forward ? a.position.z + 12.5 * this.zoom : midZ + trailing;
-    const targetY = forward ? 7.5 + 4.2 * this.zoom : height;
+    const targetY = forward ? 7.5 + 4.2 * this.zoom + altitudeLift * .58 : height;
     this.positionTarget.set(targetX, targetY, targetZ);
     if (Math.abs(this.orbitYaw) > .001 || Math.abs(this.orbitPitch) > .001) {
       const anchor = new THREE.Vector3(forward ? a.position.x : midX, forward ? a.position.y : 0, forward ? a.position.z : midZ);
@@ -51,7 +53,7 @@ export default class SmashCamera {
       const pitch = THREE.MathUtils.clamp(Math.asin(THREE.MathUtils.clamp(offset.y / length, -1, 1)) + this.orbitPitch, .12, .82);
       this.positionTarget.set(anchor.x + Math.sin(yaw) * length * Math.cos(pitch), anchor.y + length * Math.sin(pitch), anchor.z + Math.cos(yaw) * length * Math.cos(pitch));
     }
-    this.lookTarget.set(forward ? a.position.x * .42 + b.position.x * .58 : midX, forward ? 1.35 : 1.2, forward ? a.position.z * .72 + b.position.z * .28 - .5 : midZ - 2.4);
+    this.lookTarget.set(forward ? a.position.x * .42 + b.position.x * .58 : midX, forward ? Math.max(1.35,a.position.y*.35) : Math.max(1.2,altitude*.78), forward ? a.position.z * .72 + b.position.z * .28 - .5 : midZ - 2.4);
     this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, this.positionTarget.x, 3.8, dt);
     this.camera.position.y = THREE.MathUtils.damp(this.camera.position.y, this.positionTarget.y, 3.4, dt);
     this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, this.positionTarget.z, 3.4, dt);
