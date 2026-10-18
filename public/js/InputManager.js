@@ -1,3 +1,3 @@
 // Stable modular name for the existing keyboard/gamepad handler.
-import SmashInputHandler from './smash_input.js?v=cinematic-combo-signature-v6-20261018';
+import SmashInputHandler from './smash_input.js?v=cinematic-combo-signature-v7-20261018';
 export default class InputManager extends SmashInputHandler {}
