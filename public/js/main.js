@@ -123,96 +123,47 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
  else if(key==='neon'){landmark(0,-100,1.8);for(let i=0;i<45;i++){const x=(Math.random()-.5)*220,z=(Math.random()-.5)*220,h=8+Math.random()*28,w=2+Math.random()*5;addProp(new THREE.BoxGeometry(w,h,w),landmarkMat,x,h/2,z);for(let row=2;row<h;row+=2.5)addProp(new THREE.BoxGeometry(w*.6,.09,.06),glowMat,x,row,z+w/2+.04);}}
  // Iconic-world silhouettes are built from procedural geometry so each arena works offline without downloading copyrighted art.
  if(key==='deathstar'){
+   // Exterior station silhouette.
    const stationMat=mat(0x68717d,.72,.42),darkPanel=mat(0x252d39,.55,.55),laserMat=new THREE.MeshBasicMaterial({color:0x79dfff});
-   const sphere=addProp(new THREE.SphereGeometry(27,40,28),stationMat,0,29,-105,1,1,1);
-   sphere.rotation.z=.18;
+   const sphere=addProp(new THREE.SphereGeometry(27,40,28),stationMat,0,29,-105,1,1,1);sphere.rotation.z=.18;
    addProp(new THREE.SphereGeometry(7,24,18),darkPanel,10,38,-80,1,1,1);
    for(let i=0;i<14;i++){const a=i*Math.PI*2/14;const rib=addProp(new THREE.BoxGeometry(1.4,25,.7),darkPanel,Math.cos(a)*24,29+Math.sin(a)*24,-105);rib.rotation.z=-a;}
-   addProp(new THREE.TorusGeometry(5.7,.42,8,40),laserMat,10,38,-72,1,1,1).rotation.x=Math.PI/2;
+   addProp(new THREE.TorusGeometry(5.7,.42,8,40),laserMat,10,38,-72).rotation.x=Math.PI/2;
    for(let i=0;i<8;i++){const col=addProp(new THREE.BoxGeometry(4,12,4),darkPanel,-28+i*8,6,-38);addProp(new THREE.BoxGeometry(4.1,.2,4.1),laserMat,col.position.x,12.2,-38);}
-   // Room 1: Imperial briefing room, circular conference table and a ring of luminous wall panels.
+   // Interior one: Imperial briefing room, circular conference table and luminous wall panels.
    const panelGlow=new THREE.MeshBasicMaterial({color:0x9aaebf,transparent:true,opacity:.58});
    const briefingX=-38,briefingZ=-31;
    addProp(new THREE.BoxGeometry(35,.22,34),darkPanel,briefingX,-.13,briefingZ);
    for(let i=0;i<13;i++){
      const a=(i/13)*Math.PI*2,x=briefingX+Math.cos(a)*15,z=briefingZ+Math.sin(a)*15;
-     const panel=addProp(new THREE.BoxGeometry(3.6,7.5,.35),darkPanel,x,3.8,z);
-     panel.rotation.y=-a;
+     const panel=addProp(new THREE.BoxGeometry(3.6,7.5,.35),darkPanel,x,3.8,z);panel.rotation.y=-a;
      addProp(new THREE.BoxGeometry(2.5,4.5,.06),panelGlow,x,4.1,z-Math.cos(a)*.22);
    }
    addProp(new THREE.CylinderGeometry(7.5,7.5,.35,48),stationMat,briefingX,.28,briefingZ);
-   addProp(new THREE.CylinderGeometry(6.9} else if(key==='starktower'){
-   // Stark Tower rooftop helipad, accessible penthouse lounge, and the glass elevator above Manhattan.
-   const glass=mat(0x172b43,.62,.22),steel=mat(0x667888,.72,.3),darkSteel=mat(0x252c36,.58,.42);
-   const roomGlass=new THREE.MeshStandardMaterial({color:0x7ebad2,metalness:.28,roughness:.16,transparent:true,opacity:.22,side:THREE.DoubleSide});
-   const gold=mat(0xc6a66a,.62,.3),leather=mat(0x24262d,.12,.72),cream=mat(0xb9b5a9,.05,.92),arc=new THREE.MeshBasicMaterial({color:0x42dfff});
-   addProp(new THREE.BoxGeometry(116,.52,94),darkSteel,0,-.28,-24);
-   // Helipad ring and unmistakable H markings.
-   addProp(new THREE.TorusGeometry(13,.16,8,84),arc,0,.025,-24,1,1,1).rotation.x=Math.PI/2;
-   for(const r of [17,22])addProp(new THREE.TorusGeometry(r,.045,6,84),steel,0,.015,-24,1,1,1).rotation.x=Math.PI/2;
-   addProp(new THREE.BoxGeometry(.7,.035,8),cream,-1.5,.018,-24);
-   addProp(new THREE.BoxGeometry(.7,.035,8),cream,1.5,.018,-24);
-   addProp(new THREE.BoxGeometry(3.2,.035,.7),cream,0,.018,-24);
-   for(const side of [-1,1])for(let i=0;i<7;i++){
-     const x=side*(25+i*4.7);
-     addProp(new THREE.BoxGeometry(.18,1.3,.18),steel,x,.45,-65);
-     addProp(new THREE.BoxGeometry(.18,1.3,.18),steel,x,.45,17);
+   addProp(new THREE.CylinderGeometry(6.9,6.9,.15,48),darkPanel,briefingX,.52,briefingZ);
+   addProp(new THREE.SphereGeometry(1.3,20,16),laserMat,briefingX,.9,briefingZ);
+   for(let i=0;i<9;i++){
+     const a=i*Math.PI*2/9,x=briefingX+Math.cos(a)*9,z=briefingZ+Math.sin(a)*9;
+     addProp(new THREE.CylinderGeometry(.65,.8,1.6,10),darkPanel,x,.7,z);
+     addProp(new THREE.BoxGeometry(1.2,1.2,.25),darkPanel,x,1.4,z-Math.sin(a)*.3);
    }
-   for(const z of [-62,14])addProp(new THREE.BoxGeometry(116,1.35,.22),roomGlass,0,.55,z);
-   // Elevator lobby with bright split doors and a visible lift cabin.
-   addProp(new THREE.BoxGeometry(8,.12,7),steel,20,-.18,-24);
-   addProp(new THREE.BoxGeometry(5.5,7.8,.35),darkSteel,20,3.9,-27.3);
-   addProp(new THREE.BoxGeometry(2.35,6.6,.22),roomGlass,18.65,3.4,-27.02);
-   addProp(new THREE.BoxGeometry(2.35,6.6,.22),roomGlass,21.35,3.4,-27.02);
-   addProp(new THREE.BoxGeometry(.16,6.5,.3),arc,20,3.4,-26.85);
-   addProp(new THREE.BoxGeometry(.14,1.2,.06),gold,23,3.2,-26.7);
-   addProp(new THREE.BoxGeometry(.45,.07,.06),arc,23,4.15,-26.65);
-   addProp(new THREE.BoxGeometry(5.1,.16,5.1),steel,20,.05,-30);
-   addProp(new THREE.BoxGeometry(4.6,6.5,.15),roomGlass,20,3.3,-32.6);
-   // Penthouse living room: a three-sided glass wall deliberately leaves an open doorway on the south side.
-   const lx=42,lz=-24;
-   addProp(new THREE.BoxGeometry(33,.16,31),cream,lx,-.17,lz);
-   for(const x of [25.5,58.5])addProp(new THREE.BoxGeometry(.35,8.5,31),glass,x,4.1,lz);
-   addProp(new THREE.BoxGeometry(33,8.5,.35),glass,lx,4.1,-39.5);
-   for(const x of [27,32,37,42,47,52,57])addProp(new THREE.BoxGeometry(.1,8.1,.12),steel,x,4.1,-39.28);
-   for(const y of [2.9,5.8])addProp(new THREE.BoxGeometry(32.5,.12,.14),steel,lx,y,-39.22);
-   // Sofa + chaise, coffee table, console and bar stools.
-   addProp(new THREE.BoxGeometry(8.5,1.15,1),leather,37, .52,-28.5);
-   addProp(new THREE.BoxGeometry(8.5,1.8,.4),leather,37,1.35,-29.1);
-   for(const x of [32.9,41.1])addProp(new THREE.BoxGeometry(.55,1.45,1.2),leather,x,.72,-28.4);
-   addProp(new THREE.BoxGeometry(5,.18,2.5),darkSteel,40,.62,-22.7);
-   addProp(new THREE.BoxGeometry(5.2,.1,2.7),glass,40,.8,-22.7);
-   addProp(new THREE.CylinderGeometry(.13,.16,.55,10),steel,38,.27,-21.8);
-   addProp(new THREE.CylinderGeometry(.13,.16,.55,10),steel,42,.27,-21.8);
-   addProp(new THREE.BoxGeometry(7,.16,2.2),gold,49,.72,-16.5);
-   addProp(new THREE.BoxGeometry(7,.75,.18),darkSteel,49,1.1,-15.5);
-   for(const x of [47,49,51]){addProp(new THREE.CylinderGeometry(.16,.19,1.1,10),steel,x,.52,-19);addProp(new THREE.CylinderGeometry(.42,.42,.12,12),leather,x,1.05,-19);}
-   // Rooftop skyline: building tops sit below the hero deck so New York reads far beneath the glass edge.
-   for(let i=0;i<52;i++){
-     const side=i%2?1:-1,z=-110+(i*19%190),x=side*(68+(i*17%53)),w=4+(i%4)*1.5,h=24+(i*23%57);
-     const tower=addProp(new THREE.BoxGeometry(w,h,w*.85),i%3?glass:darkSteel,x,-h*.5-8,z);
-     for(let y=-h+3;y<-4;y+=4)addProp(new THREE.BoxGeometry(w*.46,.1,.06),i%2?arc:gold,x,y,z+w*.43);
-     if(i%5===0)addProp(new THREE.ConeGeometry(.65,5,5),steel,x,-7,z);
-   }
-   for(let i=0;i<28;i++){
-     const x=-118+i*8.5,z=42+(i%4)*6,h=18+(i*11%29);
-     addProp(new THREE.BoxGeometry(4.3,h,4.3),glass,x,-h*.5-14,z);
-   }
-Geometry(29,18,.25),new THREE.MeshBasicMaterial({color:0x080d1a}),throneX,9,-51.1);
+   // Interior two: Emperor's throne chamber with deep-space viewport and raised black throne.
+   const throneX=39,throneZ=-32,starSteel=mat(0x7f90a5,.82,.28);
+   addProp(new THREE.BoxGeometry(37,.22,38),darkPanel,throneX,-.13,throneZ);
+   addProp(new THREE.BoxGeometry(29,18,.25),new THREE.MeshBasicMaterial({color:0x080d1a}),throneX,9,-51.1);
    for(let i=0;i<65;i++){
      const x=throneX+(Math.random()-.5)*26,y=2+Math.random()*14;
      addProp(new THREE.SphereGeometry(.04+Math.random()*.035,5,4),new THREE.MeshBasicMaterial({color:0xbed8ff}),x,y,-50.8);
    }
-   addProp(new THREE.TorusGeometry(9,.24,8,72),steelForStarRoom(),throneX,9,-50.5,1,1,1).rotation.y=0;
-   addProp(new THREE.BoxGeometry(14,.7,8),stationMat,throneX, .32,-39);
+   addProp(new THREE.TorusGeometry(9,.24,8,72),starSteel,throneX,9,-50.5);
+   addProp(new THREE.BoxGeometry(14,.7,8),stationMat,throneX,.32,-39);
    addProp(new THREE.BoxGeometry(5.6,6.8,.9),stationMat,throneX,4,-42.1);
    addProp(new THREE.BoxGeometry(7,.65,1.15),darkPanel,throneX,1.6,-41);
    for(const x of [throneX-3.7,throneX+3.7]){
      addProp(new THREE.BoxGeometry(1.0,2.8,1.1),stationMat,x,1.5,-39.4);
-     addProp(new THREE.BoxGeometry(1.4,.22,1.15),steel,x,2.9,-39.4);
+     addProp(new THREE.BoxGeometry(1.4,.22,1.15),starSteel,x,2.9,-39.4);
    }
-   function steelForStarRoom(){return mat(0x7f90a5,.82,.28);}
- } else if(key==='tournament'){
+} else if(key==='tournament'){
    const tileMat=mat(0xe2d4b6,.05,.85),trimMat=mat(0x5a3b29,.25,.65);
    addProp(new THREE.BoxGeometry(24,.55,20),trimMat,0,.15,-12);
    addProp(new THREE.BoxGeometry(22,.22,18),tileMat,0,.52,-12);
