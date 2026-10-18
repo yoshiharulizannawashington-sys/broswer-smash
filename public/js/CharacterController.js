@@ -1,5 +1,5 @@
 // Camera-relative movement vector utility. Fighter simulation remains in fighter3D.js.
-import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+import * as THREE from 'three';
 
 export default class CharacterController {
   static movementVector(inputs, cameraYaw = 0) {
