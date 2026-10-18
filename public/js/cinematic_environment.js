@@ -31,6 +31,7 @@ export function addCinematicEnvironment(THREE, scene) {
   group.add(sky);
 
   // Procedural wispy cloud cards, made with Canvas so no external textures are required.
+  const cloudGroup = new THREE.Group(); cloudGroup.name = 'Atmospheric clouds'; group.add(cloudGroup);
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 192;
   const ctx = canvas.getContext('2d');
@@ -57,7 +58,8 @@ export function addCinematicEnvironment(THREE, scene) {
     );
     cloud.position.set(-64+i*16, 17+Math.random()*12, -68-Math.random()*20);
     cloud.rotation.y=(Math.random()-.5)*.22;
-    group.add(cloud);
+    cloud.userData.baseOpacity=cloud.material.opacity;
+    cloudGroup.add(cloud);
   }
 
   // Layered mountain ranges make the horizon feel vast rather than like a flat backdrop.
@@ -66,6 +68,7 @@ export function addCinematicEnvironment(THREE, scene) {
     new THREE.MeshStandardMaterial({color:0x26364a,roughness:1,metalness:0}),
     new THREE.MeshStandardMaterial({color:0x18283c,roughness:1,metalness:0})
   ];
+  const ridgeLayers = new THREE.Group(); ridgeLayers.name = 'Distant valley ridgelines'; group.add(ridgeLayers);
   for (let layer=0;layer<3;layer++) {
     const points=[];
     const baseZ=-47-layer*13;
@@ -79,7 +82,7 @@ export function addCinematicEnvironment(THREE, scene) {
     shape.lineTo(points[points.length-1].x,0);shape.closePath();
     const ridge=new THREE.Mesh(new THREE.ShapeGeometry(shape),ridgeMatters[layer]);
     ridge.position.set(0,-2,baseZ);ridge.renderOrder=-5-layer;
-    group.add(ridge);
+    ridgeLayers.add(ridge);
   }
 
   // Floating rock shelves and lit falls echo the reference's fantasy valley.
@@ -177,6 +180,9 @@ export function addCinematicEnvironment(THREE, scene) {
   group.userData.setMap=(key)=>{
     const isFinalValley=key==='finalvalley';
     sky.material.uniforms.uFinalValley.value=isFinalValley?1:0;
+    cloudGroup.children.forEach((cloud)=>{cloud.material.color.setHex(isFinalValley?0x9aa9a3:0xffffff);cloud.material.opacity=cloud.userData.baseOpacity*(isFinalValley?.62:1);});
+    const ridgeColors=isFinalValley?[0x4f605c,0x3b4d4a,0x293b3b]:[0x39465b,0x26364a,0x18283c];
+    ridgeMatters.forEach((material,index)=>material.color.setHex(ridgeColors[index]));
     floatingIslands.visible=!isFinalValley;
     city.visible=!isFinalValley;
     sciFiBeacon.visible=!isFinalValley;
