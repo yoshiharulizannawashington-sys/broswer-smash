@@ -88,7 +88,7 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
 export function animateHumanFighter(fighter,dt){
   const root=fighter.model;if(!root?.userData?.humanMixer)return;
   fighter.position=root.position;
-  root.rotation.y=Math.atan2(fighter.facingZ,fighter.facing)+(fighter.facingZ===0&&fighter.facing>=0?Math.PI:0);
+  root.rotation.y=Math.atan2(fighter.facingZ,Math.abs(fighter.facing))+(fighter.facing>=0?Math.PI:0);
   root.userData.humanMixer.update(dt);
   const speed=Math.hypot(fighter.velocity.x,fighter.velocity.z), airborne=!fighter.isGrounded;
   const attacking=(fighter.attackQueue?.length||0)>0;
@@ -99,7 +99,7 @@ export function animateHumanFighter(fighter,dt){
   if(gear){
     gear.userData.attackTime=Math.max(0,gear.userData.attackTime-dt);
     gear.userData.specialTime=Math.max(0,gear.userData.specialTime-dt);
-    if(attacking)gear.userData.attackTime=.18;
+    if(attacking&&!root.userData.wasAttacking)gear.userData.attackTime=.18;
     if(fighter.specialCooldown>.65)gear.userData.specialTime=.3;
     const swing=gear.userData.attackTime>0?Math.sin((1-gear.userData.attackTime/.18)*Math.PI):0;
     gear.rotation.z=-swing*.22;
