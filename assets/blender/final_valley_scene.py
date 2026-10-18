@@ -42,11 +42,17 @@ foam = material('Waterfall mist', (.58,.68,.68), .42, .02, .03)
 statue = material('Ancient statue stone', (.43,.47,.45))
 rune = material('Old mineral inlay', (.22,.43,.44), .48, .1, .18)
 
+def game_to_blender(point):
+    # Convert game coordinates (X, Y-up, Z) to Blender coordinates (X, Y, Z-up).
+    x, y, z = point
+    return (x, -z, y)
+
 def finish(obj, name, mat, loc, scale=None):
     obj.name = name
-    obj.location = loc
+    obj.location = game_to_blender(loc)
     if scale:
-        obj.scale = scale
+        # Scale is authored in game X/Y-up/Z axes; Blender's vertical axis is Z.
+        obj.scale = (scale[0], scale[2], scale[1])
     obj.data.materials.append(mat)
     if obj.type == 'MESH':
         for p in obj.data.polygons:
@@ -73,18 +79,18 @@ def cyl(name, loc, radius, depth, mat, verts=8):
     return finish(bpy.context.object, name, mat, loc)
 
 # Broad playable clearing and river channel.
-bpy.ops.mesh.primitive_cylinder_add(vertices=64, radius=57, depth=.5, location=(0,-.36,-30))
-finish(bpy.context.object, 'Arena clearing', stone, (0,-.36,-30))
+bpy.ops.mesh.primitive_cylinder_add(vertices=96, radius=57, depth=.5, location=game_to_blender((0,-.28,-30)))
+finish(bpy.context.object, 'Continuous valley floor · flush to game plane', stone, (0,-.28,-30))
 box('Central river', (0,.02,-48), (8.5,.06,136), water)
 
 # Layered cliff walls, waterfall curtains and pools frame the arena.
 for side in (-1,1):
     for i in range(6):
-        x = side * (28 + random.uniform(-5,8))
-        z = -94 + i*16 + random.uniform(-3,3)
-        h = random.uniform(16,31)
-        ico('Jagged cliff', (x,h*.42,z), (random.uniform(7,13),h,random.uniform(8,15)), stone if i%2 else shadow, 2)
-        ico('Moss cap', (x-side*2,h*.86,z+1), (random.uniform(4,8),1.5,random.uniform(4,8)), moss, 1)
+        x = side * random.uniform(43,50)
+        z = -132 + i*21 + random.uniform(-4,4)
+        h = random.uniform(25,42)
+        ico('Tall enclosing canyon wall', (x,h*.52,z), (random.uniform(7,13),h,random.uniform(12,19)), stone if i%2 else shadow, 2)
+        ico('Moss cap and mineral seam', (x-side*1.8,h*1.14,z+1), (random.uniform(5,9),1.7,random.uniform(7,12)), moss, 1)
     box('Side waterfall sheet', (side*21,11,-97), (10,22,.16), foam)
     cyl('Side waterfall basin', (side*21,.02,-85), 7, .08, water, 32)
 
@@ -151,24 +157,24 @@ bpy.context.scene.world = world
 world.use_nodes = True
 world.node_tree.nodes['Background'].inputs['Color'].default_value = (.025,.045,.08,1)
 world.node_tree.nodes['Background'].inputs['Strength'].default_value = .45
-bpy.ops.object.light_add(type='AREA', location=(-25,55,10))
+bpy.ops.object.light_add(type='AREA', location=game_to_blender((-25,55,10)))
 key = bpy.context.object
 key.name = 'Warm valley key'
 key.data.energy = 5000
 key.data.shape = 'DISK'
 key.data.size = 45
 key.rotation_euler = (math.radians(25),0,math.radians(-25))
-bpy.ops.object.light_add(type='AREA', location=(30,25,-70))
+bpy.ops.object.light_add(type='AREA', location=game_to_blender((30,25,-70)))
 rim = bpy.context.object
 rim.name = 'Cool waterfall rim'
 rim.data.energy = 3000
 rim.data.color = (.25,.65,1)
 rim.data.size = 30
 rim.rotation_euler = (math.radians(35),0,math.radians(155))
-bpy.ops.object.camera_add(location=(105,95,115))
+bpy.ops.object.camera_add(location=game_to_blender((105,95,115)))
 cam = bpy.context.object
 cam.name = 'Final Valley overview'
-direction = Vector((0,8,-38)) - cam.location
+direction = Vector(game_to_blender((0,8,-38))) - cam.location
 cam.rotation_euler = direction.to_track_quat('-Z','Y').to_euler()
 cam.data.lens = 42
 bpy.context.scene.camera = cam
@@ -179,12 +185,7 @@ scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100
 
-# Convert the script's game-style Y-up layout to Blender Z-up for the editable .blend.
-from mathutils import Matrix
-y_up_to_blender_z_up = Matrix.Rotation(math.radians(90), 4, 'X')
-for obj in list(bpy.context.scene.objects):
-    obj.matrix_world = y_up_to_blender_z_up @ obj.matrix_world
-
+# Objects are placed in Blender Z-up coordinates through game_to_blender().
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_DIR,'final_valley.blend'))
 bpy.ops.object.select_all(action='SELECT')
 bpy.context.view_layer.objects.active = None
