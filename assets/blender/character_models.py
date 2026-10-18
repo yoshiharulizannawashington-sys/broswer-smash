@@ -15,7 +15,7 @@ GLB_PATH = ROOT / "public" / "assets" / "character_models.glb"
 
 # keys match the game's normalized identity keys exactly.
 CHARACTERS = {
-    "superman": ("Superman", "warrior", "hero", 0x1a55aa, 0xc42b3a, 0xf4c94f, 0xc99b7f, 0x111822, 0x18191c, 1.08),
+    "superman": ("Superman", "warrior", "superman", 0x1a55aa, 0xc42b3a, 0xf4c94f, 0xc99b7f, 0x111822, 0x18191c, 1.08),
     "iron_man_tony_stark": ("Iron Man", "cyborg", "ironman", 0x901d25, 0xc32d28, 0xe9b94a, 0xc99d87, 0x121722, 0x8d2025, 1.00),
     "hulk_bruce_banner": ("Hulk", "brawler", "hulk", 0x317d3b, 0x522747, 0x87dc59, 0x388c48, 0x171a21, 0x1c261c, 1.32),
     "green_lantern_hal_jordan": ("Green Lantern", "mage", "lantern", 0x123d32, 0x205c46, 0x65f2a5, 0xc89a7d, 0x101821, 0x17261f, 1.00),
