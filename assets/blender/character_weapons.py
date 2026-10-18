@@ -248,6 +248,41 @@ def make_axe(r,mats):
     box(r,'Engraved blade channel',(.35,-.105,.77),(.21,.025,.045),gold)
     return r
 
+def make_stormbreaker(r,mats):
+    steel,gold,wood,glow,dark=mats
+    # MCU-inspired Stormbreaker: oversized, asymmetrical axe/hammer head,
+    # pale forged-metal facets, luminous runic inlay and a Groot-grown handle.
+    cyl(r,'Stormbreaker living-wood haft',(0,0,.48),.067,.94,wood,verts=16)
+    cyl(r,'Wooden handle shoulder',(0,0,.95),.092,.34,wood,verts=12)
+    cyl(r,'Dark leather lower grip',(0,0,.15),.079,.26,dark,verts=12)
+    for z,angle in [(.28,.18),(.39,-.22),(.51,.28),(.64,-.18),(.77,.12),(.91,-.24),(1.03,.18)]:
+        torus(r,'Twisted root-vine binding',(0,0,z),.084,.018,wood,(0,angle,0))
+    for x,z,scale in [(-.045,.38,.07),(.034,.62,.08),(-.025,.83,.09),(.02,1.02,.055)]:
+        ico(r,'Living wood knot',(x,-.01,z),(scale,scale*.8,scale*1.2),gold,subdivisions=1)
+    # Heavy central socket plus the square poll on the hammer side.
+    box(r,'Stormbreaker forged socket',(0,0,1.20),(.44,.27,.42),steel)
+    box(r,'Hammer poll',(-.34,0,1.22),(.45,.40,.48),steel)
+    box(r,'Hammer striking face',(-.58,-.01,1.22),(.075,.32,.34),gold)
+    box(r,'Hammer poll top facet',(-.36,0,1.49),(.37,.32,.065),dark)
+    box(r,'Hammer poll lower facet',(-.36,0,.96),(.37,.32,.065),dark)
+    # Broad, angular blade with a chunky spine and a clipped, crescent-like edge.
+    box(r,'Axe blade spine',(.30,0,1.25),(.48,.22,.52),steel,(0,-.11,0))
+    box(r,'Axe blade upper facet',(.48,-.012,1.44),(.53,.12,.19),steel,(0,.19,0))
+    box(r,'Axe blade lower facet',(.48,-.012,1.07),(.53,.12,.19),steel,(0,-.16,0))
+    box(r,'Axe blade cutting edge',(.68,-.015,1.25),(.42,.08,.20),gold,(0,.1,0))
+    cone(r,'Axe edge tip',(1.01,0,1.22),.22,.48,steel,(0,math.pi/2,0),8)
+    # Asgardian etched grooves and blue-white energy channels.
+    for x,z in [(.21,1.43),(.39,1.34),(.56,1.24),(.72,1.15)]:
+        box(r,'Asgardian rune inlay',(x,-.126,z),(.11,.018,.027),glow,(0,-.22,0))
+    box(r,'Socket rune',(0,-.145,1.24),(.18,.018,.045),glow)
+    for side in [-1,1]:
+        cone(r,'Storm spark',(side*.14,-.02,1.66),.032,.28,glow,(0,side*.24,0),5)
+    # Small crossing roots merge the living handle into the forged head.
+    cone(r,'Root branch left',(-.10,0,1.10),.048,.42,wood,(0,-.56,0),8)
+    cone(r,'Root branch right',(.12,.015,1.11),.048,.38,wood,(0,.58,0),8)
+    return r
+
+
 def make_club(r,mats):
     steel,gold,wood,glow,dark=mats
     cyl(r,'Wooden handle',(0,0,.15),.065,.5,wood,verts=10)
@@ -297,6 +332,7 @@ def build_kind(root, kind, mats):
     if kind in ('trident','staff','wand'):
         return make_staff(root,mats,kind)
     if kind=='axe': return make_axe(root,mats)
+    if kind=='stormbreaker': return make_stormbreaker(root,mats)
     if kind=='whip': return make_whip(root,mats)
     if kind=='war_fan': return make_fan(root,mats)
     if kind=='shield': return make_shield(root,mats)
@@ -336,7 +372,7 @@ WEAPONS = {
 'the_flash_barry_allen':('The Flash · speed-force gauntlet','lightning',None,0xb8b8bc,0xffd348,0x93232a),
 'aquaman':('Aquaman · Atlantean trident','trident',None,0xb68c43,0x53c6c2,0x195747),
 'doctor_strange':('Doctor Strange · spell rings','spellrings',None,0xb88f48,0xffb652,0x5c272a),
-'thor':('Thor · Mjolnir','hammer',None,0xaeb7c3,0x79c8ff,0x513321),
+'thor':('Thor · MCU Stormbreaker','stormbreaker',None,0xb9c2cc,0x72d8ff,0x573c2d),
 'aang':('Aang · airbending glider staff','staff',None,0x9f7944,0x83d8ff,0xc27b31),
 'goku':('Goku · ki focus','ki_orb',None,0xc3b4a1,0xff8b2a,0x285e9c),
 'naruto_uzumaki':('Naruto · kunai','knife','ki_orb',0x97a3af,0x48aaff,0x262930),
