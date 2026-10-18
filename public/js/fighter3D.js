@@ -343,6 +343,72 @@ export default class Fighter3D {
           u.rightLeg.rotation.x = 0.55 * punch;
           u.pelvis.rotation.x = 0.12 * punch;
         }
+        // Individual combo choreography: the same three-hit input chain reads differently
+        // for an acrobatic web-slinger, speedster, dual-blade scout, and martial-arts lead.
+        const identity=this.identityKey||'';
+        if(identity==='spider_man'){
+          if(aerialAttack){
+            // Compact mid-air tuck on the first hit, then a broad twisting kick finisher.
+            u.torso.rotation.z=(combo===3?.48:-.28)*punch;
+            u.leftArm.rotation.x=-1.15*punch;u.leftArm.rotation.z=.72*punch;
+            u.rightArm.rotation.x=-.72*punch;u.rightArm.rotation.z=-.55*punch;
+            u.leftLeg.rotation.x=combo===3?-1.35:-.75;
+            u.rightLeg.rotation.x=combo===3?-.1:.88;
+            u.leftShin.rotation.x=.55;u.rightShin.rotation.x=.18;
+            u.pelvis.rotation.x=-.28*punch;
+          }else if(combo===2){
+            u.rightArm.rotation.x=-1.1*punch;u.rightArm.rotation.z=-.84*punch;
+            u.leftArm.rotation.x=-1.9*punch;u.leftArm.rotation.z=.32*punch;
+            u.torso.rotation.y=.65*punch;u.pelvis.rotation.y=-.22*punch;
+          }else if(combo===3){
+            u.rightArm.rotation.x=-1.95*punch;u.rightArm.rotation.z=-.5*punch;
+            u.leftArm.rotation.x=-1.55*punch;u.leftArm.rotation.z=.5*punch;
+            u.rightLeg.rotation.x=.95*punch;u.leftLeg.rotation.x=-.4*punch;
+            u.torso.rotation.y=-.72*punch;
+          }
+        }else if(identity==='the_flash_barry_allen'){
+          // A lightning-fast alternating one-two into a short forward dash strike.
+          const side=combo%2?1:-1;
+          u.rightArm.rotation.x=(side>0?-2.2:-.45)*punch;
+          u.leftArm.rotation.x=(side>0?-.45:-2.2)*punch;
+          u.rightFore.rotation.x=-.74*punch;u.leftFore.rotation.x=-.74*punch;
+          u.torso.rotation.x=-.25*punch;u.torso.rotation.y=.26*side*punch;
+          u.leftLeg.rotation.x=combo===3?-.82:-.24;
+          u.rightLeg.rotation.x=combo===3?1.0:.33;
+          if(combo===3){u.pelvis.rotation.x=-.24*punch;u.rightArm.rotation.z=-.25*punch;}
+        }else if(identity==='levi_ackerman'){
+          // Compact ODM-style cross cuts alternate shoulders; the third hit commits to a
+          // longer diagonal slash so the hit spark and launch read as a true finisher.
+          const side=combo%2?1:-1;
+          u.leftArm.rotation.x=(side>0?-1.7:-.8)*punch;
+          u.rightArm.rotation.x=(side>0?-.8:-1.7)*punch;
+          u.leftArm.rotation.z=.48*side*punch;u.rightArm.rotation.z=-.48*side*punch;
+          u.leftFore.rotation.x=-1.12*punch;u.rightFore.rotation.x=-1.12*punch;
+          u.torso.rotation.y=.52*side*punch;u.pelvis.rotation.y=-.24*side*punch;
+          if(aerialAttack){u.leftLeg.rotation.x=-.9;u.rightLeg.rotation.x=.74;u.torso.rotation.x=-.25*punch;}
+        }else if(identity==='goku'||identity==='vegeta'){
+          // Martial-arts strings: straight punch, cross, then a rising strike that launches.
+          if(combo===1){u.rightArm.rotation.x=-2.0*punch;u.rightFore.rotation.x=-.88*punch;u.torso.rotation.y=.24*punch;}
+          else if(combo===2){u.leftArm.rotation.x=-1.95*punch;u.leftFore.rotation.x=-.92*punch;u.torso.rotation.y=-.32*punch;}
+          else{u.leftArm.rotation.x=-1.5*punch;u.rightArm.rotation.x=-2.18*punch;u.leftLeg.rotation.x=-.55*punch;u.rightLeg.rotation.x=.88*punch;u.pelvis.rotation.x=-.28*punch;}
+          if(aerialAttack){u.leftLeg.rotation.x=-.78;u.rightLeg.rotation.x=.95;u.torso.rotation.x=-.22*punch;}
+        }else if(identity==='aang'){
+          // Staff-driven redirection and a circular airbending spin rather than a generic fist.
+          if(weaponKind==='staff'){
+            u.rightArm.rotation.y=.72*Math.sin(progress*Math.PI*2)*punch;
+            u.leftArm.rotation.y=-.52*Math.sin(progress*Math.PI*2)*punch;
+            u.rightFore.rotation.y=.34*Math.sin(progress*Math.PI*2)*punch;
+            u.torso.rotation.y=.34*Math.sin(progress*Math.PI*2)*punch;
+          }
+          if(aerialAttack){u.leftArm.rotation.x=-.8;u.rightArm.rotation.x=-1.0;u.leftLeg.rotation.x=-.85;u.rightLeg.rotation.x=.65;}
+        }else if(['hulk_bruce_banner','saitama','all_might'].includes(identity)){
+          // Heavier shoulder-first hooks with more planted legs; the finisher drives upward.
+          u.torso.rotation.x=-(combo===3?.42:.25)*punch;
+          u.torso.rotation.y=(combo%2?.36:-.36)*punch;
+          u.leftLeg.rotation.x=-.36*punch;u.rightLeg.rotation.x=.48*punch;
+          u.pelvis.rotation.x=combo===3?-.18*punch:.12*punch;
+          if(combo===3){u.rightArm.rotation.x=-2.3*punch;u.rightFore.rotation.x=-1.28*punch;}
+        }
       } else if (u.torso) {
         u.torso.rotation.y = THREE.MathUtils.damp(u.torso.rotation.y, 0, 10, dt);
       }
