@@ -63,23 +63,7 @@ function populateRoster(select, selected){if(!select)return;select.replaceChildr
 
 const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006}};
 function applyMap(key){const t=mapThemes[key]||mapThemes.valley;scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material.color.setHex(t.floor);platform.material.color.setHex(t.platform);sun.color.setHex(t.light);sunBall.material.color.setHex(t.sun);halo.material.color.setHex(t.sun);while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
-  // Height-field terrain rises toward the edges while keeping a broad, walkable central basin.
-  const gridX=72,gridZ=56,positions=[],indices=[],colors=[];
-  const baseColor=new THREE.Color(key==='ice'?0x527f99:key==='volcano'?0x30272b:key==='neon'?0x20243a:0x34464c);
-  for(let iz=0;iz<=gridZ;iz++){for(let ix=0;ix<=gridX;ix++){
-    const x=(ix/gridX-.5)*176,z=(iz/gridZ-.5)*136;
-    const edge=Math.max(0,Math.max(Math.abs(x)/88,Math.abs(z)/68)-.23);
-    const noise=Math.sin(x*.11+key.length)*Math.cos(z*.13)*.7+Math.sin(z*.07+x*.04)*.6;
-    const hill=Math.pow(edge,1.35)*(key==='volcano'?13:key==='ice'?8:10);
-    const y=Math.max(0,hill+noise*edge*2.2);
-    positions.push(x,y-.08,z);
-    const shade=THREE.MathUtils.clamp(.88+y*.012,.88,1.12);
-    colors.push(baseColor.r*shade,baseColor.g*shade,baseColor.b*shade);
-    if(ix<gridX&&iz<gridZ){const a=iz*(gridX+1)+ix,b=a+1,d=a+gridX+1,e=d+1;indices.push(a,d,b,b,d,e);}
-  }}
-  const terrainGeo=new THREE.BufferGeometry();terrainGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));terrainGeo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));terrainGeo.setIndex(indices);terrainGeo.computeVertexNormals();
-  const terrainMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,metalness:.02});const terrain=new THREE.Mesh(terrainGeo,terrainMat);terrain.receiveShadow=true;terrain.castShadow=true;mapDecor.add(terrain);
-  // Each region gets an identifiable landmark rather than a circular fighting pad.
+  // The continuous high-detail grass material is the terrain surface; keep map landmarks on it without a flat low-poly patch.\n  // Each region gets an identifiable landmark rather than a circular fighting pad.
   if(key==='volcano'){addProp(new THREE.ConeGeometry(10,23,7),mat(0x292124,.15,.96),-32,8,-38,1,1,1);addProp(new THREE.ConeGeometry(4,1.2,7),new THREE.MeshBasicMaterial({color:0xff5a1e}),-32,19,-38,1,1,1);}
   if(key==='ice'){const citadel=addProp(new THREE.CylinderGeometry(5,8,18,6),mat(0x456c85,.35,.32),-34,9,-35);for(let i=0;i<6;i++)addProp(new THREE.ConeGeometry(1.2,7,5),mat(0xbdefff,.25,.2),-39+i*2,19,-35);}
   if(key==='neon'){for(let i=0;i<5;i++){const tower=addProp(new THREE.BoxGeometry(5,18+i*3,5),mat(0x1a2340,.65,.25),-38+i*9,(18+i*3)/2,-38);addProp(new THREE.BoxGeometry(5.1,.12,5.1),new THREE.MeshBasicMaterial({color:i%2?0xff32db:0x31eaff}),tower.position.x,tower.position.y+tower.geometry.parameters.height/2+.1,-38);}}
