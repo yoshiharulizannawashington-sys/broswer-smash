@@ -27,7 +27,16 @@ export function createFinalValley(THREE) {
   const rockTexture=new THREE.CanvasTexture(rockCanvas);
   rockTexture.colorSpace=THREE.SRGBColorSpace;rockTexture.wrapS=rockTexture.wrapT=THREE.RepeatWrapping;
   rockTexture.repeat.set(2,2);rockTexture.anisotropy=8;
-  const toon = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp,map:rockTexture});
+  const rockNormalData=new Uint8Array(256*256*4);
+  for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+    const i=(y*256+x)*4;const nx=Math.sin(x*.15+Math.cos(y*.055)*1.8)*.12+Math.sin(y*.27-x*.12)*.08;
+    const ny=Math.cos(y*.17+x*.07)*.12+Math.cos(x*.09-y*.21)*.08;
+    rockNormalData[i]=128+nx*110;rockNormalData[i+1]=128+ny*110;rockNormalData[i+2]=247;rockNormalData[i+3]=255;
+  }
+  const rockNormal=new THREE.DataTexture(rockNormalData,256,256,THREE.RGBAFormat);
+  rockNormal.wrapS=rockNormal.wrapT=THREE.RepeatWrapping;rockNormal.repeat.set(2,2);rockNormal.colorSpace=THREE.NoColorSpace;rockNormal.needsUpdate=true;
+  const toon = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp,map:rockTexture,normalMap:rockNormal,normalScale:new THREE.Vector2(.14,.14)});
+  const toonFlat = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp});
   // Prefer the Blender-exported GLB when it exists; keep the procedural scene as a no-download fallback.
   const blenderLoader = new GLTFLoader();
   const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url).href;
@@ -53,8 +62,8 @@ export function createFinalValley(THREE) {
   const green = toon(0x42634b);
   const riverMat = new THREE.MeshPhysicalMaterial({
     color: 0x4a7883, roughness: .42, metalness: .04,
-    transparent: true, opacity: .86,
-    emissive: 0x0b2228, emissiveIntensity: .08
+    transparent: false, opacity: 1,
+    emissive: 0x0b2228, emissiveIntensity: .04
   });
   const foamMat = new THREE.MeshBasicMaterial({ color: 0xa8c2c4, transparent: true, opacity: .48, depthWrite: false });
   const statueMat = toon(0x858b84);
@@ -256,10 +265,10 @@ export function createFinalValley(THREE) {
   }
   // Rounded broadleaf trees, exposed roots and layered canopies frame the playable channel.
   // Shared meshes keep the richer environment inexpensive to draw.
-  const bark=toon(0x53463d),branchGeo=new THREE.CylinderGeometry(.06,.16,2.5,6);
+  const bark=toonFlat(0x53463d),branchGeo=new THREE.CylinderGeometry(.06,.16,2.5,6);
   const trunkGeo=new THREE.CylinderGeometry(.22,.48,6.4,7);
   const canopyGeo=new THREE.IcosahedronGeometry(1,1);
-  const canopyMats=[toon(0x36523a),toon(0x496746),toon(0x617950),toon(0x334b3c)];
+  const canopyMats=[toonFlat(0x36523a),toonFlat(0x496746),toonFlat(0x617950),toonFlat(0x334b3c)];
   for(const side of [-1,1]){
     for(let i=0;i<22;i++){
       const x=side*(43+rng()*34),z=-112+rng()*145,h=5.2+rng()*5.2;
