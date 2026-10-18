@@ -17,10 +17,15 @@ const sun=new THREE.DirectionalLight(0xffaa44,2.8);sun.position.set(-18,7,-20);s
 const mat=(color,metalness=.1,roughness=.8,emissive=0)=>new THREE.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:1});
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(700,700),createWetStoneMaterial(0x26313b));floor.rotation.x=-Math.PI/2;floor.position.y=-.04;floor.receiveShadow=true;scene.add(floor);const ssrPass=enableSSR(floor);
 const platform=new THREE.Mesh(new THREE.BoxGeometry(700,.65,700),mat(0x343a42,.18,.78));platform.position.y=-.36;platform.receiveShadow=true;scene.add(platform);
-for(let side of [-1,1]){for(let i=0;i<13;i++){const h=3+Math.random()*9,w=1.5+Math.random()*3;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),mat(i%3?0x303b4b:0x4a4147,.15,.9));rock.scale.set(w,h*.72,2+Math.random()*3);rock.position.set(side*(20+Math.random()*8),h*.45-1,-15+i*2.6);rock.rotation.set(Math.random(),Math.random(),Math.random()*.2);rock.castShadow=true;scene.add(rock);}
-for(let i=0;i<6;i++){const h=4+Math.random()*5;const pillar=new THREE.Mesh(new THREE.BoxGeometry(.7,h,.7),mat(0x263d54,.5,.4,0x092d50));pillar.position.set(side*(8+i*2.5),h/2,-11-Math.random()*5);scene.add(pillar);const strip=new THREE.Mesh(new THREE.BoxGeometry(.1,h*.7,.1),new THREE.MeshBasicMaterial({color:0x39dfff}));strip.position.set(pillar.position.x,pillar.position.y,pillar.position.z+.4);scene.add(strip);}}
-const sunBall=new THREE.Mesh(new THREE.SphereGeometry(2.1,24,16),new THREE.MeshBasicMaterial({color:0xffb66f}));sunBall.position.set(-11,10,-45);scene.add(sunBall);const halo=new THREE.Mesh(new THREE.TorusGeometry(3.2,.09,8,64),new THREE.MeshBasicMaterial({color:0xff8c4d}));halo.position.copy(sunBall.position);halo.rotation.x=.9;scene.add(halo);
-for(let i=0;i<28;i++){const h=3+Math.random()*12;const b=new THREE.Mesh(new THREE.BoxGeometry(1+Math.random()*2,h,1+Math.random()*2),mat(0x17283e,.45,.5));b.position.set(-34+i*2.6,h/2-1,-34-Math.random()*15);scene.add(b);if(i%3===0){const l=new THREE.Mesh(new THREE.BoxGeometry(.07,h*.6,.07),new THREE.MeshBasicMaterial({color:0x28cfff}));l.position.set(b.position.x,h*.6,b.position.z+.6);scene.add(l);}}
+// The old close-up rows of giant low-poly rocks and box towers were removed: they crowded the camera and obscured the valley.
+const grassCanvas=document.createElement('canvas');grassCanvas.width=512;grassCanvas.height=512;const grassCtx=grassCanvas.getContext('2d');
+grassCtx.fillStyle='#536d3b';grassCtx.fillRect(0,0,512,512);
+for(let i=0;i<24000;i++){const x=Math.random()*512,y=Math.random()*512;const hue=75+Math.random()*38,light=22+Math.random()*35;grassCtx.strokeStyle='hsla('+hue+', '+(24+Math.random()*45)+'%, '+light+'%, '+(.12+Math.random()*.45)+')';grassCtx.lineWidth=.5+Math.random()*1.5;grassCtx.beginPath();grassCtx.moveTo(x,y);grassCtx.lineTo(x+(Math.random()-.5)*4,y-1-Math.random()*6);grassCtx.stroke();}
+for(let i=0;i<380;i++){const x=Math.random()*512,y=Math.random()*512;grassCtx.fillStyle=i%3?'rgba(190,174,119,.12)':'rgba(22,37,22,.2)';grassCtx.beginPath();grassCtx.ellipse(x,y,2+Math.random()*8,1+Math.random()*4,Math.random(),0,Math.PI*2);grassCtx.fill();}
+const grassTexture=new THREE.CanvasTexture(grassCanvas);grassTexture.colorSpace=THREE.SRGBColorSpace;grassTexture.wrapS=grassTexture.wrapT=THREE.RepeatWrapping;grassTexture.repeat.set(90,90);grassTexture.anisotropy=8;
+const grassMaterial=new THREE.MeshStandardMaterial({map:grassTexture,color:0xffffff,roughness:1,metalness:0});
+floor.material=grassMaterial;
+const ssrPass=enableSSR(floor);
 // Distant citadel silhouette and waterfall ribbons frame the contained combat platform.
 const horizon=new THREE.Group();scene.add(horizon);
 const citadelMat=mat(0x39465a,.55,.35,0x122b48);
