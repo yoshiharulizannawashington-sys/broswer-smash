@@ -6,6 +6,7 @@ This creates an editable final_valley.blend and exports final_valley.glb.
 The game currently has a procedural Three.js fallback scene.
 """
 import bpy, math, random, os
+from array import array
 from mathutils import Vector
 
 OUT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,32 +21,103 @@ for datablocks in (bpy.data.meshes, bpy.data.curves, bpy.data.materials):
         if datablock.users == 0:
             datablocks.remove(datablock)
 
-def material(name, color, roughness=.88, metallic=.04, emission=0.0):
+def make_texture(name, size, kind, base):
+    """Generate and pack a high-resolution seamless albedo texture."""
+    image = bpy.data.images.new(name, width=size, height=size, alpha=True, float_buffer=False)
+    image.colorspace_settings.name = 'sRGB'
+    pixels = array('f')
+    br, bg, bb = base
+    for y in range(size):
+        for x in range(size):
+            fine = math.sin(x*.17 + math.sin(y*.043)*3.0)*.025
+            fine += math.sin(y*.29 - x*.071)*.018 + math.cos(x*.037 + y*.091)*.018
+            fine += (random.random()-.5)*.065
+            if kind == 'rock':
+                strata = math.sin(y*.046 + math.sin(x*.013)*2.1 + math.sin(x*.031)*.35)*.045
+                fissure = -.13 if (x + int(9*math.sin(y*.025))) % 173 < 2 else 0
+                fleck = .045 if random.random() > .996 else 0
+                value = fine + strata + fissure + fleck
+            elif kind == 'moss':
+                value = fine + math.sin(x*.021 + math.sin(y*.027)*2.5)*.055
+                value += math.sin(x*.071)*math.cos(y*.053)*.045
+            elif kind == 'water':
+                value = fine*.25 + math.sin(y*.065 + math.sin(x*.025)*1.8)*.045
+                value += math.cos(y*.23 + x*.013)*.018
+            else:
+                value = fine*.2 + math.sin(x*.19 + math.sin(y*.018)*3.2)*.05
+            pixels.extend((max(0.0,min(1.0,br+value)),
+                           max(0.0,min(1.0,bg+value)),
+                           max(0.0,min(1.0,bb+value)), 1.0))
+    image.pixels.foreach_set(pixels)
+    image.pack()
+    return image
+
+def make_normal_texture(name, size=512):
+    image = bpy.data.images.new(name, width=size, height=size, alpha=True, float_buffer=False)
+    image.colorspace_settings.name = 'Non-Color'
+    pixels = array('f')
+    for y in range(size):
+        for x in range(size):
+            nx = math.sin(x*.13+math.cos(y*.031)*1.7)*.12 + math.sin(y*.22-x*.08)*.06
+            ny = math.cos(y*.15+x*.051)*.12 + math.cos(x*.075-y*.11)*.06
+            pixels.extend((.5+nx,.5+ny,.97,1.0))
+    image.pixels.foreach_set(pixels)
+    image.pack()
+    return image
+
+def material(name, color, roughness=.88, metallic=.04, emission=0.0,
+             texture=None, alpha=1.0, normal=None):
     m = bpy.data.materials.new(name)
-    m.diffuse_color = (*color, 1)
+    m.diffuse_color = (*color, alpha)
     m.use_nodes = True
-    bs = m.node_tree.nodes.get('Principled BSDF')
-    bs.inputs['Base Color'].default_value = (*color, 1)
+    nodes = m.node_tree.nodes
+    links = m.node_tree.links
+    bs = nodes.get('Principled BSDF')
+    bs.inputs['Base Color'].default_value = (*color, alpha)
     bs.inputs['Roughness'].default_value = roughness
     bs.inputs['Metallic'].default_value = metallic
+    bs.inputs['Alpha'].default_value = alpha
     if emission:
-        bs.inputs['Emission Color'].default_value = (*color, 1)
-        bs.inputs['Emission Strength'].default_value = emission
+        emission_input = bs.inputs.get('Emission Color') or bs.inputs.get('Emission')
+        if emission_input:
+            emission_input.default_value = (*color, 1)
+        strength = bs.inputs.get('Emission Strength')
+        if strength:
+            strength.default_value = emission
+    if texture:
+        tex = nodes.new('ShaderNodeTexImage')
+        tex.name = name + ' packed high-definition texture'
+        tex.image = texture
+        tex.interpolation = 'Linear'
+        links.new(tex.outputs['Color'], bs.inputs['Base Color'])
+    if normal:
+        normal_tex = nodes.new('ShaderNodeTexImage')
+        normal_tex.name = name + ' micro-normal'
+        normal_tex.image = normal
+        normal_node = nodes.new('ShaderNodeNormalMap')
+        normal_node.inputs['Strength'].default_value = .22
+        links.new(normal_tex.outputs['Color'], normal_node.inputs['Color'])
+        links.new(normal_node.outputs['Normal'], bs.inputs['Normal'])
     return m
 
-stone = material('Weathered slate', (.28,.36,.37))
-shadow = material('Deep cliff shadow', (.12,.18,.2))
-moss = material('Moss and forest', (.15,.31,.19))
-pine = material('Pine green', (.08,.23,.14))
-water = material('River slate turquoise', (.10,.27,.32), .42, .05, .04)
-foam = material('Waterfall mist', (.58,.68,.68), .42, .02, .03)
-statue = material('Ancient statue stone', (.43,.47,.45))
-rune = material('Old mineral inlay', (.22,.43,.44), .48, .1, .18)
+# Packed maps travel inside the .blend and the exported GLB. 1K albedo, 512px micro-normal.
+rock_texture = make_texture('FV_WeatheredRock_1K', 1024, 'rock', (.43,.47,.44))
+dark_rock_texture = make_texture('FV_ShadowRock_1K', 1024, 'rock', (.21,.26,.25))
+moss_texture = make_texture('FV_MossAndLichen_1K', 1024, 'moss', (.22,.32,.20))
+pine_texture = make_texture('FV_PineNeedles_1K', 1024, 'moss', (.10,.20,.12))
+water_texture = make_texture('FV_ShallowWater_1K', 1024, 'water', (.22,.36,.37))
+waterfall_texture = make_texture('FV_WaterfallVeil_512', 512, 'waterfall', (.64,.70,.67))
+rock_normal = make_normal_texture('FV_RockMicroNormal_512', 512)
 
-def game_to_blender(point):
-    # Convert game coordinates (X, Y-up, Z) to Blender coordinates (X, Y, Z-up).
-    x, y, z = point
-    return (x, -z, y)
+stone = material('Weathered slate · textured', (.43,.47,.44), .93, .02, texture=rock_texture, normal=rock_normal)
+shadow = material('Deep cliff shadow · textured', (.21,.26,.25), .97, .01, texture=dark_rock_texture, normal=rock_normal)
+moss = material('Moss and lichen · textured', (.22,.32,.20), .96, .0, texture=moss_texture)
+pine = material('Pine green · textured', (.10,.20,.12), .95, .0, texture=pine_texture)
+water = material('Shallow clear river', (.22,.36,.37), .24, .03, .025, texture=water_texture, alpha=.78)
+foam = material('Waterfall veil and spray', (.64,.70,.67), .38, .0, .03, texture=waterfall_texture, alpha=.64)
+statue = material('Ancient statue stone', (.45,.49,.45), .9, .015, texture=rock_texture, normal=rock_normal)
+rune = material('Old mineral inlay', (.22,.43,.44), .48, .1, .18)
+hair_stone = material('Carved hair shadow', (.20,.25,.25), .96, .01, texture=dark_rock_texture, normal=rock_normal)
 
 def finish(obj, name, mat, loc, scale=None):
     obj.name = name
