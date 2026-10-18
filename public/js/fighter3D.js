@@ -21,6 +21,7 @@ export default class Fighter3D {
     this.facingZ = 0;
     this.aiTimer = 0;
     this.specialCooldown = 0;
+    this.grabCooldown = 0;
     this.dodgeTimer = 0;
     this.attackPose = 0;
     this.landPulse = 0;
@@ -46,6 +47,7 @@ export default class Fighter3D {
     const inputs = inputHandler.getInputs();
     this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
+    this.grabCooldown = Math.max(0, this.grabCooldown - dt);
     this.dodgeTimer = Math.max(0, this.dodgeTimer - dt);
     this.guardBreak = Math.max(0, this.guardBreak - dt);
     this.attackPose = Math.max(0, this.attackPose - dt * 4.5);
@@ -141,6 +143,12 @@ export default class Fighter3D {
       this.attackPose = 1;
     }
 
+    if (i.grab && this.grabCooldown <= 0 && this.attackQueue.length === 0 && this.guardBreak <= 0) {
+      this.attackQueue.push({kind:'grab',total:.48,t:0,start:.1,end:.27,damage:16,kbs:126,reach:1.45,hit:false});
+      this.grabCooldown=.85;
+      this.attackPose=1;
+    }
+
     if (i.special && this.specialCooldown <= 0 && this.guardBreak <= 0) {
       window.spawnProjectile?.(this);
       const cooldowns = {warrior:.82,ninja:.68,brawler:1.02,mage:.9,cyborg:.76};
@@ -228,7 +236,7 @@ export default class Fighter3D {
     if (dir.lengthSq() < 0.01) dir.set(this.player ? 1 : -1, 0, 0);
     dir.normalize();
     const pos = this.position.clone().add(dir.multiplyScalar(a.reach || (a.kind === 'heavy' ? 1.25 : 1.05))).add(new THREE.Vector3(0, 1.25, 0));
-    this.hitboxes.push({ pos, radius: a.kind === 'heavy' ? 1.3 : a.kind === 'slash' ? 1.25 : 1.15, damage: a.damage, kbs: a.kbs, lifetime: 0.15, hit: false });
+    this.hitboxes.push({ pos, radius: a.kind === 'heavy' ? 1.3 : a.kind === 'slash' ? 1.25 : a.kind === 'grab' ? 1.05 : 1.15, damage: a.damage, kbs: a.kbs, lifetime: 0.15, hit: false });
   }
 
   updateHitboxes(dt) {
