@@ -1,15 +1,15 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-hud-combat-v21-20261018';
-import SmashCamera from './SmashCamera.js?v=browser-smash-hud-combat-v21-20261018';
-import InputManager from './InputManager.js?v=browser-smash-hud-combat-v21-20261018';
-import Fighter3D from './fighter3D.js?v=browser-smash-hud-combat-v21-20261018';
-import { createCombatItems } from './combat_items.js?v=browser-smash-hud-combat-v21-20261018';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-hud-combat-v21-20261018';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-hud-combat-v21-20261018';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-hud-combat-v21-20261018';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-hud-combat-v21-20261018';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-combat-v22-20261018';
+import SmashCamera from './SmashCamera.js?v=browser-smash-combat-v22-20261018';
+import InputManager from './InputManager.js?v=browser-smash-combat-v22-20261018';
+import Fighter3D from './fighter3D.js?v=browser-smash-combat-v22-20261018';
+import { createCombatItems } from './combat_items.js?v=browser-smash-combat-v22-20261018';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-combat-v22-20261018';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-combat-v22-20261018';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-combat-v22-20261018';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-combat-v22-20261018';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
