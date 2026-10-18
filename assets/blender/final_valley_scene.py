@@ -115,13 +115,13 @@ guardian(36,-1)
 # Different silhouettes make the two founders readable at a distance.
 hair_stone = material('Carved hair shadow', (.20,.25,.25), .96, .01)
 for i in range(-2,3):
-    cone('Hashirama swept-back hair', (-36+i*.52,13.5,-77.05-abs(i)*.12), .62, 5.4, hair_stone, 6)
+    cone('Hashirama swept-back hair', (36+i*.52,13.5,-77.05-abs(i)*.12), .62, 5.4, hair_stone, 6)
 for i in range(11):
     angle=(i/10)*math.pi*1.45-math.pi*.72
     px=math.sin(angle)*2.0
     py=14.0+math.cos(angle)*1.0
-    cone('Madara spiked hair', (36+px,py,-76.35), .58, 3.9, hair_stone, 5)
-ico('Madara war fan silhouette', (31.6,10.8,-77.55), (1.7,1.9,.22), shadow, 1)
+    cone('Madara spiked hair', (-36+px,py,-76.35), .58, 3.9, hair_stone, 5)
+ico('Madara war fan silhouette', (-40.4,10.8,-77.55), (1.7,1.9,.22), shadow, 1)
 
 # Forested outer ridges and a stepping-stone trail across the river.
 for side in (-1,1):
