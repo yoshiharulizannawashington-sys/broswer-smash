@@ -75,6 +75,7 @@ jobs:
           assert wdoc.get("materials"), "Weapon GLB has no materials"
           weapon_nodes = {node.get("name", "") for node in wdoc.get("nodes", [])}
           for required in ("weapon_the_rock_right", "weapon_lord_voldemort_right",
+                       "weapon_thor_right", "weapon_aang_right",
                            "weapon_naruto_uzumaki_right", "weapon_madara_uchiha_right",
                            "weapon_wolverine_logan_left", "weapon_link_left"):
               assert required in weapon_nodes, f"Missing weapon prefab node: {required}"
