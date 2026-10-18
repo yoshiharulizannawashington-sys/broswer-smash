@@ -9,9 +9,9 @@ export default class SmashCamera {
     this.minHeight = minHeight;
     this.maxHeight = maxHeight;
     // Start wider than the old close-up framing; mouse wheel can zoom between 0.7x and 3.2x.
-    this.zoom = 1.55;
+    this.zoom = 2.25;
     this.minZoom = 0.7;
-    this.maxZoom = 3.2;
+    this.maxZoom = 5.0;
     this.shake = 0;
     this.shakeVector = new THREE.Vector3();
     this.lookTarget = new THREE.Vector3();
@@ -30,9 +30,9 @@ export default class SmashCamera {
     const height = THREE.MathUtils.clamp(this.baseHeight + spread * 7, this.minHeight, this.maxHeight) * this.zoom;
     const trailing = (this.baseTrailing + spread * 9) * this.zoom;
     const forward = mode === 'over-p1';
-    const targetX = forward ? a.position.x - a.facing * 2.4 : midX;
-    const targetZ = forward ? a.position.z + 10 * this.zoom : midZ + trailing;
-    const targetY = forward ? 10.5 * this.zoom : height;
+    const targetX = forward ? a.position.x - a.facing * 3.6 : midX;
+    const targetZ = forward ? a.position.z + 28 * this.zoom : midZ + trailing;
+    const targetY = forward ? 9.2 * this.zoom : height;
     this.positionTarget.set(targetX, targetY, targetZ);
     this.lookTarget.set(forward ? a.position.x * .65 + b.position.x * .35 : midX, 1.2, midZ - 2.4);
     this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, this.positionTarget.x, 3.8, dt);
