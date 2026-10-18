@@ -7,6 +7,11 @@ on:
       - "public/index.html"
       - "index.html"
       - ".github/workflows/validate-game.yml"
+      - "scripts/browser-smoke.mjs"
+      - "public/assets/*.glb"
+      - "assets/blender/character_models.py"
+      - "assets/blender/character_weapons.py"
+      - "assets/blender/final_valley_scene.py"
   workflow_dispatch:
 
 jobs:
@@ -83,3 +88,10 @@ jobs:
           for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB SNARE'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
           console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
           NODE
+      - name: Install Playwright and Chromium for runtime testing
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Smoke-test actual game render and Blender GLB loading
+        timeout-minutes: 6
+        run: node scripts/browser-smoke.mjs
