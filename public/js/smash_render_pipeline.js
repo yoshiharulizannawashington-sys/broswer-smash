@@ -1,16 +1,12 @@
 // Cinematic PBR renderer: physical reflections, tone mapping and controlled highlight bloom.
-import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
-import { EffectComposer } from 'https://unpkg.com/three@0.152.2/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'https://unpkg.com/three@0.152.2/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'https://unpkg.com/three@0.152.2/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'https://unpkg.com/three@0.152.2/examples/jsm/postprocessing/OutputPass.js';
+import * as THREE from 'three';
 export function createSmashRenderPipeline(canvas,scene){
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.65));
  renderer.setSize(window.innerWidth,window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
- renderer.toneMapping=THREE.ACESFilmicToneMapping;
- renderer.toneMappingExposure=1.12;
+ renderer.toneMapping=THREE.NoToneMapping;
+ renderer.toneMappingExposure=1;
  renderer.setClearColor(0x111b30,1);
  renderer.shadowMap.enabled=true;
  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
