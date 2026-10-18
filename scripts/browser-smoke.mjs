@@ -6,6 +6,7 @@ import { chromium } from 'playwright';
 
 const root = process.cwd();
 const failedRequests = [];
+const cdnRequestFailures = [];
 const mime = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -72,14 +73,28 @@ try {
     const page = await context.newPage();
     const pageErrors = [];
     const glbResponses = [];
+    const assetResponses = [];
+    const consoleMessages = [];
+    const requestFailures = [];
     page.on('pageerror', error => pageErrors.push(error.stack || String(error)));
+    page.on('console', message => { if (message.type() === 'error') consoleMessages.push(message.text()); });
+    page.on('requestfailed', request => requestFailures.push({url:request.url(),failure:request.failure()?.errorText||'failed'}));
     page.on('response', response => {
       if (/\.glb(?:\?|$)/i.test(response.url())) {
         glbResponses.push({ url: response.url(), status: response.status() });
       }
+      if (/\.js(?:\?|$)|\.glb(?:\?|$)/i.test(response.url())) assetResponses.push({url:response.url(),status:response.status()});
     });
 
     try {
+      // Use the exact Three.js release already referenced by the project, but serve it locally
+      // during CI so a transient unpkg network/TLS issue cannot hide real game failures.
+      await page.route('https://unpkg.com/three@0.152.2/**', async requestRoute => {
+        const requestUrl = new URL(requestRoute.request().url());
+        const relative = requestUrl.pathname.replace('/three@0.152.2/', '');
+        const localUrl = origin + '/node_modules/three/' + relative + requestUrl.search;
+        await requestRoute.continue({ url: localUrl });
+      });
       const response = await page.goto(origin + route, { waitUntil: 'domcontentloaded', timeout: 60_000 });
       assert.ok(response && response.status() === 200, route + ' did not return HTTP 200');
 
@@ -131,6 +146,9 @@ try {
       } catch {}
       console.error('GLB responses:', JSON.stringify(glbResponses, null, 2));
       console.error('Page errors:', JSON.stringify(pageErrors, null, 2));
+      console.error('Console errors:', JSON.stringify(consoleMessages, null, 2));
+      console.error('Failed requests:', JSON.stringify(requestFailures, null, 2));
+      console.error('Script/GLB responses:', JSON.stringify(assetResponses, null, 2));
       throw error;
     } finally {
       await page.close();
