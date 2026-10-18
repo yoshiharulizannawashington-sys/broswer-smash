@@ -46,7 +46,7 @@ CHARACTERS = {
     "sasuke_uchiha": ("Sasuke Uchiha", "ninja", "sasuke", 0x18223b, 0x384359, 0x5d9be3, 0xc79c82, 0x15141a, 0x15161d, 1.00),
     "edna_mode": ("Edna Mode", "cyborg", "edna", 0x14151a, 0x2e3238, 0xece8e2, 0xe0bba5, 0x13151a, 0x161519, 0.82),
     "captain_jack_sparrow": ("Captain Jack Sparrow", "ninja", "pirate", 0x5d4534, 0x2e3038, 0xb99555, 0xcda47f, 0x171820, 0x352a26, 0.99),
-    "spider_man": ("Spider-Man", "ninja", "spiderman", 0xc62b33, 0x164c91, 0xe8524d, 0xbfc7d3, 0x10141b, 0x17202d, 1.00),,
+    "spider_man": ("Spider-Man", "ninja", "spiderman", 0xc62b33, 0x164c91, 0xe8524d, 0xbfc7d3, 0x10141b, 0x17202d, 1.00),
     # Reserved DLC models: generated now so the editable Blender archive is ready when DLC is enabled.
     "the_rock": ("The Rock", "brawler", "blackadam", 0x17191f, 0x252a33, 0xe1b94e, 0x875f4c, 0x111318, 0x17171a, 1.08),
     "samuel_l_jackson": ("Samuel L. Jackson", "warrior", "samuel", 0x151922, 0x242c38, 0x5d86bc, 0x6b4a38, 0x10131b, 0x151519, 1.00),
