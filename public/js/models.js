@@ -46,7 +46,7 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     the_flash_barry_allen:{body:0x941f26,armor:0xb52a31,accent:0xe7bf42,head:'helmet',feature:'flash'},
     aquaman:{body:0x185747,armor:0xb57926,accent:0xd7af51,head:'hair',feature:'trident'},
     doctor_strange:{body:0x3b2424,armor:0x6f2e2c,accent:0xd9a746,head:'hair',feature:'strange'},
-    thor:{body:0x1a2b44,armor:0x8f9aa4,accent:0xe3be58,head:'hair',feature:'hammer',scale:1.1},
+    thor:{body:0x1a2b44,armor:0x8f9aa4,accent:0xe3be58,head:'hair',feature:'stormbreaker',scale:1.1},
     goku:{body:0xe36b20,armor:0x2864ad,accent:0xffc43e,head:'hair',feature:'goku',scale:1.04},
     naruto_uzumaki:{body:0xe97920,armor:0x24466e,accent:0x328add,head:'hair',feature:'naruto'},
     aang:{body:0xe1a24f,armor:0xb86c36,accent:0x55c7ff,skin:0xd2a783,head:'hair',feature:'aang',scale:.92},
@@ -186,6 +186,22 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   }
   if(feature==='hulk'){for(const side of [-1,1])part(g,new THREE.BoxGeometry(.2,.35,.06),skin,[side*.27,.55,.21]);}
   if(feature==='green_lantern_hal_jordan'){part(g,new THREE.TorusGeometry(.05,.018,6,12),glow,[.28,1.08,.25]);}
+  if(feature==='hoverchair'){
+    const chairFrame=mat(0x697786,.72,.28), chairDark=mat(0x242b36,.55,.36), hoverGlow=mat(0x65eaff,.25,.2,0x1ebbea);
+    part(g,new THREE.BoxGeometry(.66,.12,.62),chairDark,[0,.67,-.03]);
+    part(g,new THREE.BoxGeometry(.58,.58,.14),armor,[0,.99,-.27]);
+    part(g,new THREE.BoxGeometry(.68,.09,.62),chairFrame,[0,.75,-.04]);
+    for(const side of [-1,1]){
+      part(g,new THREE.BoxGeometry(.12,.1,.46),chairFrame,[side*.42,.91,-.02]);
+      const wheel=part(g,new THREE.TorusGeometry(.34,.055,8,28),chairDark,[side*.49,.45,-.03]);
+      wheel.rotation.y=Math.PI/2;
+      const inner=part(g,new THREE.TorusGeometry(.21,.022,6,24),hoverGlow,[side*.495,.45,-.03]);
+      inner.rotation.y=Math.PI/2;
+      part(g,new THREE.BoxGeometry(.14,.22,.3),chairFrame,[side*.43,.56,.18]);
+    }
+    part(g,new THREE.BoxGeometry(.48,.07,.38),chairFrame,[0,.33,.26]);
+    part(g,new THREE.BoxGeometry(.42,.035,.08),hoverGlow,[0,.24,.25]);
+  }
 
   if(feature==='wonderwoman'){part(head,new THREE.TorusGeometry(.21,.035,7,28),mat(0xd7ad4f,.8,.2),[0,.13,0]);cape(0x8c202a,.62,1.1);}
   if(feature==='lantern'){part(g,new THREE.TorusGeometry(.07,.035,7,16),glow,[.28,1.1,.24]);}
@@ -193,6 +209,21 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
 
   if(feature==='strange'){cape(0x77262c,.9,1.4);part(torso,new THREE.TorusGeometry(.11,.035,7,20),mat(0xd8ad50,.75,.2),[0,.22,.35]);}
   if(feature==='hammer'){cape(0x7a2026,.7,1.2);}
+  if(feature==='stormbreaker'){
+    cape(0x7a2026,.78,1.42);
+    spikeHair(0xc99e61,5,.18);
+    const plate=mat(0xaeb9c5,.78,.27), darkSteel=mat(0x4a5969,.62,.35), runeBlue=mat(0x57d5ff,.2,.2,0x168edc);
+    for(const side of [-1,1]){
+      const pauldron=part(torso,new THREE.BoxGeometry(.26,.17,.18),plate,[side*.36,.43,.22]);pauldron.rotation.z=side*.18;
+      for(let row=0;row<3;row++){
+        const disc=part(torso,new THREE.CylinderGeometry(.085,.085,.04,16),row===1?darkSteel:plate,[side*(.18+row*.025),.29-row*.18,.315]);
+        disc.rotation.x=Math.PI/2;
+      }
+      part(g,new THREE.BoxGeometry(.16,.28,.18),darkSteel,[side*.32,.36,.16]);
+      part(g,new THREE.BoxGeometry(.13,.045,.12),runeBlue,[side*.32,.35,.265]);
+    }
+    part(torso,new THREE.BoxGeometry(.12,.32,.035),runeBlue,[0,.24,.335]);
+  }
   if(feature==='vegeta'||feature==='madara'||feature==='hashirama')for(const side of [-1,1])part(torso,new THREE.BoxGeometry(.2,.56,.14),armor,[side*.42,.25,.2]);
   if(feature==='saitama'){part(head,new THREE.SphereGeometry(.29,16,10),skin,[0,.02,0],[1.02,1.02,.95]);cape(0xf0ede3,.8,1.5);for(const side of [-1,1])part(g,new THREE.SphereGeometry(.12,10,8),mat(0xc7322e),[side*.32,.32,.05]);}
   if(feature==='darkcircles'){for(const side of [-1,1])part(head,new THREE.BoxGeometry(.12,.04,.035),dark,[side*.12,-.03,.225]);}
@@ -201,7 +232,19 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   if(feature==='zoro'){spikeHair(0x458344,7,.24); }
   if(feature==='all_might'){spikeHair(0xe9ba47,7,.68);cape(0xe7ddd1,.9,1.5);}
   if(feature==='jotaro'){part(head,new THREE.BoxGeometry(.58,.11,.45),armor,[0,.18,-.02]);part(head,new THREE.TorusGeometry(.25,.035,6,18),mat(0xdbb45b,.7,.25),[.34,.13,.04]);cape(0x1b2244,.9,1.4);}
-  if(feature==='aang'){part(head,new THREE.ConeGeometry(.035,.4,4),glow,[0,.18,.24]);}
+  if(feature==='aang'){
+    const arrow=mat(0x4ebfff,.15,.25,0x1289e5);
+    // Distinct blue arrow tattoos on the scalp, brow, arms and tunic.
+    part(head,new THREE.BoxGeometry(.075,.42,.035),arrow,[0,.28,.238]);
+    part(head,new THREE.ConeGeometry(.09,.18,3),arrow,[0,.49,.235]);
+    part(head,new THREE.BoxGeometry(.2,.04,.025),arrow,[0,.12,.265]);
+    part(torso,new THREE.BoxGeometry(.07,.44,.025),arrow,[0,.26,.32]);
+    for(const side of [-1,1]){
+      const stripe=part(g,new THREE.BoxGeometry(.045,.36,.024),arrow,[side*.28,.79,.19]);
+      stripe.rotation.z=side*.1;
+      part(g,new THREE.TorusGeometry(.075,.018,6,18),arrow,[side*.30,.72,.12]);
+    }
+  }
   if(feature==='mario'||feature==='luigi'){const cap=part(head,new THREE.CylinderGeometry(.29,.28,.12,16),feature==='mario'?mat(0xc72e2e):mat(0x34804a),[0,.25,0]);part(head,new THREE.SphereGeometry(.27,12,8),feature==='mario'?mat(0xc72e2e):mat(0x34804a),[0,.3,-.02],[1,.45,1]);}
   if(feature==='bandana'){part(head,new THREE.BoxGeometry(.56,.12,.17),mat(0x707d8a),[0,.15,-.05]);}
   if(feature==='kratos'){part(head,new THREE.BoxGeometry(.11,.75,.055),mat(0xb72a35),[-.17,.0,.27]);part(head,new THREE.BoxGeometry(.18,.13,.05),mat(0xb72a35),[.09,-.16,.27]);}
@@ -237,7 +280,7 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','weapon-library-roster31-20261018');
+      url.searchParams.set('v','weapon-library-stormbreaker-flight-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);});
@@ -249,6 +292,7 @@ function loadWeaponLibrary(){
   return weaponLibraryState.promise;
 }
 function weaponSize(kind){
+  if(kind==='stormbreaker')return 1.05;
   if(kind==='giant_sword'||kind==='war_fan')return 1.02;
   if(['rifle','plasma_rifle','shotgun'].includes(kind))return .66;
   if(['pistol','blaster'].includes(kind))return .72;
