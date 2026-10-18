@@ -1,8 +1,22 @@
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Final Valley-inspired arena: procedural geometry, native materials, and collision proxies.
 // Original fan-inspired scenery; no external model or texture downloads are required.
 export function createFinalValley(THREE) {
   const group = new THREE.Group();
   group.name = 'Final Valley - playable arena';
+  // Prefer the Blender-exported GLB when it exists; keep the procedural scene as a no-download fallback.
+  const blenderLoader = new GLTFLoader();
+  const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url).href;
+  blenderLoader.load(blenderAssetUrl, (gltf) => {
+    for (const child of group.children) child.visible = false;
+    gltf.scene.name = 'Final Valley Blender environment';
+    gltf.scene.traverse((node) => {
+      if (node.isMesh) { node.castShadow = true; node.receiveShadow = true; }
+    });
+    group.add(gltf.scene);
+  }, undefined, () => {
+    // The optional Blender export may not be present yet; the procedural arena remains active.
+  });
   const obstacles = [
     [-36, -52, 7.2], [36, -52, 7.2],
     [-27, -55, 8], [27, -55, 8],
