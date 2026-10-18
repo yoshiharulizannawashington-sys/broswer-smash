@@ -146,7 +146,11 @@ export function createFinalValley(THREE) {
     part(new THREE.BoxGeometry(1.35, 4.6, 1.7), statueShadow, 1.35, 2.7, 0, 1, 1, 1, .08);
     // raised arm and stone blade silhouette
     part(new THREE.CylinderGeometry(.55, .72, 5.6, 7), armorMat, 4.1 * mirror, 13.2, 0, 1, 1, 1, -.62 * mirror);
-    part(new THREE.BoxGeometry(.55, 8.5, .8), statueShadow, 6.6 * mirror, 17.8, -.1, 1, 1, 1, -.18 * mirror);
+    // The raised hand forms the Valley of the End's confrontation seal, not a sword.
+    part(new THREE.BoxGeometry(.88,1.05,.72), armorMat, 5.25*mirror,15.9,.12);
+    part(new THREE.BoxGeometry(.2,2.25,.2), statueMat,5.08*mirror,17.45,.25);
+    part(new THREE.BoxGeometry(.2,2.0,.2), statueMat,5.43*mirror,17.3,.25);
+    part(new THREE.BoxGeometry(.2,1.0,.2), statueMat,5.72*mirror,16.85,.25);
     part(new THREE.SphereGeometry(.8, 8, 8), armorMat, 4.8 * mirror, 15.6, 0);
     // Distinct stone silhouettes based on the two rival shinobi.
     if (!isMadara) {
@@ -180,8 +184,9 @@ export function createFinalValley(THREE) {
     }
     return statue;
   }
-  makeStatue(-36,-76,1,'hashirama');
-  makeStatue(36,-76,-1,'madara');
+  // Canonical orientation: Madara on the left, Hashirama on the right.
+  makeStatue(-36,-76,1,'madara');
+  makeStatue(36,-76,-1,'hashirama');
 
   // Broken stepping stones cross the shallow channel; they are scenery, not fighter blockers.
   for (let i = 0; i < 13; i++) {
