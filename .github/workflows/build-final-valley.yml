@@ -24,8 +24,9 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender
+          sudo apt-get install -y blender python3-numpy
           blender --version | head -n 2
+          blender --background --python-expr "import numpy; print('Blender exporter NumPy:', numpy.__version__)"
 
       - name: Generate editable Blender project and game GLB
         run: |
