@@ -105,7 +105,7 @@ def make_sword(r, mats, kind='sword', scale=1.0):
         width=(.16 if kind=='giant_sword' else .085 if kind=='katana' else .105)*scale
         box(r,'Main blade',(0,0,.14*scale+length*.47),(width,.045*scale,length),steel)
         box(r,'Blade fuller',(0,-.025*scale,.14*scale+length*.47),(.018*scale,.012*scale,length*.78),glow if kind in ('katana','cyber_blade') else gold)
-        cone(r,'Blade point',(0,0,.14*scale+length),(width*.52,.045*scale*.6,.18*scale),.18*scale,steel)
+        cone(r,'Blade point',(0,0,.14*scale+length),width*.52,.18*scale,steel)
         if kind in ('katana','cyber_blade'):
             box(r,'Handle wrap',(0,0,-.07*scale),(.095*scale,.075*scale,.2*scale),dark)
             for i in range(4):
