@@ -49,6 +49,7 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     thor:{body:0x1a2b44,armor:0x8f9aa4,accent:0xe3be58,head:'hair',feature:'hammer',scale:1.1},
     goku:{body:0xe36b20,armor:0x2864ad,accent:0xffc43e,head:'hair',feature:'goku',scale:1.04},
     naruto_uzumaki:{body:0xe97920,armor:0x24466e,accent:0x328add,head:'hair',feature:'naruto'},
+    aang:{body:0xe1a24f,armor:0xb86c36,accent:0x55c7ff,skin:0xd2a783,head:'hair',feature:'aang',scale:.92},
     vegeta:{body:0x1d3459,armor:0xe0e3e1,accent:0x3d70bd,head:'hair',feature:'vegeta'},
     saitama:{body:0xd8c9a5,armor:0xe2bb36,accent:0xa92c2c,head:'hair',feature:'saitama'},
     l_death_note_style:{body:0xf1eee6,armor:0x22232a,accent:0x596276,head:'hair',feature:'darkcircles'},
@@ -236,7 +237,7 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','weapon-library-v2-20261018');
+      url.searchParams.set('v','weapon-library-roster31-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);});
