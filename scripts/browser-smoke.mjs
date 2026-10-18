@@ -92,8 +92,22 @@ try {
       await page.route('https://unpkg.com/three@0.152.2/**', async requestRoute => {
         const requestUrl = new URL(requestRoute.request().url());
         const relative = requestUrl.pathname.replace('/three@0.152.2/', '');
-        const localUrl = origin + '/node_modules/three/' + relative + requestUrl.search;
-        await requestRoute.continue({ url: localUrl });
+        const localPath = resolve(root, 'node_modules/three', relative);
+        try {
+          const body = await readFile(localPath);
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'text/javascript; charset=utf-8',
+            headers: { 'Access-Control-Allow-Origin': '*' },
+            body
+          });
+        } catch (error) {
+          await requestRoute.fulfill({
+            status: 404,
+            contentType: 'text/plain; charset=utf-8',
+            body: 'Missing local Three.js dependency: ' + relative + ' (' + String(error?.message || error) + ')'
+          });
+        }
       });
       const response = await page.goto(origin + route, { waitUntil: 'domcontentloaded', timeout: 60_000 });
       assert.ok(response && response.status() === 200, route + ' did not return HTTP 200');
