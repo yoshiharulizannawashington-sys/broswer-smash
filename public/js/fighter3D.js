@@ -188,9 +188,29 @@ export default class Fighter3D {
       }
       if (this.attackPose > 0) {
         const punch = Math.sin(Math.min(1, this.attackPose) * Math.PI);
-        u.rightArm.rotation.x = -1.45 * punch - 0.2;
-        u.rightFore.rotation.x = -0.65 * punch;
-        u.torso.rotation.x = -0.14 * punch;
+        const archetype = this.archetype || 'warrior';
+        const combo = this.comboStep || 1;
+        const slash = archetype === 'ninja' || combo === 3;
+        const heavy = archetype === 'brawler' || combo === 3;
+        const arc = archetype === 'mage';
+        const mechanical = archetype === 'cyborg';
+        // Anticipation and follow-through vary by fighter archetype and combo step.
+        u.rightArm.rotation.x = (heavy ? -1.9 : arc ? -1.15 : -1.5) * punch - 0.18;
+        u.rightArm.rotation.z = (slash ? -0.62 : mechanical ? -0.12 : 0.08) * punch;
+        u.rightFore.rotation.x = (slash ? -0.9 : arc ? -0.25 : -0.68) * punch;
+        u.rightFore.rotation.z = slash ? -0.3 * punch : 0;
+        u.leftArm.rotation.x = -0.25 - (heavy ? 0.55 : arc ? 0.15 : 0.3) * punch;
+        u.leftArm.rotation.z = (slash ? 0.45 : 0.18) * punch;
+        u.leftFore.rotation.x = -0.25 - 0.25 * punch;
+        u.torso.rotation.x = -(heavy ? 0.23 : 0.14) * punch;
+        u.torso.rotation.y = (slash ? 0.22 : mechanical ? 0.05 : -0.12) * punch * (combo % 2 ? 1 : -1);
+        if (heavy) {
+          u.leftLeg.rotation.x = -0.35 * punch;
+          u.rightLeg.rotation.x = 0.55 * punch;
+          u.pelvis.rotation.x = 0.12 * punch;
+        }
+      } else if (u.torso) {
+        u.torso.rotation.y = THREE.MathUtils.damp(u.torso.rotation.y, 0, 10, dt);
       }
       if (dodge > 0) {
         u.leftArm.rotation.x -= dodge * 0.45;
