@@ -8,9 +8,9 @@ export default class SmashInputHandler {
  update(){for(let i=this.buffer.length-1;i>=0;i--){this.buffer[i].frame++;if(this.buffer[i].frame>this.bufferWindow)this.buffer.splice(i,1);}}
  consumeBuffer(code){const i=this.buffer.findIndex(b=>b.code===code);if(i<0)return false;this.buffer.splice(i,1);return true;}
  readGamepad(){return navigator.getGamepads?.()[0]||null;}
- getInputs(){const gp=this.readGamepad(),lx=gp?.axes?.[0]||0;return {
+ getInputs(){const gp=this.readGamepad(),lx=gp?.axes?.[0]||0,ly=gp?.axes?.[1]||0;return {
   left:!!(this.keys.ArrowLeft||this.keys.KeyA||lx<-.5),right:!!(this.keys.ArrowRight||this.keys.KeyD||lx>.5),
-  up:!!(this.keys.ArrowUp||this.keys.KeyW),down:!!(this.keys.ArrowDown||this.keys.KeyS),
+  up:!!(this.keys.ArrowUp||this.keys.KeyW||ly<-.5),down:!!(this.keys.ArrowDown||this.keys.KeyS||ly>.5),
   run:!!(this.keys.ShiftLeft||this.keys.ShiftRight),sprint:!!(this.keys.ShiftLeft||this.keys.ShiftRight),
   jump:this.consumeBuffer('Space')||!!gp?.buttons?.[3]?.pressed,
   attack:this.consumeBuffer('KeyJ')||!!this.keys.ArrowUp&&this.consumeBuffer('KeyZ')||!!gp?.buttons?.[0]?.pressed,
