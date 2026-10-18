@@ -27,10 +27,17 @@ export default class Fighter3D {
     this.guardBreak = 0;
     this.guardHeld = false;
     this.roamMode = false;
+    this.comboStep = 0;
+    this.comboWindow = 0;
+    this.invulnerable = 0;
+    this.runBlend = 0;
   }
 
   simulate(dt, inputHandler) {
     this.t += dt;
+    this.invulnerable = Math.max(0, this.invulnerable - dt);
+    this.comboWindow = Math.max(0, this.comboWindow - dt);
+    if (this.comboWindow <= 0) this.comboStep = 0;
     const inputs = inputHandler.getInputs();
     this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
@@ -55,8 +62,8 @@ export default class Fighter3D {
 
     this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -85 : -17, this.roamMode ? 85 : 17);
     this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -55 : -8, this.roamMode ? 55 : 8);
-    this.velocity.x *= Math.pow(this.isGrounded ? 0.82 : 0.985, dt * 60);
-    this.velocity.z *= Math.pow(this.isGrounded ? 0.82 : 0.985, dt * 60);
+    this.velocity.x *= Math.pow(this.isGrounded ? 0.84 : 0.992, dt * 60);
+    this.velocity.z *= Math.pow(this.isGrounded ? 0.84 : 0.992, dt * 60);
     this.updateProceduralPose(inputs, dt);
     this.updateAttackQueue(dt);
     this.updateHitboxes(dt);
@@ -69,6 +76,7 @@ export default class Fighter3D {
     const nx = len ? x / len : 0;
     const nz = len ? z / len : 0;
     const topSpeed = i.sprint ? 12.5 : i.run ? 8.8 : 5.1;
+    this.runBlend = THREE.MathUtils.damp(this.runBlend, len ? (i.sprint ? 1 : i.run ? .65 : .25) : 0, 8, dt);
 
     if (len) {
       this.velocity.x = THREE.MathUtils.damp(this.velocity.x, nx * topSpeed, this.isGrounded ? 16 : 7, dt);
@@ -82,6 +90,7 @@ export default class Fighter3D {
 
     if (i.jump && this.isGrounded) {
       this.velocity.y = 10.8;
+      this.velocity.x *= 1.08;
       this.isGrounded = false;
       this.velocity.x *= 1.08;
       this.velocity.z *= 1.08;
@@ -92,19 +101,24 @@ export default class Fighter3D {
       this.velocity.x = (this.facing / mag) * 13;
       this.velocity.z = (this.facingZ / mag) * 13;
       this.velocity.y = 2.1;
+      this.invulnerable = .2;
       this.dodgeTimer = 0.48;
     }
 
     if (i.attack && this.attackQueue.length === 0 && this.guardBreak <= 0) {
       const heavy = !!i.run;
+      if (this.comboWindow <= 0) this.comboStep = 0;
+      this.comboStep = (this.comboStep % 3) + 1;
+      const finisher = this.comboStep === 3;
+      this.comboWindow = .62;
       this.attackQueue.push({
-        kind: heavy ? 'heavy' : 'melee',
-        total: heavy ? 0.52 : 0.36,
+        kind: heavy || finisher ? 'heavy' : 'melee',
+        total: heavy || finisher ? .56 : .34,
         t: 0,
-        start: heavy ? 0.13 : 0.075,
-        end: heavy ? 0.27 : 0.205,
-        damage: heavy ? 15 : 8,
-        kbs: heavy ? 100 : 75,
+        start: heavy || finisher ? .14 : .065,
+        end: heavy || finisher ? .31 : .19,
+        damage: heavy ? 17 : finisher ? 20 : 8 + this.comboStep,
+        kbs: heavy || finisher ? 112 : 76 + this.comboStep * 4,
         hit: false
       });
       this.attackPose = 1;
@@ -174,6 +188,7 @@ export default class Fighter3D {
       u.head.rotation.z = hit * 0.16;
     }
     this.model.rotation.y = Math.atan2(this.facingZ, this.facing);
+    this.model.position.y += 0; // root stays grounded; vertical motion remains in the physics body
     this.model.rotation.z = THREE.MathUtils.damp(this.model.rotation.z, dodge * -0.2 + hit * 0.12, 12, dt);
     this.model.scale.y = THREE.MathUtils.damp(this.model.scale.y, 1 - this.landPulse * 0.08, 14, dt);
   }
@@ -209,6 +224,7 @@ export default class Fighter3D {
         const d = h.pos.distanceTo(targetPoint);
         if (d < h.radius + other.hurtboxRadius) {
           h.hit = true;
+          if (other.invulnerable > 0) continue;
           const guarding = other.guardHeld && other.guardBreak <= 0;
           const damageScale = guarding ? 0.28 : 1;
           other.percent += h.damage * damageScale;
