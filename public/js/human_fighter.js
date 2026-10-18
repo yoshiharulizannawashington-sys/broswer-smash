@@ -93,13 +93,14 @@ export function animateHumanFighter(fighter,dt){
   const speed=Math.hypot(fighter.velocity.x,fighter.velocity.z), airborne=!fighter.isGrounded;
   const attacking=(fighter.attackQueue?.length||0)>0;
   const gear=root.userData.armorGear;
-  if(attacking&&!root.userData.wasAttacking)root.userData.attackLock=.34;
+  const attackStarted=attacking&&!root.userData.wasAttacking;
+  if(attackStarted)root.userData.attackLock=.34;
   root.userData.wasAttacking=attacking;
   root.userData.attackLock=Math.max(0,root.userData.attackLock-dt);
   if(gear){
     gear.userData.attackTime=Math.max(0,gear.userData.attackTime-dt);
     gear.userData.specialTime=Math.max(0,gear.userData.specialTime-dt);
-    if(attacking&&!root.userData.wasAttacking)gear.userData.attackTime=.18;
+    if(attackStarted)gear.userData.attackTime=.18;
     if(fighter.specialCooldown>.65)gear.userData.specialTime=.3;
     const swing=gear.userData.attackTime>0?Math.sin((1-gear.userData.attackTime/.18)*Math.PI):0;
     gear.rotation.z=-swing*.22;
