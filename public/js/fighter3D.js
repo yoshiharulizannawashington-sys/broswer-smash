@@ -39,6 +39,11 @@ export default class Fighter3D {
     this.dashTimer = 0;
     this.canFly = false;
     this.flightMode = false;
+    this.canWebSwing = false;
+    this.webSwinging = false;
+    this.webSwingAnchor = null;
+    this.webSwingLine = null;
+    this.webSwingLength = 0;
     this.airChaseTime = 0;
   }
 
@@ -60,6 +65,13 @@ export default class Fighter3D {
         // Release flight gracefully rather than snapping to the floor.
         this.velocity.y = Math.max(this.velocity.y, -1.2);
       }
+    }
+    if (this.canWebSwing && this.hitstun <= 0) {
+      if (inputs.webSwing && !this.webSwinging) window.beginWebSwing?.(this);
+      else if (!inputs.webSwing && this.webSwinging) window.endWebSwing?.(this, false);
+      if (this.webSwinging && inputs.jump) window.endWebSwing?.(this, true);
+    } else if (this.webSwinging) {
+      window.endWebSwing?.(this, false);
     }
     this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
@@ -83,6 +95,7 @@ export default class Fighter3D {
       this.velocity.y -= (this.roamMode ? 19 : 24) * dt;
     }
     this.position.addScaledVector(this.velocity, dt);
+    if (this.webSwinging) window.updateWebSwing?.(this, dt, inputs);
     if (this.position.y <= 0) {
       if (!this.wasGrounded && this.velocity.y < -3) this.landPulse = 1;
       this.position.y = 0;
@@ -124,8 +137,10 @@ export default class Fighter3D {
       if (Math.abs(nx) > 0.1) this.facing = Math.sign(nx);
       if (Math.abs(nz) > 0.1) this.facingZ = Math.sign(nz);
     } else {
-      this.velocity.x = THREE.MathUtils.damp(this.velocity.x, 0, this.isGrounded ? 11 : 2.5, dt);
-      this.velocity.z = THREE.MathUtils.damp(this.velocity.z, 0, this.isGrounded ? 11 : 2.5, dt);
+      if (!this.webSwinging) {
+        this.velocity.x = THREE.MathUtils.damp(this.velocity.x, 0, this.isGrounded ? 11 : 2.5, dt);
+        this.velocity.z = THREE.MathUtils.damp(this.velocity.z, 0, this.isGrounded ? 11 : 2.5, dt);
+      }
     }
 
     if (i.jump && this.isGrounded && !this.flightMode) {
@@ -149,7 +164,7 @@ export default class Fighter3D {
     }
 
     if (i.attack && this.attackQueue.length === 0 && this.guardBreak <= 0) {
-      const style = {
+      const style = this.canWebSwing ? {reach:1.75,damage:.94,windup:.72,combo:.9,cooldown:.56} : {
         warrior:{reach:1.65,damage:1.12,windup:1,combo:.82,cooldown:.72},
         ninja:{reach:1.8,damage:.86,windup:.72,combo:.88,cooldown:.62},
         brawler:{reach:1.5,damage:1.32,windup:1.18,combo:.86,cooldown:.88},
@@ -227,9 +242,9 @@ export default class Fighter3D {
     }
 
     if (i.special && this.specialCooldown <= 0 && this.guardBreak <= 0) {
-      window.spawnProjectile?.(this);
+      window.spawnProjectile?.(this, this.canWebSwing ? {source:'web',weaponKind:'webshooters'} : {});
       const cooldowns = {warrior:.82,ninja:.68,brawler:1.02,mage:.9,cyborg:.76};
-      this.specialCooldown = cooldowns[this.archetype] || .82;
+      this.specialCooldown = this.canWebSwing ? .72 : cooldowns[this.archetype] || .82;
       this.attackPose = Math.max(this.attackPose, 0.65);
     }
   }
