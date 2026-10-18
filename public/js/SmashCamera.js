@@ -1,5 +1,5 @@
 // Elevated isometric-style camera with distance-aware framing and impact shake.
-import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+import * as THREE from 'three';
 
 export default class SmashCamera {
   constructor(camera, { height = 12, trailing = 18, minHeight = 10, maxHeight = 38 } = {}) {
