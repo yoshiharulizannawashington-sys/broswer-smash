@@ -114,19 +114,28 @@ export default class Fighter3D {
     }
 
     if (i.attack && this.attackQueue.length === 0 && this.guardBreak <= 0) {
+      const style = {
+        warrior:{reach:1.12,damage:1.12,windup:1,combo:.62,cooldown:.82},
+        ninja:{reach:1.28,damage:.86,windup:.72,combo:.48,cooldown:.68},
+        brawler:{reach:1.04,damage:1.32,windup:1.28,combo:.72,cooldown:1.02},
+        mage:{reach:1.18,damage:1.02,windup:1.08,combo:.66,cooldown:.9},
+        cyborg:{reach:1.22,damage:1.04,windup:.88,combo:.56,cooldown:.76}
+      }[this.archetype] || {reach:1,damage:1,windup:1,combo:.62,cooldown:.82};
       const heavy = !!i.run;
       if (this.comboWindow <= 0) this.comboStep = 0;
       this.comboStep = (this.comboStep % 3) + 1;
       const finisher = this.comboStep === 3;
-      this.comboWindow = .62;
+      this.comboWindow = style.combo;
+      const baseDamage = heavy ? 17 : finisher ? 20 : 8 + this.comboStep;
       this.attackQueue.push({
-        kind: heavy || finisher ? 'heavy' : 'melee',
-        total: heavy || finisher ? .56 : .34,
+        kind: heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
+        total: (heavy || finisher ? .56 : .34) * style.windup,
         t: 0,
-        start: heavy || finisher ? .14 : .065,
-        end: heavy || finisher ? .31 : .19,
-        damage: heavy ? 17 : finisher ? 20 : 8 + this.comboStep,
-        kbs: heavy || finisher ? 112 : 76 + this.comboStep * 4,
+        start: (heavy || finisher ? .14 : .065) * style.windup,
+        end: (heavy || finisher ? .31 : .19) * style.windup,
+        damage: baseDamage * style.damage,
+        reach: style.reach,
+        kbs: (heavy || finisher ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1),
         hit: false
       });
       this.attackPose = 1;
@@ -134,7 +143,8 @@ export default class Fighter3D {
 
     if (i.special && this.specialCooldown <= 0 && this.guardBreak <= 0) {
       window.spawnProjectile?.(this);
-      this.specialCooldown = 0.82;
+      const cooldowns = {warrior:.82,ninja:.68,brawler:1.02,mage:.9,cyborg:.76};
+      this.specialCooldown = cooldowns[this.archetype] || .82;
       this.attackPose = Math.max(this.attackPose, 0.65);
     }
   }
@@ -217,8 +227,8 @@ export default class Fighter3D {
     const dir = new THREE.Vector3(this.facing, 0, this.facingZ);
     if (dir.lengthSq() < 0.01) dir.set(this.player ? 1 : -1, 0, 0);
     dir.normalize();
-    const pos = this.position.clone().add(dir.multiplyScalar(a.kind === 'heavy' ? 1.25 : 1.05)).add(new THREE.Vector3(0, 1.25, 0));
-    this.hitboxes.push({ pos, radius: a.kind === 'heavy' ? 1.3 : 1.15, damage: a.damage, kbs: a.kbs, lifetime: 0.15, hit: false });
+    const pos = this.position.clone().add(dir.multiplyScalar(a.reach || (a.kind === 'heavy' ? 1.25 : 1.05))).add(new THREE.Vector3(0, 1.25, 0));
+    this.hitboxes.push({ pos, radius: a.kind === 'heavy' ? 1.3 : a.kind === 'slash' ? 1.25 : 1.15, damage: a.damage, kbs: a.kbs, lifetime: 0.15, hit: false });
   }
 
   updateHitboxes(dt) {
