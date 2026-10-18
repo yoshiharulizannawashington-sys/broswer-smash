@@ -2,14 +2,14 @@
 import * as THREE from 'three';
 
 export default class SmashCamera {
-  constructor(camera, { height = 12, trailing = 18, minHeight = 10, maxHeight = 38 } = {}) {
+  constructor(camera, { height = 15, trailing = 23, minHeight = 12, maxHeight = 48 } = {}) {
     this.camera = camera;
     this.baseHeight = height;
     this.baseTrailing = trailing;
     this.minHeight = minHeight;
     this.maxHeight = maxHeight;
     // Elevated player-anchored default; mouse wheel and right-drag remain available.
-    this.zoom = 1.35;
+    this.zoom = 1.8;
     this.minZoom = 0.75;
     this.maxZoom = 3.2;
     this.orbitYaw = 0;
@@ -57,8 +57,11 @@ export default class SmashCamera {
     this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, this.positionTarget.x, 3.8, dt);
     this.camera.position.y = THREE.MathUtils.damp(this.camera.position.y, this.positionTarget.y, 3.4, dt);
     this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, this.positionTarget.z, 3.4, dt);
-    this.camera.fov = THREE.MathUtils.damp(this.camera.fov, THREE.MathUtils.clamp(42 + spread * 19 + (this.zoom - 1) * 7, 40, 78), 2.5, dt);
-    this.camera.updateProjectionMatrix();
+    const nextFov = THREE.MathUtils.damp(this.camera.fov, THREE.MathUtils.clamp(43 + spread * 15 + (this.zoom - 1) * 4, 42, 70), 2.5, dt);
+    if (Math.abs(nextFov - this.camera.fov) > 0.015) {
+      this.camera.fov = nextFov;
+      this.camera.updateProjectionMatrix();
+    }
     this.shake = Math.max(0, this.shake - dt * 2.8);
     if (this.shake > 0) {
       const magnitude = this.shake * this.shake;
