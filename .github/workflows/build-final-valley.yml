@@ -1,5 +1,9 @@
 name: Export Final Valley Blender assets
 
+concurrency:
+  group: browser-smash-blender-export
+  cancel-in-progress: false
+
 on:
   push:
     branches: [main]
@@ -20,6 +24,7 @@ jobs:
       - name: Check out game
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Install Blender
@@ -76,10 +81,29 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb
-          if git diff --cached --quiet; then
-            echo "Generated assets are already up to date."
-            exit 0
-          fi
-          git commit -m "Export Final Valley and character weapon Blender libraries"
-          git push origin HEAD:main
+          mkdir -p /tmp/browser-smash-exports
+          cp assets/blender/final_valley.blend /tmp/browser-smash-exports/final_valley.blend
+          cp public/assets/final_valley.glb /tmp/browser-smash-exports/final_valley.glb
+          cp assets/blender/character_weapons.blend /tmp/browser-smash-exports/character_weapons.blend
+          cp public/assets/character_weapons.glb /tmp/browser-smash-exports/character_weapons.glb
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/browser-smash-exports/final_valley.blend assets/blender/final_valley.blend
+            cp /tmp/browser-smash-exports/final_valley.glb public/assets/final_valley.glb
+            cp /tmp/browser-smash-exports/character_weapons.blend assets/blender/character_weapons.blend
+            cp /tmp/browser-smash-exports/character_weapons.glb public/assets/character_weapons.glb
+            git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb
+            if git diff --cached --quiet; then
+              echo "Generated assets are already up to date."
+              exit 0
+            fi
+            git commit -m "Export Final Valley and character weapon Blender libraries"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push raced with another commit; retrying from the latest main (attempt $attempt)."
+            sleep 2
+          done
+          echo "Unable to push generated Blender assets after 5 attempts."
+          exit 1
