@@ -407,6 +407,7 @@ export function createFinalValley(THREE) {
   }
   rearPos.needsUpdate = true;
   rearWall.geometry.computeVertexNormals();
+  rearWall.geometry.computeBoundingSphere();
   rearWall.position.set(0, 35, -139);
   rearWall.castShadow = true; rearWall.receiveShadow = true;
   group.add(rearWall);
