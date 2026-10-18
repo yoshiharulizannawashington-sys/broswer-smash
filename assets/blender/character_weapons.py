@@ -248,6 +248,24 @@ def make_axe(r,mats):
     box(r,'Engraved blade channel',(.35,-.105,.77),(.21,.025,.045),gold)
     return r
 
+def make_webshooters(r,mats):
+    steel,gold,wood,glow,dark=mats
+    # Compact red-and-black wrist rigs with twin nozzles, web cartridges and an emitter lens.
+    box(r,'Web shooter wrist cuff',(0,0,-.025),(.34,.28,.36),dark)
+    box(r,'Raised alloy top plate',(0,-.01,.14),(.30,.21,.08),steel)
+    box(r,'Red wrist-shell shoulders',(-.12,0,.0),(.055,.22,.26),gold)
+    box(r,'Red wrist-shell shoulders',(.12,0,.0),(.055,.22,.26),gold)
+    cyl(r,'Web cartridge',(0,0,-.16),.075,.22,wood,verts=12)
+    cyl(r,'Cartridge cap',(0,0,-.275),.085,.045,gold,verts=12)
+    cyl(r,'Twin web nozzle left',(-.075,-.12,.20),.043,.18,steel,(math.pi/2,0,0),verts=12)
+    cyl(r,'Twin web nozzle right',(.075,-.12,.20),.043,.18,steel,(math.pi/2,0,0),verts=12)
+    torus(r,'Emitter ring left',(-.075,-.215,.20),.047,.012,glow,(math.pi/2,0,0))
+    torus(r,'Emitter ring right',(.075,-.215,.20),.047,.012,glow,(math.pi/2,0,0))
+    box(r,'Web cartridge status light',(0,-.12,.05),(.12,.018,.05),glow)
+    for x in [-.13,.13]:
+        box(r,'Cuff side clasp',(x,.01,-.02),(.045,.16,.08),gold)
+    return r
+
 def make_stormbreaker(r,mats):
     steel,gold,wood,glow,dark=mats
     # MCU-inspired Stormbreaker: oversized, asymmetrical axe/hammer head,
@@ -332,6 +350,7 @@ def build_kind(root, kind, mats):
     if kind in ('trident','staff','wand'):
         return make_staff(root,mats,kind)
     if kind=='axe': return make_axe(root,mats)
+    if kind=='webshooters': return make_webshooters(root,mats)
     if kind=='stormbreaker': return make_stormbreaker(root,mats)
     if kind=='whip': return make_whip(root,mats)
     if kind=='war_fan': return make_fan(root,mats)
@@ -373,6 +392,7 @@ WEAPONS = {
 'aquaman':('Aquaman · Atlantean trident','trident',None,0xb68c43,0x53c6c2,0x195747),
 'doctor_strange':('Doctor Strange · spell rings','spellrings',None,0xb88f48,0xffb652,0x5c272a),
 'thor':('Thor · MCU Stormbreaker','stormbreaker',None,0xb9c2cc,0x72d8ff,0x573c2d),
+'spider_man':('Spider-Man · twin web shooters','webshooters','webshooters',0x8d2730,0xe54b52,0x20242d),
 'aang':('Aang · airbending glider staff','staff',None,0x9f7944,0x83d8ff,0xc27b31),
 'goku':('Goku · ki focus','ki_orb',None,0xc3b4a1,0xff8b2a,0x285e9c),
 'naruto_uzumaki':('Naruto · kunai','knife','ki_orb',0x97a3af,0x48aaff,0x262930),
