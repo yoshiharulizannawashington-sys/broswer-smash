@@ -52,7 +52,8 @@ const arenaFloorMaterials={
  finalvalley:makeFinalValleyGround(),
  tournament:makeArenaSurface('#c9b895','#8f7d63','#e7d6b6',.9,.04),
  starktower:makeArenaSurface('#30394b','#4e5c75','#35eaff',.62,.4),
- asgard:makeArenaSurface('#554e70','#81759d','#52dcff',.48,.32)
+ asgard:makeArenaSurface('#c1b99f','#918a78','#d9bd6b',.82,.08),
+ hogwarts:makeArenaSurface('#3c3e43','#5c5952','#9c8450',.96,.02)
 };
 floor.material=grassMaterial;
 const ssrPass=enableSSR(floor);
@@ -74,8 +75,8 @@ const lintel=new THREE.Mesh(new THREE.BoxGeometry(9.2,.9,1),alienStone);lintel.p
 const gateCore=new THREE.Mesh(new THREE.OctahedronGeometry(1.35,2),alienGlow);gateCore.position.set(0,4.7,.1);gate.add(gateCore);
 const dust=new THREE.Group();scene.add(dust);for(let i=0;i<130;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(.025+Math.random()*.035,5,5),new THREE.MeshBasicMaterial({color:0xb6eaff,transparent:true,opacity:.48}));p.position.set((Math.random()-.5)*42,Math.random()*12-1,(Math.random()-.5)*25);p.userData.speed=.15+Math.random()*.45;dust.add(p);}
 const input=new InputManager();window.fighters=[];const effects=[],projectiles=[],impactRings=[];let clockDelta=1/60,remaining=105,started=false,practice=false,exploration=false,accumulator=0;
-const roster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"]];const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'The Rock',ninja:'Bruce Lee',brawler:'Hulk',mage:'Doctor Strange',cyborg:'Iron Man'};const fighterArchetype=id=>roster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>roster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:({warrior:'The Rock',ninja:'Bruce Lee',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'}[id]||'The Rock');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'The Rock'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Bruce Lee');
-function spawn(name,x,archetype,player){const model=makeProceduralCharacter(archetype);model.position.set(x,0,0);scene.add(model);const f=new Fighter3D({name,model,weight:player?88:82,player});f.archetype=archetype;window.fighters.push(f);upgradeFighterModel(f,archetype).catch(err=>console.warn('Human fighter model unavailable; using fallback:',err));return f;}
+const roster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"]];const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'The Rock',ninja:'Bruce Lee',brawler:'Hulk',mage:'Doctor Strange',cyborg:'Iron Man'};const fighterArchetype=id=>roster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>roster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:({warrior:'The Rock',ninja:'Bruce Lee',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'}[id]||'The Rock');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'The Rock'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Bruce Lee');
+function spawn(name,x,archetype,player){const model=makeProceduralCharacter(archetype,name);model.position.set(x,0,0);scene.add(model);const f=new Fighter3D({name,model,weight:player?88:82,player});f.archetype=archetype;f.identity=name;window.fighters.push(f);return f;}
 const player=spawn(fighterDisplay(playerType),-12,fighterArchetype(playerType),true),cpu=spawn(fighterDisplay(cpuType),12,fighterArchetype(cpuType),false);player.facing=1;cpu.facing=-1;
 const ai={getInputs(){if(exploration)return {left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,shield:false};const dx=player.position.x-cpu.position.x,dz=player.position.z-cpu.position.z,dist=Math.hypot(dx,dz);cpu.aiTimer-=clockDelta;const attack=dist<2.1&&cpu.aiTimer<=0;if(attack)cpu.aiTimer=.8+Math.random()*.55;return {left:dx< -1.1,right:dx>1.1,up:dz< -1.1,down:dz>1.1,run:dist>5,sprint:dist>8,jump:false,dodge:false,attack:attack&&Math.random()>.32,special:attack&&Math.random()>.58,shield:false};}};
 function burst(pos,color=0x58eaff,count=18,power=5){const group=new THREE.Group();for(let i=0;i<count;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.025+Math.random()*.065,6,5),new THREE.MeshBasicMaterial({color,transparent:true}));m.position.copy(pos);m.userData.v=new THREE.Vector3((Math.random()-.5)*power,Math.random()*power*.8,(Math.random()-.5)*power*.4);group.add(m);}scene.add(group);effects.push({group,t:0,life:.55});bloom.strength=.95;}
@@ -94,7 +95,7 @@ window.spawnImpact=(pos,intensity=5)=>{
 window.spawnProjectile=(owner)=>{const palette={warrior:0xff713c,ninja:0x16bfff,brawler:0xff8d36,mage:0x9d67ff,cyborg:0x26e8e0};const color=palette[owner.archetype]|| (owner.player?0x25dfff:0xff5a24);const group=new THREE.Group();const coreGeometry=owner.archetype==='mage'?new THREE.IcosahedronGeometry(.34,2):owner.archetype==='ninja'?new THREE.OctahedronGeometry(.32,1):new THREE.IcosahedronGeometry(.3,2);const core=new THREE.Mesh(coreGeometry,new THREE.MeshBasicMaterial({color}));group.add(core);const shell=new THREE.Mesh(new THREE.SphereGeometry(.48,16,12),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.23,blending:THREE.AdditiveBlending,depthWrite:false}));group.add(shell);for(let i=0;i<3;i++){const orbit=new THREE.Mesh(new THREE.TorusGeometry(.45+i*.1,.025,6,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.9}));orbit.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);group.add(orbit);}const direction=new THREE.Vector3(owner.facing,0,owner.facingZ);if(direction.lengthSq()<.01)direction.set(owner.player?1:-1,0,0);direction.normalize();const start=owner.position.clone().add(direction.clone().multiplyScalar(1.05)).add(new THREE.Vector3(0,1.5,0));group.position.copy(start);scene.add(group);projectiles.push({owner,group,velocity:direction.multiplyScalar(17),life:1.6,damage:14,color});burst(start,color,10,2.8);};
 window.camState={shake:0,targetZoom:19};let cameraMode=localStorage.getItem('browserSmashCameraMode')||'over-p1';const cameraModeSelect=$('#cameraMode');if(cameraModeSelect){cameraModeSelect.value=cameraMode;cameraModeSelect.addEventListener('change',()=>{cameraMode=cameraModeSelect.value;localStorage.setItem('browserSmashCameraMode',cameraMode);});}const cameraZoom=$('#cameraZoom');if(cameraZoom){const savedZoom=Number(localStorage.getItem('browserSmashCameraZoom_v3'));if(Number.isFinite(savedZoom)&&savedZoom>=smashCamera.minZoom&&savedZoom<=smashCamera.maxZoom)smashCamera.setZoom(savedZoom);cameraZoom.value=String(smashCamera.zoom);cameraZoom.addEventListener('input',()=>{smashCamera.setZoom(Number(cameraZoom.value));localStorage.setItem('browserSmashCameraZoom_v3',String(smashCamera.zoom));});}canvas.addEventListener('wheel',e=>{e.preventDefault();smashCamera.setZoom(smashCamera.zoom*(e.deltaY>0?1.12:1/1.12));if(cameraZoom)cameraZoom.value=String(smashCamera.zoom);localStorage.setItem('browserSmashCameraZoom_v3',String(smashCamera.zoom));},{passive:false});let lookingAround=false,lastPointerX=0,lastPointerY=0;canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointerdown',e=>{if(e.button!==2)return;lookingAround=true;lastPointerX=e.clientX;lastPointerY=e.clientY;canvas.setPointerCapture?.(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!lookingAround)return;const dx=e.clientX-lastPointerX,dy=e.clientY-lastPointerY;lastPointerX=e.clientX;lastPointerY=e.clientY;smashCamera.orbit(-dx*.006,dy*.004);});const stopLooking=()=>{lookingAround=false;};canvas.addEventListener('pointerup',stopLooking);canvas.addEventListener('pointercancel',stopLooking);canvas.addEventListener('lostpointercapture',stopLooking);const $status=$('#status');
 const characterSelects={p1:$('#p1Character'),cpu:$('#cpuCharacter')};
-for(const [key,select] of Object.entries(characterSelects)){if(select){populateRoster(select,key==='p1'?playerType:cpuType);select.value=key==='p1'?playerType:cpuType;select.addEventListener('change',()=>{if(key==='p1')playerType=select.value;else cpuType=select.value;localStorage.setItem(key==='p1'?'browserSmashP1':'browserSmashCPU',select.value);const fighter=key==='p1'?player:cpu;const archetype=fighterArchetype(select.value);const previous=fighter.model;scene.remove(previous);const fresh=makeProceduralCharacter(archetype);fresh.position.copy(fighter.position);scene.add(fresh);fighter.model=fresh;fighter.position=fresh.position;fighter.archetype=archetype;fighter.name=fighterDisplay(select.value);upgradeFighterModel(fighter,archetype).catch(err=>console.warn('Humanoid model load failed; keeping fallback:',err));fighterTypeRefresh();});}}
+for(const [key,select] of Object.entries(characterSelects)){if(select){populateRoster(select,key==='p1'?playerType:cpuType);select.value=key==='p1'?playerType:cpuType;select.addEventListener('change',()=>{if(key==='p1')playerType=select.value;else cpuType=select.value;localStorage.setItem(key==='p1'?'browserSmashP1':'browserSmashCPU',select.value);const fighter=key==='p1'?player:cpu;const archetype=fighterArchetype(select.value);const previous=fighter.model;scene.remove(previous);const fresh=makeProceduralCharacter(archetype,select.value);fresh.position.copy(fighter.position);scene.add(fresh);fighter.model=fresh;fighter.position=fresh.position;fighter.archetype=archetype;fighter.identity=select.value;fighter.name=fighterDisplay(select.value);applyMap(mapSelect?.value||'valley');fighterTypeRefresh();});}}
 function fighterTypeRefresh(){const labels=document.querySelectorAll('.fighter .name');if(labels[0])labels[0].textContent='P1 · '+fighterDisplay(playerType).toUpperCase();if(labels[1])labels[1].textContent=fighterDisplay(cpuType).toUpperCase()+' · CPU';}
 fighterTypeRefresh();
 const mapDecor=new THREE.Group();scene.add(mapDecor);
@@ -103,8 +104,9 @@ const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
 // Replace the old five generic labels with the full original 50-character roster.
 function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
 
-const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · IMPERIAL HANGAR',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x35484b,fog:0x73817b,floor:0x68746a,platform:0x536158,ringA:0x879f94,ringB:0xa88978,light:0xd2d6c9,sun:0xb6c2c5,density:.007},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'STARK TOWER · MANHATTAN ROOFTOP',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · BIFROST BRIDGE',sky:0x191b43,fog:0x46436e,floor:0x635b77,platform:0x37354f,ringA:0x39e8ff,ringB:0xffd06b,light:0xffd7a1,sun:0xffb7a2,density:.004}};
-function applyMap(key){const t=mapThemes[key]||mapThemes.valley;cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);sun.intensity=key==='finalvalley'?2.55:2.8;rim.intensity=key==='finalvalley'?1.55:2.5;rim.color.setHex(key==='finalvalley'?0x8eaaa0:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0xbac8bf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x4a4a40:0x191421);hemisphere.intensity=key==='finalvalley'?1.75:1.5;renderer.toneMappingExposure=key==='finalvalley'?1.0:1.08;if(key==='finalvalley'){sun.position.set(-32,38,20);rim.position.set(18,22,-36);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · IMPERIAL HANGAR',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x35484b,fog:0x73817b,floor:0x68746a,platform:0x536158,ringA:0x879f94,ringB:0xa88978,light:0xd2d6c9,sun:0xb6c2c5,density:.007},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'STARK TOWER · MANHATTAN ROOFTOP',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x8cb1d2,fog:0x9eb3c0,floor:0xc1b99f,platform:0x77776e,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.003},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
+function applyFloorFootprint(){const key=mapSelect?.value||'valley';const footprint=key==='starktower'?.17:key==='deathstar'?.18:1;floor.scale.set(footprint,1,footprint);}
+function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootprint();for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);sun.intensity=key==='finalvalley'?2.55:2.8;rim.intensity=key==='finalvalley'?1.55:2.5;rim.color.setHex(key==='finalvalley'?0x8eaaa0:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0xbac8bf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x4a4a40:0x191421);hemisphere.intensity=key==='finalvalley'?1.75:1.5;renderer.toneMappingExposure=key==='finalvalley'?1.0:1.08;if(key==='finalvalley'){sun.position.set(-32,38,20);rim.position.set(18,22,-36);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
   // The continuous high-detail grass material is the terrain surface; keep map landmarks on it without a flat low-poly patch.\n  // Each region gets an identifiable landmark rather than a circular fighting pad.
   if(key==='volcano'){addProp(new THREE.ConeGeometry(10,23,7),mat(0x292124,.15,.96),-32,8,-38,1,1,1);addProp(new THREE.ConeGeometry(4,1.2,7),new THREE.MeshBasicMaterial({color:0xff5a1e}),-32,19,-38,1,1,1);}
   if(key==='ice'){const citadel=addProp(new THREE.CylinderGeometry(5,8,18,6),mat(0x456c85,.35,.32),-34,9,-35);for(let i=0;i<6;i++)addProp(new THREE.ConeGeometry(1.2,7,5),mat(0xbdefff,.25,.2),-39+i*2,19,-35);}
@@ -128,6 +130,88 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;cinematicEnviron
    for(let i=0;i<14;i++){const a=i*Math.PI*2/14;const rib=addProp(new THREE.BoxGeometry(1.4,25,.7),darkPanel,Math.cos(a)*24,29+Math.sin(a)*24,-105);rib.rotation.z=-a;}
    addProp(new THREE.TorusGeometry(5.7,.42,8,40),laserMat,10,38,-72,1,1,1).rotation.x=Math.PI/2;
    for(let i=0;i<8;i++){const col=addProp(new THREE.BoxGeometry(4,12,4),darkPanel,-28+i*8,6,-38);addProp(new THREE.BoxGeometry(4.1,.2,4.1),laserMat,col.position.x,12.2,-38);}
+   // Room 1: Imperial briefing room, circular conference table and a ring of luminous wall panels.
+   const panelGlow=new THREE.MeshBasicMaterial({color:0x9aaebf,transparent:true,opacity:.58});
+   const briefingX=-38,briefingZ=-31;
+   addProp(new THREE.BoxGeometry(35,.22,34),darkPanel,briefingX,-.13,briefingZ);
+   for(let i=0;i<13;i++){
+     const a=(i/13)*Math.PI*2,x=briefingX+Math.cos(a)*15,z=briefingZ+Math.sin(a)*15;
+     const panel=addProp(new THREE.BoxGeometry(3.6,7.5,.35),darkPanel,x,3.8,z);
+     panel.rotation.y=-a;
+     addProp(new THREE.BoxGeometry(2.5,4.5,.06),panelGlow,x,4.1,z-Math.cos(a)*.22);
+   }
+   addProp(new THREE.CylinderGeometry(7.5,7.5,.35,48),stationMat,briefingX,.28,briefingZ);
+   addProp(new THREE.CylinderGeometry(6.9} else if(key==='starktower'){
+   // Stark Tower rooftop helipad, accessible penthouse lounge, and the glass elevator above Manhattan.
+   const glass=mat(0x172b43,.62,.22),steel=mat(0x667888,.72,.3),darkSteel=mat(0x252c36,.58,.42);
+   const roomGlass=new THREE.MeshStandardMaterial({color:0x7ebad2,metalness:.28,roughness:.16,transparent:true,opacity:.22,side:THREE.DoubleSide});
+   const gold=mat(0xc6a66a,.62,.3),leather=mat(0x24262d,.12,.72),cream=mat(0xb9b5a9,.05,.92),arc=new THREE.MeshBasicMaterial({color:0x42dfff});
+   addProp(new THREE.BoxGeometry(116,.52,94),darkSteel,0,-.28,-24);
+   // Helipad ring and unmistakable H markings.
+   addProp(new THREE.TorusGeometry(13,.16,8,84),arc,0,.025,-24,1,1,1).rotation.x=Math.PI/2;
+   for(const r of [17,22])addProp(new THREE.TorusGeometry(r,.045,6,84),steel,0,.015,-24,1,1,1).rotation.x=Math.PI/2;
+   addProp(new THREE.BoxGeometry(.7,.035,8),cream,-1.5,.018,-24);
+   addProp(new THREE.BoxGeometry(.7,.035,8),cream,1.5,.018,-24);
+   addProp(new THREE.BoxGeometry(3.2,.035,.7),cream,0,.018,-24);
+   for(const side of [-1,1])for(let i=0;i<7;i++){
+     const x=side*(25+i*4.7);
+     addProp(new THREE.BoxGeometry(.18,1.3,.18),steel,x,.45,-65);
+     addProp(new THREE.BoxGeometry(.18,1.3,.18),steel,x,.45,17);
+   }
+   for(const z of [-62,14])addProp(new THREE.BoxGeometry(116,1.35,.22),roomGlass,0,.55,z);
+   // Elevator lobby with bright split doors and a visible lift cabin.
+   addProp(new THREE.BoxGeometry(8,.12,7),steel,20,-.18,-24);
+   addProp(new THREE.BoxGeometry(5.5,7.8,.35),darkSteel,20,3.9,-27.3);
+   addProp(new THREE.BoxGeometry(2.35,6.6,.22),roomGlass,18.65,3.4,-27.02);
+   addProp(new THREE.BoxGeometry(2.35,6.6,.22),roomGlass,21.35,3.4,-27.02);
+   addProp(new THREE.BoxGeometry(.16,6.5,.3),arc,20,3.4,-26.85);
+   addProp(new THREE.BoxGeometry(.14,1.2,.06),gold,23,3.2,-26.7);
+   addProp(new THREE.BoxGeometry(.45,.07,.06),arc,23,4.15,-26.65);
+   addProp(new THREE.BoxGeometry(5.1,.16,5.1),steel,20,.05,-30);
+   addProp(new THREE.BoxGeometry(4.6,6.5,.15),roomGlass,20,3.3,-32.6);
+   // Penthouse living room: a three-sided glass wall deliberately leaves an open doorway on the south side.
+   const lx=42,lz=-24;
+   addProp(new THREE.BoxGeometry(33,.16,31),cream,lx,-.17,lz);
+   for(const x of [25.5,58.5])addProp(new THREE.BoxGeometry(.35,8.5,31),glass,x,4.1,lz);
+   addProp(new THREE.BoxGeometry(33,8.5,.35),glass,lx,4.1,-39.5);
+   for(const x of [27,32,37,42,47,52,57])addProp(new THREE.BoxGeometry(.1,8.1,.12),steel,x,4.1,-39.28);
+   for(const y of [2.9,5.8])addProp(new THREE.BoxGeometry(32.5,.12,.14),steel,lx,y,-39.22);
+   // Sofa + chaise, coffee table, console and bar stools.
+   addProp(new THREE.BoxGeometry(8.5,1.15,1),leather,37, .52,-28.5);
+   addProp(new THREE.BoxGeometry(8.5,1.8,.4),leather,37,1.35,-29.1);
+   for(const x of [32.9,41.1])addProp(new THREE.BoxGeometry(.55,1.45,1.2),leather,x,.72,-28.4);
+   addProp(new THREE.BoxGeometry(5,.18,2.5),darkSteel,40,.62,-22.7);
+   addProp(new THREE.BoxGeometry(5.2,.1,2.7),glass,40,.8,-22.7);
+   addProp(new THREE.CylinderGeometry(.13,.16,.55,10),steel,38,.27,-21.8);
+   addProp(new THREE.CylinderGeometry(.13,.16,.55,10),steel,42,.27,-21.8);
+   addProp(new THREE.BoxGeometry(7,.16,2.2),gold,49,.72,-16.5);
+   addProp(new THREE.BoxGeometry(7,.75,.18),darkSteel,49,1.1,-15.5);
+   for(const x of [47,49,51]){addProp(new THREE.CylinderGeometry(.16,.19,1.1,10),steel,x,.52,-19);addProp(new THREE.CylinderGeometry(.42,.42,.12,12),leather,x,1.05,-19);}
+   // Rooftop skyline: building tops sit below the hero deck so New York reads far beneath the glass edge.
+   for(let i=0;i<52;i++){
+     const side=i%2?1:-1,z=-110+(i*19%190),x=side*(68+(i*17%53)),w=4+(i%4)*1.5,h=24+(i*23%57);
+     const tower=addProp(new THREE.BoxGeometry(w,h,w*.85),i%3?glass:darkSteel,x,-h*.5-8,z);
+     for(let y=-h+3;y<-4;y+=4)addProp(new THREE.BoxGeometry(w*.46,.1,.06),i%2?arc:gold,x,y,z+w*.43);
+     if(i%5===0)addProp(new THREE.ConeGeometry(.65,5,5),steel,x,-7,z);
+   }
+   for(let i=0;i<28;i++){
+     const x=-118+i*8.5,z=42+(i%4)*6,h=18+(i*11%29);
+     addProp(new THREE.BoxGeometry(4.3,h,4.3),glass,x,-h*.5-14,z);
+   }
+Geometry(29,18,.25),new THREE.MeshBasicMaterial({color:0x080d1a}),throneX,9,-51.1);
+   for(let i=0;i<65;i++){
+     const x=throneX+(Math.random()-.5)*26,y=2+Math.random()*14;
+     addProp(new THREE.SphereGeometry(.04+Math.random()*.035,5,4),new THREE.MeshBasicMaterial({color:0xbed8ff}),x,y,-50.8);
+   }
+   addProp(new THREE.TorusGeometry(9,.24,8,72),steelForStarRoom(),throneX,9,-50.5,1,1,1).rotation.y=0;
+   addProp(new THREE.BoxGeometry(14,.7,8),stationMat,throneX, .32,-39);
+   addProp(new THREE.BoxGeometry(5.6,6.8,.9),stationMat,throneX,4,-42.1);
+   addProp(new THREE.BoxGeometry(7,.65,1.15),darkPanel,throneX,1.6,-41);
+   for(const x of [throneX-3.7,throneX+3.7]){
+     addProp(new THREE.BoxGeometry(1.0,2.8,1.1),stationMat,x,1.5,-39.4);
+     addProp(new THREE.BoxGeometry(1.4,.22,1.15),steel,x,2.9,-39.4);
+   }
+   function steelForStarRoom(){return mat(0x7f90a5,.82,.28);}
  } else if(key==='tournament'){
    const tileMat=mat(0xe2d4b6,.05,.85),trimMat=mat(0x5a3b29,.25,.65);
    addProp(new THREE.BoxGeometry(24,.55,20),trimMat,0,.15,-12);
@@ -143,12 +227,107 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;cinematicEnviron
    addProp(new THREE.ConeGeometry(1.2,12,6),steel,0,54,-58);
    for(let i=0;i<14;i++){const x=-55+i*8,h=8+(i*13%17);addProp(new THREE.BoxGeometry(5,h,5),glass,x,h/2-1,-75-(i%3)*8);for(let y=2;y<h;y+=3)addProp(new THREE.BoxGeometry(3,.12,.08),arc,x,y,-72-(i%3)*8);}
  } else if(key==='asgard'){
-   const gold=mat(0xc69b53,.78,.24),marble=mat(0x7d7a9b,.4,.32),rainbow=new THREE.MeshStandardMaterial({color:0x4ddfff,emissive:0x1b8bff,emissiveIntensity:1.7,metalness:.4,roughness:.25});
-   addProp(new THREE.BoxGeometry(13,.45,95),rainbow,0,.1,-42);
-   for(let i=0;i<13;i++){const x=-6+i;addProp(new THREE.BoxGeometry(.06,.03,95),new THREE.MeshBasicMaterial({color:[0x44e7ff,0x9d71ff,0xff8bcb,0xffd46b][i%4]}),x,.35,-42);}
-   for(const side of [-1,1])for(let i=0;i<7;i++){const z=-78+i*12;addProp(new THREE.CylinderGeometry(1.3,1.8,12,8),marble,side*10,6,z);addProp(new THREE.CylinderGeometry(1.8,1.4,1.3,8),gold,side*10,12.5,z);addProp(new THREE.SphereGeometry(.45,10,8),new THREE.MeshBasicMaterial({color:0xffdc80}),side*10,13.4,z);}
-   landmark(0,-105,2.2);addProp(new THREE.BoxGeometry(26,1,5),gold,0,15,-105);
- }
+   // Civilian-level Asgard plaza and living city; enormous polished-gold palace rises behind it.
+   const gold=mat(0xd7aa42,.78,.2),lightGold=mat(0xf3d77d,.84,.18),marble=mat(0xaaa59b,.32,.5),stone=mat(0x6d777d,.22,.64),roof=mat(0x81746b,.5,.42);
+   const rainbow=new THREE.MeshStandardMaterial({color:0x4ddfff,emissive:0x1b8bff,emissiveIntensity:1.25,metalness:.4,roughness:.25});
+   addProp(new THREE.BoxGeometry(24,.25,108),marble,0,-.18,-36);
+   addProp(new THREE.BoxGeometry(116,.2,84),stone,0,-.26,5);
+   // Broad avenue and foreground plaza populated with small Norse-style homes and workshops.
+   for(const side of [-1,1])for(let i=0;i<7;i++){
+     const x=side*(18+(i%3)*7),z=26-i*10,h=6+(i%4)*1.5,w=7+(i%2)*2;
+     addProp(new THREE.BoxGeometry(w,h,w*.9),i%2?marble:roof,x,h*.5,z);
+     addProp(new THREE.ConeGeometry(w*.75,3.8,6),gold,x,h+1.8,z);
+     addProp(new THREE.BoxGeometry(w*.2,3.6,.18),lightGold,x,h*.42,z+w*.46);
+     addProp(new THREE.BoxGeometry(1.4,2.3,.22),gold,x,.65,z+w*.47);
+     for(let win=-1;win<=1;win+=2)addProp(new THREE.BoxGeometry(.65,.9,.1),rainbow,x+win*w*.23,h*.62,z+w*.47);
+   }
+   // Decorative streetlamps, fountain basins and stairs make the foreground read as a lived-in city.
+   for(let i=0;i<9;i++){
+     const z=28-i*10;
+     addProp(new THREE.CylinderGeometry(.13,.22,5,8),gold,sideFix(i)*5,2.5,z);
+     addProp(new THREE.SphereGeometry(.32,12,8),lightGold,sideFix(i)*5,5.2,z);
+   }
+   function sideFix(i){return i%2?1:-1;}
+   addProp(new THREE.CylinderGeometry(3.5,4,.65,32),marble,-12,.2,3);
+   addProp(new THREE.CylinderGeometry(2.6,2.8,.35,32),gold,-12,.65,3);
+   addProp(new THREE.SphereGeometry(1.0,20,16),rainbow,-12,1.55,3);
+   // The Bifrost is a road through the settlement to the distant royal district.
+   addProp(new THREE.BoxGeometry(10,.22,88),rainbow,0,.035,-48);
+   for(let i=0;i<10;i++){
+     const z= -91+i*9.5;
+     for(let side of [-1,1]){
+       addProp(new THREE.CylinderGeometry(.75,1.2,8,10),marble,side*8,4,z);
+       addProp(new THREE.CylinderGeometry(1.2,1.0,.9,12),gold,side*8,8.4,z);
+       addProp(new THREE.SphereGeometry(.25,10,8),lightGold,side*8,9.2,z);
+     }
+   }
+   // Huge golden palace with repeated wings, domes, columns, and dozens of needle spires.
+   addProp(new THREE.BoxGeometry(64,5,27),gold,0,8.5,-108);
+   addProp(new THREE.BoxGeometry(50,4,23),lightGold,0,13,-107);
+   addProp(new THREE.BoxGeometry(36,4,19),gold,0,17,-106);
+   addProp(new THREE.CylinderGeometry(8,11,3,18),lightGold,0,20,-105);
+   addProp(new THREE.SphereGeometry(7,24,16),gold,0,23,-105,1,.55,1);
+   for(const side of [-1,1])for(let i=0;i<9;i++){
+     const x=side*(13+i*4.4),h=18+(i%4)*7;
+     addProp(new THREE.BoxGeometry(5,h,5),i%2?gold:lightGold,x,h/2+6,-107+(i%3)*3);
+     addProp(new THREE.ConeGeometry(2.4,10+(i%3)*2,6),gold,x,h+11,-107+(i%3)*3);
+     addProp(new THREE.SphereGeometry(.8,12,10),lightGold,x,h+16,-107+(i%3)*3);
+   }
+   for(let i=0;i<13;i++){
+     const x=-30+i*5;
+     addProp(new THREE.CylinderGeometry(.42,.56,12,10),lightGold,x,8,-93);
+     addProp(new THREE.CylinderGeometry(.8,.7,1,10),gold,x,14,-93);
+   }
+} else if(key==='hogwarts'){
+   // Hogwarts Great Hall: a long stone nave, pointed arches, four house tables, floating candles, banners.
+   const stone=mat(0x55545a,.06,.96),stoneDark=mat(0x34353d,.08,.95),wood=mat(0x49352b,.04,.9),gold=mat(0xb49a60,.62,.28);
+   const candle=new THREE.MeshStandardMaterial({color:0xffdca0,emissive:0xffb95c,emissiveIntensity:1.7});
+   const windowMat=new THREE.MeshBasicMaterial({color:0x8ab6d4,transparent:true,opacity:.35,side:THREE.DoubleSide});
+   const roomX=0,roomZ=-32;
+   addProp(new THREE.BoxGeometry(48,.5,94),stoneDark,roomX,-.28,roomZ);
+   // Long nave columns and peaked stone arch braces.
+   for(let i=0;i<9;i++){
+     const z=-77+i*11.3;
+     for(const side of [-1,1]){
+       const x=side*20;
+       addProp(new THREE.BoxGeometry(2.2,14,2.2),stone,x,7,z);
+       addProp(new THREE.CylinderGeometry(1.4,1.8,1,8),stone,x,14.5,z);
+       const brace=addProp(new THREE.BoxGeometry(1.0,9,1.0),stone,x-side*4.8,15,z);
+       brace.rotation.z=side*.66;
+       const window=addProp(new THREE.BoxGeometry(.16,7.5,3.9),windowMat,x-side*.3,8.8,z+.2);
+     }
+     addProp(new THREE.BoxGeometry(38,1.0,1.7),stone,0,18.3,z);
+   }
+   // Four long house tables, benches, plates, and warm candlelight.
+   for(const x of [-12,-4,4,12]){
+     addProp(new THREE.BoxGeometry(3.2,.52,67),wood,x,.95,-32);
+     addProp(new THREE.BoxGeometry(3.7,.18,67.5),gold,x,1.28,-32);
+     for(let z=-61;z<=-3;z+=8){
+       for(const side of [-1,1]){
+         addProp(new THREE.BoxGeometry(1.0,.75,3.6),wood,x+side*2.6,.38,z);
+         addProp(new THREE.CylinderGeometry(.15,.15,.045,12),gold,x+side*.6,1.42,z);
+       }
+     }
+   }
+   // Teacher dais and raised chair at the far end.
+   addProp(new THREE.BoxGeometry(29,.5,8),stone,0,.1,-78);
+   for(let i=0;i<7;i++){addProp(new THREE.BoxGeometry(3,.6,2.2),wood,-9+i*3,1,-79);addProp(new THREE.BoxGeometry(1.1,2.2,.3),gold,-9+i*3,2.2,-80);}
+   // Starry enchanted ceiling dome and suspended candles, visible above the hall.
+   addProp(new THREE.SphereGeometry(37,32,18,0,Math.PI*2,0,Math.PI*.5),new THREE.MeshBasicMaterial({color:0x101629,side:THREE.BackSide}),0,16,-32);
+   for(let i=0;i<56;i++){
+     const x=(Math.random()-.5)*34,z=-76+Math.random()*82,y=10+Math.random()*7;
+     addProp(new THREE.CylinderGeometry(.045,.06,.55,8),gold,x,y,z);
+     addProp(new THREE.SphereGeometry(.11,10,8),candle,x,y+.34,z);
+     addProp(new THREE.SphereGeometry(.055,8,6),new THREE.MeshBasicMaterial({color:0xfff3c4}),x,y+.42,z);
+   }
+   // Four tall house banners down the nave.
+   const bannerColors=[0x9e1f2e,0x1d426d,0xc2a438,0x2b623d];
+   for(let i=0;i<4;i++){
+     const x=-15+i*10,color=bannerColors[i];
+     addProp(new THREE.BoxGeometry(3.1,8,.16),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide}),x,11.5,-72+(i%2)*21);
+     addProp(new THREE.ConeGeometry(.16,1.5,4),gold,x,7.2,-72+(i%2)*21);
+   }
+} 
  $status.textContent=t.label+' · ROUND 01';localStorage.setItem('browserSmashMap',key);}
 // Lightweight arena collision proxies keep fighters from walking through major landmarks while preserving free-roam movement.
 const arenaCollision={
@@ -160,7 +339,8 @@ const arenaCollision={
  finalvalley:[],
  tournament:[[-15,-20,1.2],[-15,-4,1.2],[15,-20,1.2],[15,-4,1.2]],
  starktower:[[0,-58,10],[-55,-75,4],[-47,-83,4],[-39,-91,4],[-31,-75,4],[25,-83,4],[33,-91,4]],
- asgard:[[-10,-78,2.2],[-10,-66,2.2],[-10,-54,2.2],[-10,-42,2.2],[-10,-30,2.2],[-10,-18,2.2],[-10,-6,2.2],[10,-78,2.2],[10,-66,2.2],[10,-54,2.2],[10,-42,2.2],[10,-30,2.2],[10,-18,2.2],[10,-6,2.2]]
+ asgard:[[-10,-78,2.2],[-10,-66,2.2],[-10,-54,2.2],[-10,-42,2.2],[-10,-30,2.2],[-10,-18,2.2],[-10,-6,2.2],[10,-78,2.2],[10,-66,2.2],[10,-54,2.2],[10,-42,2.2],[10,-30,2.2],[10,-18,2.2],[10,-6,2.2]],
+ hogwarts:[[-20,-32,1.1],[20,-32,1.1]]
 };
 function resolveArenaCollision(fighter){
  const key=mapSelect?.value||'valley', obstacles=[...(arenaCollision[key]||[]),...(key==='finalvalley'?finalValleyArena.obstacles:[])];
@@ -176,8 +356,8 @@ function resolveArenaCollision(fighter){
  }
 }
 if(mapSelect){mapSelect.value=localStorage.getItem('browserSmashMap')||'valley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
-function reset(isPractice=false){exploration=false;player.roamMode=false;cpu.model.visible=true;floor.scale.set(1,1,1);platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const arenaKey=mapSelect?.value||'valley';const stageCenterZ=({valley:0,volcano:-20,ice:-20,neon:-20,deathstar:-22,finalvalley:-30,tournament:-12,starktower:-24,asgard:-38})[arenaKey]??0;const stageCenterX=0;const startGap=arenaKey==='finalvalley'?6.2:5.4;player.position.set(stageCenterX-startGap,0,stageCenterZ);cpu.position.set(stageCenterX+startGap,0,stageCenterZ+.7);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
-$('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',()=>{exploration=true;practice=true;started=true;player.roamMode=true;player.position.set((Math.random()-.5)*34,0,(Math.random()-.5)*34);player.velocity.set(0,0,0);cpu.model.visible=false;floor.scale.set(1,1,1);platform.visible=false;remaining=0;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');$('#timer').style.display='none';$('#energyHUD').style.opacity='0';$('#exploreHint').style.display='block';$('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');});addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration){exploration=false;player.roamMode=false;cpu.model.visible=true;floor.scale.set(1,1,1);platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';}});
+function reset(isPractice=false){exploration=false;player.roamMode=false;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const arenaKey=mapSelect?.value||'valley';const stageCenterZ=({valley:0,volcano:-20,ice:-20,neon:-20,deathstar:-22,finalvalley:-30,tournament:-12,starktower:-24,asgard:-28,hogwarts:-28})[arenaKey]??0;const stageCenterX=0;const startGap=arenaKey==='finalvalley'?6.2:5.4;player.position.set(stageCenterX-startGap,0,stageCenterZ);cpu.position.set(stageCenterX+startGap,0,stageCenterZ+.7);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
+$('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',()=>{exploration=true;practice=true;started=true;player.roamMode=true;const roamKey=mapSelect?.value||'valley';const roamStart=({valley:[0,0],finalvalley:[0,-24],starktower:[0,-24],deathstar:[0,-22],asgard:[0,-20],hogwarts:[0,-26],tournament:[0,-12]})[roamKey]||[0,0];player.position.set(roamStart[0],0,roamStart[1]);player.velocity.set(0,0,0);cpu.model.visible=false;applyFloorFootprint();platform.visible=false;remaining=0;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');$('#timer').style.display='none';$('#energyHUD').style.opacity='0';$('#exploreHint').style.display='block';$('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');});addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration){exploration=false;player.roamMode=false;cpu.model.visible=true;floor.scale.set(1,1,1);platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';}});
 function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=true;floor.scale.set(1,1,1);platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';$('#result').textContent=text;$('#play').textContent='REMATCH';}
 function updateHud(){$('#p1bar').style.width=Math.max(0,100-player.percent*.72)+'%';$('#p2bar').style.width=Math.max(0,100-cpu.percent*.72)+'%';const seconds=Math.ceil(remaining);$('#timer').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');const energy=Math.max(0,Math.min(100,(1-player.specialCooldown/.82)*100));const ef=$('#energyFill'),eh=$('#energyHUD');if(ef)ef.style.width=energy+'%';if(eh){eh.classList.toggle('ready',player.specialCooldown<=0);eh.style.opacity=exploration?'0':'1';}const combo=$('#comboNotice');if(combo){const show=player.comboStep>=2&&player.comboWindow>0;if(show){combo.textContent=player.comboStep===3?'FINISHER!':' '+player.comboStep+' HIT COMBO';combo.classList.add('show');}else combo.classList.remove('show');}}
 const clock=new THREE.Clock();
