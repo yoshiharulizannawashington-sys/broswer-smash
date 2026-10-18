@@ -128,13 +128,17 @@ export default class Fighter3D {
       }[this.archetype] || {reach:1.6,damage:1,windup:1,combo:.82,cooldown:.74};
       const heavy = !!i.run;
       const aerial = !this.isGrounded;
+      const weaponKind=this.model?.userData?.weaponKind||'unarmed';
+      const rangedWeapon=['blaster','rifle','shotgun','plasma_rifle','pistol'].includes(weaponKind);
+      const weaponReachBonus={sword:.42,katana:.5,cyber_blade:.48,giant_sword:.8,scimitar:.46,trident:.62,staff:.38,axe:.5,hammer:.42,war_fan:.34,whip:1.15,tentacle:.62,knife:.22,claws:.24,nunchaku:.42};
+      const reachBonus=weaponReachBonus[weaponKind]||0;
       if (this.comboWindow <= 0) { this.comboStep = 0; this.comboHitCount = 0; }
       this.comboStep = (this.comboStep % 3) + 1;
       const finisher = this.comboStep === 3;
       const launcher = finisher && !aerial && !heavy;
       this.comboWindow = style.combo;
       const baseDamage = heavy ? 17 : finisher ? 20 : 8 + this.comboStep;
-      const reach = aerial ? (finisher ? 4.0 : 3.05) : (finisher ? style.reach * 1.42 : style.reach);
+      const reach = aerial ? (finisher ? 4.25 : 3.2) + reachBonus*.42 : (finisher ? style.reach * 1.42 : style.reach) + reachBonus;
       this.attackQueue.push({
         kind: aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
         total: (aerial ? (finisher ? .5 : .38) : (heavy || finisher ? .56 : .34)) * style.windup,
@@ -148,12 +152,14 @@ export default class Fighter3D {
         launcher,
         launchY: aerial ? (finisher ? 8.8 : 6.4) : (launcher ? 8.6 : 3.4),
         comboStep: this.comboStep,
+        weaponKind,
         hit: false
       });
       const dirX = this.facing || (this.player ? 1 : -1);
       const dirZ = this.facingZ || 0;
       if (aerial) { this.velocity.x += dirX * (finisher ? 2.8 : 1.65); this.velocity.z += dirZ * (finisher ? 2.4 : 1.35); }
       else if (launcher) { this.velocity.x += dirX * 1.2; this.velocity.y = Math.max(this.velocity.y, .9); }
+      if(rangedWeapon&&!heavy&&!aerial) window.spawnProjectile?.(this,{source:'weapon',weaponKind});
       this.attackPose = 1;
     }
 
@@ -211,16 +217,19 @@ export default class Fighter3D {
         const arc = archetype === 'mage';
         const mechanical = archetype === 'cyborg';
         const aerialAttack=!!activeAttack?.aerial;
+        const weaponKind=this.model.userData.weaponKind||'unarmed';
+        const bladed=['sword','katana','cyber_blade','giant_sword','scimitar','trident','staff','axe','hammer','war_fan','whip','nunchaku','knife','claws','tentacle'].includes(weaponKind);
+        const ranged=['blaster','rifle','shotgun','plasma_rifle','pistol'].includes(weaponKind);
         // Anticipation and follow-through vary by fighter archetype and combo step.
-        u.rightArm.rotation.x = (heavy ? -2.0 : arc ? -1.15 : aerialAttack ? -1.72 : -1.5) * punch - 0.18;
+        u.rightArm.rotation.x = (heavy ? -2.05 : arc ? -1.15 : ranged ? -1.0 : bladed ? -1.86 : aerialAttack ? -1.72 : -1.5) * punch - 0.18;
         u.rightArm.rotation.z = (slash ? -0.62 : mechanical ? -0.12 : 0.08) * punch;
-        u.rightFore.rotation.x = (slash ? -1.0 : arc ? -0.25 : aerialAttack ? -1.08 : -0.68) * punch;
+        u.rightFore.rotation.x = (ranged ? -.32 : slash ? -1.0 : arc ? -0.25 : bladed ? -1.08 : aerialAttack ? -1.08 : -0.68) * punch;
         u.rightFore.rotation.z = slash ? -0.3 * punch : 0;
         u.leftArm.rotation.x = -0.25 - (heavy ? 0.55 : arc ? 0.15 : 0.3) * punch;
         u.leftArm.rotation.z = (slash ? 0.45 : 0.18) * punch;
         u.leftFore.rotation.x = -0.25 - 0.25 * punch;
         u.torso.rotation.x = -(heavy ? 0.23 : 0.14) * punch;
-        u.torso.rotation.y = (slash ? 0.28 : mechanical ? 0.08 : -0.17) * punch * (combo % 2 ? 1 : -1);
+        u.torso.rotation.y = (slash || bladed ? 0.32 : mechanical ? 0.08 : -0.17) * punch * (combo % 2 ? 1 : -1);
         if(aerialAttack){u.leftLeg.rotation.x=-.55-.18*punch;u.rightLeg.rotation.x=.62+.24*punch;u.leftShin.rotation.x=.25;u.rightShin.rotation.x=.3;u.pelvis.rotation.x=-.16-.09*punch;}
         if (heavy) {
           u.leftLeg.rotation.x = -0.35 * punch;
