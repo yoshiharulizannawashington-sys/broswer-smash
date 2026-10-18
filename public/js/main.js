@@ -1,19 +1,26 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js';
-import SmashCamera from './SmashCamera.js?v=fv-weapons-v2-20261018';
-import InputManager from './InputManager.js?v=parry-counter-items-20261018';
-import Fighter3D from './fighter3D.js?v=parry-counter-items-20261018';
-import { createCombatItems } from './combat_items.js?v=parry-counter-items-20261018';
-import { makeProceduralCharacter, equipCharacterWeapons } from './models.js?v=weapon-library-spiderman-20261018';
-import { createFinalValley } from './arenas/final_valley.js?v=fv-weapons-v2-20261018';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=fv-weapons-v2-20261018';
+import { RoomEnvironment } from 'https://unpkg.com/three@0.152.2/examples/jsm/environments/RoomEnvironment.js';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=cinematic-fighter-polish-v2-20261018';
+import SmashCamera from './SmashCamera.js?v=cinematic-fighter-polish-v2-20261018';
+import InputManager from './InputManager.js?v=cinematic-fighter-polish-v2-20261018';
+import Fighter3D from './fighter3D.js?v=cinematic-fighter-polish-v2-20261018';
+import { createCombatItems } from './combat_items.js?v=cinematic-fighter-polish-v2-20261018';
+import { makeProceduralCharacter, equipCharacterWeapons } from './models.js?v=cinematic-fighter-polish-v2-20261018';
+import { createFinalValley } from './arenas/final_valley.js?v=cinematic-fighter-polish-v2-20261018';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=cinematic-fighter-polish-v2-20261018';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=cinematic-fighter-polish-v2-20261018';
 const $=s=>document.querySelector(s);
 const canvas=$('#gl');const scene=new THREE.Scene();scene.background=new THREE.Color(0x111b30);scene.fog=new THREE.FogExp2(0x253448,.012);
 const {renderer,camera,composer,bloom,enableSSR}=createSmashRenderPipeline(canvas,scene);
+const studioPMREM=new THREE.PMREMGenerator(renderer);
+const studioRoom=new RoomEnvironment();
+const studioTarget=studioPMREM.fromScene(studioRoom,.035);
+scene.environment=studioTarget.texture;
+studioRoom.dispose();
+studioPMREM.dispose();
 const cinematicEnvironment=addCinematicEnvironment(THREE,scene);
-const smashCamera=new SmashCamera(camera,{height:12,trailing:18,minHeight:10,maxHeight:22});
+const smashCamera=new SmashCamera(camera,{height:12,trailing:18,minHeight:10,maxHeight:38};
 const hemisphere=new THREE.HemisphereLight(0xb5c7c2,0x4d5047,1.65);scene.add(hemisphere);
 const sun=new THREE.DirectionalLight(0xffaa44,2.8);sun.position.set(-18,7,-20);sun.castShadow=true;sun.shadow.radius=3.5;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-110;sun.shadow.camera.right=110;sun.shadow.camera.top=110;sun.shadow.camera.bottom=-110;sun.shadow.camera.near=.1;sun.shadow.camera.far=280;sun.shadow.camera.updateProjectionMatrix();scene.add(sun);const rim=new THREE.DirectionalLight(0x218cff,2.5);rim.position.set(10,7,-12);scene.add(rim);
 const mat=(color,metalness=.1,roughness=.8,emissive=0)=>new THREE.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:1});
@@ -77,11 +84,11 @@ const gateCore=new THREE.Mesh(new THREE.OctahedronGeometry(1.35,2),alienGlow);ga
 const dust=new THREE.Group();scene.add(dust);for(let i=0;i<130;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(.025+Math.random()*.035,5,5),new THREE.MeshBasicMaterial({color:0xb6eaff,transparent:true,opacity:.48}));p.position.set((Math.random()-.5)*42,Math.random()*12-1,(Math.random()-.5)*25);p.userData.speed=.15+Math.random()*.45;dust.add(p);}
 const input=new InputManager();window.fighters=[];const effects=[],projectiles=[],impactRings=[];let clockDelta=1/60,remaining=105,started=false,practice=false,exploration=false,accumulator=0;
 const combatCallout=document.createElement('div');combatCallout.setAttribute('aria-live','polite');Object.assign(combatCallout.style,{position:'fixed',left:'50%',top:'23%',zIndex:'7',pointerEvents:'none',opacity:'0',transform:'translateX(-50%)',font:'1000 clamp(22px,4vw,42px)/1 system-ui,sans-serif',letterSpacing:'.12em',textAlign:'center',whiteSpace:'nowrap',textShadow:'0 3px 0 #06111d,0 0 18px currentColor,0 0 34px #00131e',WebkitTextStroke:'1px #05111b',maxWidth:'96vw'});document.body.appendChild(combatCallout);window.showCombatCallout=(label,color='#a8f6ff')=>{combatCallout.textContent=label;combatCallout.style.color=color;combatCallout.animate([{opacity:0,transform:'translate(-50%,8px) scale(.82)'},{opacity:1,transform:'translate(-50%,0) scale(1.04)',offset:.18},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.62},{opacity:0,transform:'translate(-50%,-12px) scale(1.02)'}],{duration:760,easing:'cubic-bezier(.16,1,.3,1)',fill:'forwards'});};
-const allRoster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"]];const roster=[["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
+const allRoster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"]];const roster=[["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","aang","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
 function spawn(name,x,archetype,player){const model=makeProceduralCharacter(archetype,name);model.position.set(x,0,0);scene.add(model);const f=new Fighter3D({name,model,weight:player?88:82,player});f.archetype=archetype;f.identity=name;f.canFly=canCharacterFly(name);f.canWebSwing=name==='Spider-Man';f.flightMode=false;f.webSwinging=false;window.fighters.push(f);equipCharacterWeapons(f).catch(err=>console.warn('Weapon library unavailable; retry after asset build:',err));return f;}
 const player=spawn(fighterDisplay(playerType),-12,fighterArchetype(playerType),true),cpu=spawn(fighterDisplay(cpuType),12,fighterArchetype(cpuType),false);player.facing=1;cpu.facing=-1;
 const combatItems=createCombatItems(THREE,scene,(fighter,item)=>{window.spawnImpact?.(fighter.position.clone().add(new THREE.Vector3(0,1,0)),8);const status=$('#status');if(status)status.textContent=fighter.name.toUpperCase()+' PICKED UP '+item.label;});
-const ai={getInputs(){if(exploration)return {left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,shield:false,parry:false};const dx=player.position.x-cpu.position.x,dz=player.position.z-cpu.position.z,dist=Math.hypot(dx,dz);cpu.aiTimer-=clockDelta;const attack=dist<2.1&&cpu.aiTimer<=0;if(attack)cpu.aiTimer=.8+Math.random()*.55;const incoming=dist<4.0&&player.attackQueue.some(a=>!a.hit&&a.t<a.start&&a.start-a.t<.17);const parry=incoming&&cpu.parryCooldown<=0&&Math.random()<.07;const shield=incoming&&!parry;return {left:dx< -1.1,right:dx>1.1,up:dz< -1.1,down:dz>1.1,run:dist>5,sprint:dist>8,jump:false,dodge:false,attack:attack&&Math.random()>.32&&!shield,special:attack&&Math.random()>.58&&!shield,shield,parry};}};
+const ai={getInputs(){if(exploration)return {left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,shield:false,parry:false,ascend:false,descend:false,flightToggle:false};const dx=player.position.x-cpu.position.x,dz=player.position.z-cpu.position.z,dist=Math.hypot(dx,dz);if(cpu.canFly&&(player.flightMode||player.position.y>3&&dist<11))cpu.flightMode=true;cpu.aiTimer-=clockDelta;const attack=dist<2.1&&cpu.aiTimer<=0;if(attack)cpu.aiTimer=.8+Math.random()*.55;const incoming=dist<4.0&&player.attackQueue.some(a=>!a.hit&&a.t<a.start&&a.start-a.t<.17);const parry=incoming&&cpu.parryCooldown<=0&&Math.random()<.07;const shield=incoming&&!parry;return {left:dx< -1.1,right:dx>1.1,up:dz< -1.1,down:dz>1.1,run:dist>5,sprint:dist>8,jump:!cpu.flightMode&&player.position.y>2.6&&cpu.position.y<1.5,ascend:cpu.flightMode&&player.position.y>cpu.position.y+1.0,descend:cpu.flightMode&&player.position.y<cpu.position.y-2.3,dodge:false,attack:attack&&Math.random()>.32&&!shield,special:attack&&Math.random()>.58&&!shield,shield,parry,flightToggle:false};}};
 function burst(pos,color=0x58eaff,count=18,power=5){const group=new THREE.Group();for(let i=0;i<count;i++){const m=new THREE.Mesh(new THREE.SphereGeometry(.025+Math.random()*.065,6,5),new THREE.MeshBasicMaterial({color,transparent:true}));m.position.copy(pos);m.userData.v=new THREE.Vector3((Math.random()-.5)*power,Math.random()*power*.8,(Math.random()-.5)*power*.4);group.add(m);}scene.add(group);effects.push({group,t:0,life:.55});bloom.strength=.95;}
 window.spawnImpact=(pos,intensity=5)=>{
  const color=intensity>10?0xff9a37:0x60eaff;
@@ -176,10 +183,10 @@ fighterTypeRefresh();
 const mapDecor=new THREE.Group();scene.add(mapDecor);
 const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;
 const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
-// The launch roster contains 31 fighters. Remaining character definitions stay in dlcRoster.
+// The launch roster has 32 fighters including Spider-Man; the rest remain in dlcRoster.
 function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
 
-const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · BRIEFING ROOM & THRONE ROOM',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x35484b,fog:0x73817b,floor:0x68746a,platform:0x536158,ringA:0x879f94,ringB:0xa88978,light:0xd2d6c9,sun:0xb6c2c5,density:.007},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'STARK TOWER · HELIPAD, PENTHOUSE & ELEVATOR',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x8cb1d2,fog:0x9eb3c0,floor:0xc1b99f,platform:0x77776e,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.003},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
+const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · BRIEFING ROOM & THRONE ROOM',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x35484b,fog:0x73817b,floor:0x68746a,platform:0x536158,ringA:0x879f94,ringB:0xa88978,light:0xd2d6c9,sun:0xb6c2c5,density:.007},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'AVENGERS HELICARRIER · NYC SKYDECK / STARK PENTHOUSE',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x8cb1d2,fog:0x9eb3c0,floor:0xc1b99f,platform:0x77776e,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.003},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
 function applyFloorFootprint(){const key=mapSelect?.value||'valley';const footprint=key==='starktower'?.17:key==='deathstar'?.18:1;floor.scale.set(footprint,1,footprint);}
 function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootprint();for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);sun.color.setHex(t.light);sun.intensity=key==='finalvalley'?3.0:2.8;rim.intensity=key==='finalvalley'?1.85:2.5;rim.color.setHex(key==='finalvalley'?0x8eaaa0:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0xbac8bf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x4a4a40:0x191421);hemisphere.intensity=key==='finalvalley'?1.75:1.5;renderer.toneMappingExposure=key==='finalvalley'?1.12:1.08;if(key==='finalvalley'){sun.position.set(27,36,-54);rim.position.set(25,24,-82);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
   if(key==='finalvalley'){
@@ -270,13 +277,53 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
   for(const x of [21.7,56.3])addProp(new THREE.BoxGeometry(3.1,10,.25),wallPanel,x,5,-50.8);
   for(let i=0;i<10;i++){const x=23+i*3.5;addProp(new THREE.BoxGeometry(1.8,4.6,.08),darkPanel,x,4,-50.7);addProp(new THREE.BoxGeometry(1.35,.08,.08),doorGlow,x,6.1,-50.63);}
   } else if(key==='tournament'){
-   const tileMat=mat(0xe2d4b6,.05,.85),trimMat=mat(0x5a3b29,.25,.65);
-   addProp(new THREE.BoxGeometry(24,.55,20),trimMat,0,.15,-12);
-   addProp(new THREE.BoxGeometry(22,.22,18),tileMat,0,.52,-12);
-   for(let i=-5;i<=5;i++)addProp(new THREE.BoxGeometry(.08,.025,17),mat(0x8f8068),i*2,.65,-12);
-   for(let i=-4;i<=4;i++)addProp(new THREE.BoxGeometry(21,.025,.08),mat(0x8f8068),0,.65,-12+i*2);
-   for(const x of [-15,15])for(const z of [-20,-4]){addProp(new THREE.CylinderGeometry(.5,.7,5,8),trimMat,x,2.5,z);addProp(new THREE.SphereGeometry(.65,10,8),new THREE.MeshBasicMaterial({color:0xffd16c}),x,5.3,z);}
-   for(let i=0;i<7;i++)addProp(new THREE.BoxGeometry(2.8,3.5,1.4),mat(i%2?0x526e88:0x9b6553),-21+i*7,1.75,-38);
+   // Tenkaichi Budokai-inspired Papaya Island tournament grounds: tiled ring, temple gate, spectators and sea.
+   const limestone=mat(0xe3dac6,.08,.78),shadowStone=mat(0x776e62,.15,.82),red=mat(0x8e3028,.2,.56),redLight=mat(0xb94735,.15,.5);
+   const jade=mat(0x395a45,.52,.3),jadeLight=mat(0x588264,.4,.32),wood=mat(0x573927,.06,.88),gold=mat(0xd8b75c,.7,.25);
+   const crowdMats=[mat(0x3d7290,.03,.9),mat(0xb14c3b,.03,.9),mat(0xe0bd70,.03,.9),mat(0x466b49,.03,.9),mat(0x8c6d9d,.03,.9),mat(0xd8d2bd,.03,.9)];
+   const skinMats=[mat(0xd7aa8c,.02,.94),mat(0x8c624a,.02,.94),mat(0xe6c6a8,.02,.94),mat(0xb98b68,.02,.94)];
+   addProp(new THREE.BoxGeometry(39,.72,34),shadowStone,0,-.36,-12);
+   addProp(new THREE.BoxGeometry(37.5,.1,32.5),limestone,0,.04,-12);
+   addProp(new THREE.BoxGeometry(35.8,.04,30.8),red,0,.11,-12);
+   addProp(new THREE.BoxGeometry(34.9,.04,29.9),limestone,0,.15,-12);
+   const grout=mat(0xafa18c,.03,.95);
+   for(let x=-16;x<=16;x+=3.5)addProp(new THREE.BoxGeometry(.035,.012,28.4),grout,x,.176,-12);
+   for(let z=-26;z<=2;z+=3.5)addProp(new THREE.BoxGeometry(33.2,.012,.035),grout,0,.176,z);
+   for(const [x,z,w,h] of [[0,-26,32,.16],[0,2,32,.16],[-16,-12,.16,27.9],[16,-12,.16,27.9]])addProp(new THREE.BoxGeometry(w,.035,h),gold,x,.19,z);
+   for(const x of [-19,19])for(const z of [-29,5]){
+     addProp(new THREE.BoxGeometry(1.8,.65,1.8),shadowStone,x,.32,z);
+     addProp(new THREE.BoxGeometry(.72,4.5,.72),red,x,2.55,z);
+     addProp(new THREE.BoxGeometry(1.1,.25,1.1),gold,x,4.92,z);
+     const finial=addProp(new THREE.ConeGeometry(.48,.8,4),redLight,x,5.45,z);finial.rotation.y=Math.PI/4;
+   }
+   for(const x of [-15,-7.5,0,7.5,15]){
+     addProp(new THREE.BoxGeometry(.78,7.5,.82),red,x,3.75,-43);
+     addProp(new THREE.BoxGeometry(1,.34,1.02),gold,x,7.5,-43);
+     addProp(new THREE.BoxGeometry(1,.38,1),wood,x,.36,-43);
+     addProp(new THREE.BoxGeometry(.08,5.8,.84),redLight,x,3.8,-42.56);
+   }
+   addProp(new THREE.BoxGeometry(34,.9,5.3),wood,0,8,-43);
+   addProp(new THREE.BoxGeometry(39,.42,7.2),red,0,8.78,-43);
+   addProp(new THREE.BoxGeometry(36,.5,6.1),jade,0,9.14,-43);
+   addProp(new THREE.BoxGeometry(31,.18,4.9),jadeLight,0,9.48,-43);
+   for(const side of [-1,1]){const eave=addProp(new THREE.BoxGeometry(10,.28,1.4),jadeLight,side*13,8.7,-43);eave.rotation.z=side*.14;const tip=addProp(new THREE.ConeGeometry(.55,1.4,4),gold,side*19.4,8.96,-43);tip.rotation.z=side*Math.PI/2;}
+   const plaqueCanvas=document.createElement('canvas');plaqueCanvas.width=1024;plaqueCanvas.height=256;
+   const plaqueCtx=plaqueCanvas.getContext('2d');plaqueCtx.fillStyle='#233a2e';plaqueCtx.fillRect(0,0,1024,256);plaqueCtx.strokeStyle='#d7b963';plaqueCtx.lineWidth=12;plaqueCtx.strokeRect(16,16,992,224);plaqueCtx.textAlign='center';plaqueCtx.textBaseline='middle';plaqueCtx.fillStyle='#f4dfa4';plaqueCtx.font='bold 104px serif';plaqueCtx.fillText('天下一武道会',512,94);plaqueCtx.font='bold 36px sans-serif';plaqueCtx.fillText('WORLD MARTIAL ARTS TOURNAMENT',512,188);
+   const plaqueTexture=new THREE.CanvasTexture(plaqueCanvas);plaqueTexture.colorSpace=THREE.SRGBColorSpace;
+   addProp(new THREE.BoxGeometry(10,3,.18),wood,0,3.2,-47.4);addProp(new THREE.PlaneGeometry(9.4,2.45),new THREE.MeshBasicMaterial({map:plaqueTexture}),0,3.2,-47.29);
+   for(const side of [-1,1])for(let row=0;row<4;row++){
+     const x=side*(23+row*2.1),height=1.1+row*.66;
+     addProp(new THREE.BoxGeometry(2.25,height,43),shadowStone,x,height/2-1,-17);
+     addProp(new THREE.BoxGeometry(2.35,.2,41),wood,x,height-.91,-17);
+     for(let seat=0;seat<19;seat++){const z=-38+seat*2.3,y=height-.6;addProp(new THREE.BoxGeometry(.35,.48,.3),crowdMats[(seat+row+(side>0?2:0))%crowdMats.length],x,y,z);addProp(new THREE.SphereGeometry(.18,8,6),skinMats[(seat+row)%skinMats.length],x,y+.35,z);}
+   }
+   for(const side of [-1,1]){
+     const x=side*51;addProp(new THREE.BoxGeometry(18,9,17),limestone,x,4.4,-43);addProp(new THREE.BoxGeometry(19,.6,18),red,x,9.05,-43);addProp(new THREE.ConeGeometry(9.5,5.5,4),jade,x,12,-43,1,.45,1);
+     for(const wx of [-5,0,5])addProp(new THREE.BoxGeometry(1.8,3,.15),jadeLight,x+wx,4.2,-34.4);
+   }
+   for(let i=0;i<19;i++){const x=-158+i*17.5,z=-107-(i%4)*15,h=23+((i*13)%38),w=14+((i*7)%13);addProp(new THREE.ConeGeometry(w,h,8),mat(i%2?0x486b4f:0x70886a,.02,.98),x,h*.43,z,1,1.15,1);}
+   addProp(new THREE.BoxGeometry(420,1,180),mat(0x428ca9,.18,.52),0,-4,-165);
+   const blimp=addProp(new THREE.SphereGeometry(1,24,16),mat(0xddd5bf,.1,.7),31,43,-115,14,3.1,4.6);blimp.rotation.z=.04;addProp(new THREE.BoxGeometry(10,1.8,3.2),wood,31,40,-115);
  } else if(key==='starktower'){
    // Elevated Stark Tower rooftop: helipad, connected penthouse, open living room, visible glass elevator.
    const glass=mat(0x172d49,.78,.2),steel=mat(0x74849a,.76,.25),darkSteel=mat(0x202a39,.6,.38);
@@ -346,6 +393,13 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
      addProp(new THREE.CylinderGeometry(.56,.62,.65,12),wood,x,.33,-12.5);
      for(let leaf=0;leaf<5;leaf++){const leafMesh=addProp(new THREE.ConeGeometry(.18,1.8,6),plant,x+Math.sin(leaf*1.25)*.38,1.35,-12.5+Math.cos(leaf*1.25)*.38);leafMesh.rotation.z=Math.sin(leaf*1.25)*.3;}
    }
+   // Airborne Helicarrier underside and turbine housings sit below the walkable skydeck.
+   const carrierHullMat=mat(0x3f5267,.82,.3),carrierEdge=mat(0x90a5bb,.78,.24);
+   addProp(new THREE.SphereGeometry(1,48,28),carrierHullMat,0,-4,-24,41,6.2,26);
+   addProp(new THREE.BoxGeometry(70,.26,17),carrierEdge,0,-1.5,-24);
+   addProp(new THREE.BoxGeometry(48,.16,4.4),arc,0,-1.31,-24);
+   for(const side of [-1,1])for(const x of [-29,29]){addProp(new THREE.CylinderGeometry(3.1,3.6,4.8,24),darkSteel,side*36,-4.7,-24+x*.22);const rotor=addProp(new THREE.TorusGeometry(2.7,.24,10,32),arc,side*36,-2.3,-24+x*.22);rotor.rotation.x=Math.PI/2;}
+   for(let i=0;i<22;i++){const x=-31+i*2.95;addProp(new THREE.BoxGeometry(.08,.035,10.5),i%3===0?warmLight:arc,x,-1.26,-24);}
    // Manhattan city canyon: layered skyscrapers and hundreds of warm/cool office window strips.
    for(let i=0;i<48;i++){
      const x=-108+i*4.55,z=-82-(i%6)*10,h=8+((i*17)%37),w=2.2+(i%4)*.72;
@@ -408,6 +462,27 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
      addProp(new THREE.CylinderGeometry(.42,.56,12,10),lightGold,x,8,-93);
      addProp(new THREE.CylinderGeometry(.8,.7,1,10),gold,x,14,-93);
    }
+   // Added monumental skyline: towering central keep, gold wings and needle-like palace spires.
+   addProp(new THREE.BoxGeometry(154,10,52),gold,0,7,-153);
+   addProp(new THREE.BoxGeometry(142,5,48),lightGold,0,14,-151);
+   addProp(new THREE.BoxGeometry(126,11,43),gold,0,22,-150);
+   addProp(new THREE.BoxGeometry(102,8,37),lightGold,0,31,-149);
+   addProp(new THREE.BoxGeometry(82,14,31),gold,0,42,-148);
+   addProp(new THREE.BoxGeometry(47,28,29),lightGold,0,61,-147);
+   addProp(new THREE.CylinderGeometry(13,17,8,32),lightGold,0,90,-147);
+   addProp(new THREE.SphereGeometry(15,36,24),gold,0,96,-147,1,.65,1);
+   const centralNeedle=addProp(new THREE.ConeGeometry(3.3,31,8),lightGold,0,120,-147);centralNeedle.rotation.y=Math.PI/8;
+   for(const side of [-1,1])for(let i=0;i<5;i++){
+     const x=side*(25+i*16),z=-150+(i%2)*4,h=48+(i%3)*17,w=i===0?12:9;
+     addProp(new THREE.BoxGeometry(w,h,w),i%2?gold:lightGold,x,h/2+10,z);
+     addProp(new THREE.BoxGeometry(w+2.3,3,w+2.3),lightGold,x,h+10,z);
+     addProp(new THREE.CylinderGeometry(w*.48,w*.68,5,24),gold,x,h+14,z);
+     addProp(new THREE.SphereGeometry(w*.42,24,18),lightGold,x,h+17,z,1,.72,1);
+     addProp(new THREE.ConeGeometry(w*.29,15+(i%2)*5,8),gold,x,h+30,z);
+     for(let band=0;band<5;band++){const ring=addProp(new THREE.TorusGeometry(w*.58,.14,8,40),lightGold,x,14+band*(h/5.7),z);ring.rotation.x=Math.PI/2;}
+     for(let win=0;win<5;win++){const y=18+win*(h/6.4);addProp(new THREE.BoxGeometry(w*.14,3.3,.1),rainbow,x,y,z+w*.51);addProp(new THREE.BoxGeometry(w*.14,3.3,.1),rainbow,x,y,z-w*.51);}
+   }
+
 } else if(key==='hogwarts'){
    // Hogwarts Great Hall: a long stone nave, pointed arches, four house tables, floating candles, banners.
    const stone=mat(0x55545a,.06,.96),stoneDark=mat(0x34353d,.08,.95),wood=mat(0x49352b,.04,.9),gold=mat(0xb49a60,.62,.28);
@@ -470,7 +545,18 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;applyFloorFootpr
        addProp(new THREE.SphereGeometry(.1,8,6),new THREE.MeshBasicMaterial({color:0xfff0ba}),x,6.0,z);
      }
    }
-} 
+
+   // The enchanted ceiling appears to continue beyond the rafters as a starry night sky.
+   const enchantedSkyCanvas=document.createElement('canvas');enchantedSkyCanvas.width=1024;enchantedSkyCanvas.height=512;
+   const enchantedCtx=enchantedSkyCanvas.getContext('2d'),enchantedGradient=enchantedCtx.createLinearGradient(0,0,0,512);
+   enchantedGradient.addColorStop(0,'#101a32');enchantedGradient.addColorStop(.45,'#172443');enchantedGradient.addColorStop(1,'#54789d');enchantedCtx.fillStyle=enchantedGradient;enchantedCtx.fillRect(0,0,1024,512);
+   for(let star=0;star<520;star++){const x=Math.random()*1024,y=Math.random()*512,r=.5+Math.random()*1.8;enchantedCtx.fillStyle='rgba(255,244,210,'+(.18+Math.random()*.7)+')';enchantedCtx.beginPath();enchantedCtx.arc(x,y,r,0,Math.PI*2);enchantedCtx.fill();}
+   const enchantedTexture=new THREE.CanvasTexture(enchantedSkyCanvas);enchantedTexture.colorSpace=THREE.SRGBColorSpace;
+   const enchantedDome=addProp(new THREE.SphereGeometry(56,48,24,0,Math.PI*2,0,Math.PI*.5),new THREE.MeshBasicMaterial({map:enchantedTexture,side:THREE.BackSide,depthWrite:false,fog:false}),0,11,-32);
+   enchantedDome.renderOrder=-5;enchantedDome.frustumCulled=false;enchantedDome.castShadow=false;enchantedDome.receiveShadow=false;
+   // Another row of floating candles helps fill the vertical space over the house tables.
+   for(let row=0;row<7;row++)for(let col=0;col<7;col++){const x=-18+col*6,z=-75+row*14.1,y=15.3+((row+col)%3)*.72;addProp(new THREE.CylinderGeometry(.055,.065,.58,8),gold,x,y,z);addProp(new THREE.CylinderGeometry(.032,.04,.42,7),candle,x,y+.32,z);addProp(new THREE.SphereGeometry(.06,8,6),new THREE.MeshBasicMaterial({color:0xfff0bf}),x,y+.56,z);}
+ } 
  combatItems.seed(key);$status.textContent=t.label+' · ROUND 01';localStorage.setItem('browserSmashMap',key);}
 // Lightweight arena collision proxies keep fighters from walking through major landmarks while preserving free-roam movement.
 const arenaCollision={
@@ -481,7 +567,7 @@ const arenaCollision={
  deathstar:[[10,-80,8]],
  finalvalley:[],
  tournament:[[-15,-20,1.2],[-15,-4,1.2],[15,-20,1.2],[15,-4,1.2]],
- starktower:[],
+ starktower:[[32,-28,2.2],[43,-30,1.7],[44,-14,1.9]],
  asgard:[[-10,-78,2.2],[-10,-66,2.2],[-10,-54,2.2],[-10,-42,2.2],[-10,-30,2.2],[-10,-18,2.2],[-10,-6,2.2],[10,-78,2.2],[10,-66,2.2],[10,-54,2.2],[10,-42,2.2],[10,-30,2.2],[10,-18,2.2],[10,-6,2.2]],
  hogwarts:[[-20,-32,1.1],[20,-32,1.1]]
 };
@@ -498,8 +584,8 @@ function resolveArenaCollision(fighter){
   }
  }
 }
-if(mapSelect){mapSelect.value=localStorage.getItem('browserSmashMap')||'valley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
-function reset(isPractice=false){exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';if($('#energyHUD'))$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const arenaKey=mapSelect?.value||'valley';const stageCenterZ=({valley:0,volcano:-20,ice:-20,neon:-20,deathstar:-22,finalvalley:-30,tournament:-12,starktower:-24,asgard:-28,hogwarts:-28})[arenaKey]??0;const stageCenterX=0;const startGap=arenaKey==='finalvalley'?6.2:5.4;player.position.set(stageCenterX-startGap,0,stageCenterZ);cpu.position.set(stageCenterX+startGap,0,stageCenterZ+.7);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
+if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&savedMap!=='valley')?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
+function reset(isPractice=false){exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';if($('#energyHUD'))$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const arenaKey=mapSelect?.value||'valley';const stageCenterZ=({valley:0,volcano:-20,ice:-20,neon:-20,deathstar:-31,finalvalley:-30,tournament:-12,starktower:-24,asgard:-26,hogwarts:-32})[arenaKey]??0;const stageCenterX=0;const startGap=arenaKey==='finalvalley'?6.2:5.4;player.position.set(stageCenterX-startGap,0,stageCenterZ);cpu.position.set(stageCenterX+startGap,0,stageCenterZ+.7);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
 $('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',()=>{exploration=true;practice=true;started=true;player.roamMode=true;const roamKey=mapSelect?.value||'valley';const roamStart=({valley:[0,0],finalvalley:[0,-24],starktower:[0,-24],deathstar:[0,-22],asgard:[0,-20],hogwarts:[0,-26],tournament:[0,-12]})[roamKey]||[0,0];player.position.set(roamStart[0],0,roamStart[1]);player.velocity.set(0,0,0);cpu.model.visible=false;applyFloorFootprint();platform.visible=false;remaining=0;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');$('#timer').style.display='none';if($('#energyHUD'))$('#energyHUD').style.opacity='0';$('#exploreHint').style.display='block';$('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');});addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration){exploration=false;player.roamMode=false;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';}});
 function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';$('#result').textContent=text;$('#play').textContent='REMATCH';}
 function updateHud(){$('#p1bar').style.width=Math.max(0,100-player.percent*.72)+'%';$('#p2bar').style.width=Math.max(0,100-cpu.percent*.72)+'%';const seconds=Math.ceil(remaining);$('#timer').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');const energy=Math.max(0,Math.min(100,(1-player.specialCooldown/.82)*100));const ef=$('#energyFill'),eh=$('#energyHUD');if(ef)ef.style.width=energy+'%';if(eh){eh.classList.toggle('ready',player.specialCooldown<=0);eh.style.opacity=exploration?'0':'1';}const combo=$('#comboNotice');if(combo){const show=player.comboHitCount>=2&&player.comboWindow>0;if(show){combo.textContent=player.comboStep===3?'AIR / GROUND FINISHER · '+player.comboHitCount+' HITS':player.comboHitCount+' HIT COMBO';combo.classList.add('show');}else combo.classList.remove('show');}}
@@ -519,6 +605,6 @@ for(let i=impactRings.length-1;i>=0;i--){
  ring.mesh.scale.setScalar(.35+(ring.max-.35)*p);ring.mesh.material.opacity=.92*(1-p);
  if(p>=1){scene.remove(ring.mesh);ring.mesh.geometry.dispose();ring.mesh.material.dispose();impactRings.splice(i,1);}
 }
-smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'over-p1':cameraMode);renderer.render(scene,camera);}
-addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'over-p1':cameraMode);composer.render();}
+addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 $('#loading').textContent='ARENA READY · CHOOSE YOUR FIGHTER AND MAP';setTimeout(()=>$('#loading').style.opacity='0',3200);frame();
