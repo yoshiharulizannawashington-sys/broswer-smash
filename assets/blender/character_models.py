@@ -46,7 +46,34 @@ CHARACTERS = {
     "sasuke_uchiha": ("Sasuke Uchiha", "ninja", "sasuke", 0x18223b, 0x384359, 0x5d9be3, 0xc79c82, 0x15141a, 0x15161d, 1.00),
     "edna_mode": ("Edna Mode", "cyborg", "edna", 0x14151a, 0x2e3238, 0xece8e2, 0xe0bba5, 0x13151a, 0x161519, 0.82),
     "captain_jack_sparrow": ("Captain Jack Sparrow", "ninja", "pirate", 0x5d4534, 0x2e3038, 0xb99555, 0xcda47f, 0x171820, 0x352a26, 0.99),
-    "spider_man": ("Spider-Man", "ninja", "spiderman", 0xc62b33, 0x164c91, 0xe8524d, 0xbfc7d3, 0x10141b, 0x17202d, 1.00),
+    "spider_man": ("Spider-Man", "ninja", "spiderman", 0xc62b33, 0x164c91, 0xe8524d, 0xbfc7d3, 0x10141b, 0x17202d, 1.00),,
+    # Reserved DLC models: generated now so the editable Blender archive is ready when DLC is enabled.
+    "the_rock": ("The Rock", "brawler", "blackadam", 0x17191f, 0x252a33, 0xe1b94e, 0x875f4c, 0x111318, 0x17171a, 1.08),
+    "samuel_l_jackson": ("Samuel L. Jackson", "warrior", "samuel", 0x151922, 0x242c38, 0x5d86bc, 0x6b4a38, 0x10131b, 0x151519, 1.00),
+    "bruce_lee": ("Bruce Lee", "ninja", "brucelee", 0xe9c129, 0x17191d, 0xe9c129, 0xd0a17e, 0x111317, 0x121212, 0.96),
+    "jean_claude_van_damme": ("Jean-Claude Van Damme", "brawler", "vandamme", 0x6c1d2a, 0x272a33, 0xcbb18b, 0xc99b7e, 0x13151a, 0x15151a, 1.00),
+    "lucy_liu": ("Lucy Liu", "ninja", "lucyliu", 0xe3ddd2, 0x232832, 0xb92d39, 0xe0b398, 0x14171d, 0x121318, 0.96),
+    "sigourney_weaver": ("Sigourney Weaver", "cyborg", "sigourney", 0x4c5a42, 0x28352e, 0xb2a16b, 0xc99d84, 0x12171a, 0x45372b, 1.00),
+    "keanu_reeves": ("Keanu Reeves", "ninja", "keanu", 0x1d3047, 0x222832, 0xc82f3d, 0xc9a086, 0x11151b, 0x111217, 1.02),
+    "burt_reynolds": ("Burt Reynolds", "brawler", "burt", 0x9a2930, 0xe4d9c8, 0xcbb68a, 0xd1a47f, 0x13151a, 0x60422c, 1.02),
+    "grace_jones": ("Grace Jones", "mage", "grace", 0x17171d, 0x31313b, 0xc6a34f, 0x9e6d56, 0x101218, 0x151519, 1.00),
+    "wolverine_logan": ("Wolverine (Logan)", "brawler", "wolverine", 0x174b91, 0xe2ba2c, 0xefd247, 0xc69a7a, 0x15171d, 0x33251f, 1.06),
+    "roronoa_zoro": ("Roronoa Zoro", "warrior", "zoro", 0x2d694c, 0x29343a, 0x9bb6a2, 0xc89c7f, 0x11151a, 0x2a3328, 1.03),
+    "jotaro_kujo": ("Jotaro Kujo", "brawler", "jotaro", 0x1d293a, 0x243e59, 0xd7b95d, 0xc99c80, 0x12151b, 0x151519, 1.04),
+    "solid_snake": ("Solid Snake", "cyborg", "snake", 0x4a6148, 0x3c5144, 0x9da8a0, 0xc7a087, 0x151a18, 0x272c25, 1.02),
+    "geralt_of_rivia": ("Geralt of Rivia", "warrior", "geralt", 0x343b42, 0x6c7379, 0xd8e0e6, 0xd5b18e, 0x11151b, 0xd1d3cf, 1.03),
+    "lara_croft": ("Lara Croft", "ninja", "lara", 0x4b6a60, 0x513d2c, 0xd0b17d, 0xcba184, 0x171a20, 0x3e2920, 0.98),
+    "sephiroth": ("Sephiroth", "warrior", "sephiroth", 0x222733, 0x343a46, 0xbac7d8, 0xc9a187, 0x12151d, 0xd1d5df, 1.12),
+    "doom_slayer": ("Doom Slayer", "cyborg", "doom", 0x315b45, 0x5d6b54, 0xff713d, 0x9a9d8c, 0x11171a, 0x222a22, 1.18),
+    "shrek": ("Shrek", "brawler", "shrek", 0x548f37, 0x7d8c42, 0x9bcf5a, 0x63a344, 0x24251a, 0x344e24, 1.18),
+    "aladdin": ("Aladdin", "ninja", "aladdin", 0x2e5996, 0x8a2b2d, 0xf0c55d, 0xd5a37f, 0x14171e, 0x292126, 0.96),
+    "ariel": ("Ariel", "mage", "ariel", 0x1b6c58, 0x2d9b7b, 0x75e0d1, 0xe2b99b, 0x14181e, 0xd84b3f, 0.98),
+    "ursula": ("Ursula", "mage", "ursula", 0x482d56, 0x222333, 0x9e5cae, 0x9a6c82, 0x12131b, 0x17141b, 1.12),
+    "sesshomaru": ("Sesshomaru", "warrior", "sesshomaru", 0xe5e2d9, 0x3b494c, 0xb6d5a5, 0xd4b59a, 0x141820, 0xe4e3de, 1.06),
+    "norman_bates": ("Norman Bates", "ninja", "norman", 0x4b6c4f, 0x4b362a, 0xc9c6a8, 0xd1a78a, 0x17191b, 0x443228, 1.00),
+    "han_solo": ("Han Solo", "warrior", "hansolo", 0x403a34, 0x26272b, 0xc8b18a, 0xc99f83, 0x13151a, 0x3b2d25, 1.02),
+    "indiana_jones": ("Indiana Jones", "warrior", "indiana", 0x65503a, 0x44332b, 0xd3b56f, 0xc89b7c, 0x14171d, 0x392d25, 1.04),
+
 }
 
 # Principled materials are shared across all prefabs to reduce the final GLB.
@@ -416,6 +443,110 @@ def create_character(key, data, index):
         band(0x6b4935,.13);spike_hair(hair,8,.15);cape(root,key+" Pirate Coat",0x3a3030,.78,1.26)
         cylinder(head,key+" Pirate Bandana",(0,.21,-.01),.24,.10,accent,vertices=18)
         for side in (-1,1):sphere(head,key+" Dreadlock",(side*.24,-.04,-.01),(.055,.25,.06),hair,10,8)
+    elif style=="blackadam":
+        headcap(key+" Black Adam Bald Head",skin);emblem(0xe1b94e);cape(root,key+" Black Adam Cape",0x17191f,.76,1.38)
+        cube(torso,key+" Lightning Bolt",(0,.30,.34),(.11,.38,.045),accent,(0,0,math.pi/5),.012)
+    elif style=="samuel":
+        sphere(head,key+" Bald Head",(0,.11,0),(.27,.23,.23),skin,20,12)
+        cube(head,key+" Eyepatch",(0.11,.055,.23),(.16,.105,.045),dark,bevel=.02)
+        cube(head,key+" Eyepatch Strap",(0,.07,-.005),(.5,.035,.025),dark,bevel=.008)
+    elif style=="brucelee":
+        headcap(key+" Short Black Hair",hair)
+        for side in (-1,1):cube(torso,key+" Tracksuit Stripe",(side*.36,.25,.26),(.045,.52,.025),0x15171b,bevel=.008)
+        cube(torso,key+" Black Sash",(0,.0,.27),(.68,.07,.04),dark,bevel=.01)
+    elif style=="vandamme":
+        headcap(key+" Martial Artist Hair",hair);eye_lenses(0x22262d)
+        cube(torso,key+" Red Training Sash",(0,.05,.27),(.68,.08,.04),accent,bevel=.01)
+    elif style=="lucyliu":
+        headcap(key+" Black Hair",hair);cape(root,key+" White Jacket Panels",0xf0ece4,.55,.86)
+        cube(torso,key+" Red Waist Sash",(0,.04,.30),(.66,.09,.035),accent,bevel=.012)
+    elif style=="sigourney":
+        headcap(key+" Short Brown Hair",hair)
+        cube(torso,key+" Flight Pack",(0,.20,-.30),(.48,.62,.18),dark,bevel=.04)
+        for side in (-1,1):cube(torso,key+" Flight Suit Pocket",(side*.35,.08,.26),(.15,.20,.035),accent,bevel=.02)
+    elif style=="keanu":
+        headcap(key+" Long Dark Hair",hair);cape(root,key+" Long Black Coat",0x15171d,.72,1.30)
+        sphere(head,key+" Beard",(0,-.13,.18),(.19,.09,.10),hair,16,8)
+    elif style=="burt":
+        headcap(key+" Feathered Brown Hair",hair)
+        sphere(head,key+" Mustache",(0,-.085,.225),(.14,.045,.04),hair,16,8)
+        cube(torso,key+" Open Shirt Collar",(0,.53,.24),(.32,.10,.04),0xe5d9c8,bevel=.015)
+    elif style=="grace":
+        cylinder(head,key+" High Fashion Crown Hair",(0,.28,-.02),.17,.42,hair,vertices=12,bevel=.02)
+        cube(torso,key+" Sculptural Shoulder",(0,.52,.25),(.74,.16,.09),accent,bevel=.035)
+    elif style=="wolverine":
+        eye_lenses(0x252a30);headcap(key+" Wolverine Hair",hair)
+        for side in (-1,1):
+            cone(head,key+" Wolverine Sideburn",(side*.22,-.01,.08),.09,.34,hair,(0,0,side*.5),7)
+            for claw in range(3):cone(joints["leftFore"] if side<0 else joints["rightFore"],key+" Claw",(side*.10+claw*.04,-.30,.22),.025,.48,metal,(math.pi/2,0,0),6)
+        emblem(0xe4ba2a)
+    elif style=="zoro":
+        headcap(key+" Green Hair",hair);band(0x273139,.14)
+        cube(torso,key+" Green Robe Panel",(0,.22,.28),(.40,.60,.035),primary,bevel=.025)
+        cube(torso,key+" Waist Sash",(0,.0,.30),(.72,.09,.045),accent,bevel=.012)
+    elif style=="jotaro":
+        headcap(key+" Dark Hair",hair);cape(root,key+" Long School Coat",0x182333,.82,1.38)
+        cylinder(head,key+" Cap Brim",(0,.16,.03),.31,.06,secondary,vertices=24,bevel=.012)
+        cube(head,key+" Gold Cap Badge",(0,.18,.26),(.12,.09,.025),accent,bevel=.01)
+    elif style=="snake":
+        headcap(key+" Tactical Hair",hair);band(0x5b694f,.14)
+        cube(torso,key+" Tactical Harness",(0,.25,.285),(.48,.48,.045),dark,bevel=.02)
+        cube(torso,key+" Chest Strap",(-.12,.25,.32),(.06,.58,.035),secondary,(0,0,-.32),.012)
+    elif style=="geralt":
+        headcap(key+" Silver Hair",hair);cape(root,key+" Witcher Leather Coat",0x2a3036,.72,1.24)
+        cube(head,key+" Face Scar",(.09,.04,.235),(.025,.16,.014),0x9e5550,bevel=.004)
+        torus(torso,key+" Witcher Medallion",(0,.23,.31),.10,.018,metal,(math.pi/2,0,0))
+    elif style=="lara":
+        headcap(key+" Brown Ponytail",hair)
+        sphere(head,key+" Ponytail",(0,.06,-.32),(.10,.25,.12),hair,12,8)
+        cube(torso,key+" Utility Harness",(0,.22,.29),(.54,.09,.035),dark,bevel=.012)
+        for side in (-1,1):cube(pelvis,key+" Holster",(side*.32,-.06,.22),(.12,.22,.15),dark,bevel=.018)
+    elif style=="sephiroth":
+        headcap(key+" Long Silver Hair",hair);cape(root,key+" Long Black Coat",0x171a22,.84,1.55)
+        for side in (-1,1):cone(head,key+" Silver Hair Lock",(side*.20,-.08,-.08),.07,.62,hair,(0,0,side*.12),7)
+        cube(torso,key+" Silver Coat Clasp",(0,.50,.29),(.12,.20,.035),metal,bevel=.012)
+    elif style=="doom":
+        sphere(head,key+" Doom Helmet",(0,.02,0),(.30,.33,.28),secondary,20,14);eye_lenses(0xff663d)
+        cube(torso,key+" Heavy Chest Plate",(0,.28,.29),(.68,.38,.12),secondary,bevel=.05)
+        cube(torso,key+" Orange Armor Mark",(0,.28,.36),(.10,.27,.02),accent,bevel=.012)
+    elif style=="shrek":
+        sphere(head,key+" Ogre Head",(0,.0,.02),(.29,.31,.25),skin,20,14)
+        for side in (-1,1):
+            cylinder(head,key+" Ogre Ear",(side*.32,.04,-.02),.085,.24,skin,(0,0,side*math.pi/2),12,.012)
+            sphere(head,key+" Ogre Ear Tip",(side*.39,.04,-.02),(.07,.07,.07),skin,12,8)
+        cube(torso,key+" Brown Ogre Vest",(0,.30,.27),(.60,.48,.055),secondary,bevel=.04)
+    elif style=="aladdin":
+        headcap(key+" Black Hair",hair);cylinder(head,key+" Red Fez",(0,.25,-.015),.20,.22,accent,vertices=16,bevel=.025)
+        cube(torso,key+" Blue Vest",(0,.26,.27),(.46,.50,.045),primary,bevel=.035)
+        cube(pelvis,key+" Loose Sash",(0,.04,.27),(.70,.10,.04),accent,bevel=.012)
+    elif style=="ariel":
+        headcap(key+" Ariel Red Hair",hair)
+        for side in (-1,1):sphere(head,key+" Long Red Hair Lock",(side*.20,-.03,-.08),(.08,.30,.09),hair,12,8)
+        sphere(pelvis,key+" Mermaid Tail Skirt",(0,-.22,.0),(.40,.27,.34),secondary,20,12)
+        cone(pelvis,key+" Tail Fin",(0,-.44,-.02),.23,.40,accent,(math.pi,0,0),10)
+    elif style=="ursula":
+        headcap(key+" White Hair",hair);cape(root,key+" Purple Sea Witch Mantle",0x32223e,.90,1.28)
+        sphere(torso,key+" Purple Tentacle Skirt",(0,-.20,.03),(.46,.25,.42),primary,20,12)
+        for side in (-1,1):
+            cone(pelvis,key+" Tentacle",(side*.25,-.40,.04),.13,.68,secondary,(0,0,side*.35),10)
+    elif style=="sesshomaru":
+        headcap(key+" Silver Hair",hair);cape(root,key+" White Fur Mantle",0xe5e2d9,.90,1.42)
+        cube(head,key+" Crescent Forehead Mark",(0,.16,.24),(.09,.07,.025),accent,bevel=.012)
+        for side in (-1,1):cube(head,key+" Magenta Cheek Mark",(side*.17,-.01,.22),(.035,.09,.018),0xb83359,bevel=.006)
+    elif style=="norman":
+        headcap(key+" Brown Hair",hair);cape(root,key+" Motel Jacket",0x5b422f,.72,1.20)
+        cube(torso,key+" Green Sweater",(0,.20,.28),(.54,.42,.04),primary,bevel=.025)
+    elif style=="hansolo":
+        headcap(key+" Brown Hair",hair)
+        cube(torso,key+" Black Vest",(0,.24,.285),(.44,.50,.05),dark,bevel=.025)
+        cube(torso,key+" White Shirt Front",(0,.25,.32),(.24,.47,.025),0xe6e0d5,bevel=.015)
+        cube(pelvis,key+" Utility Belt",(0,.04,.28),(.72,.09,.045),accent,bevel=.012)
+    elif style=="indiana":
+        headcap(key+" Brown Hair",hair)
+        cube(head,key+" Fedora Crown",(0,.20,-.02),(.34,.18,.30),0x62482e,bevel=.035)
+        cube(head,key+" Fedora Brim",(0,.14,.03),(.48,.055,.36),0x62482e,bevel=.02)
+        cape(root,key+" Leather Adventure Jacket",0x60432e,.74,1.20)
+        cube(torso,key+" Adventure Strap",(.13,.27,.30),(.055,.60,.035),0x2b241d,(0,0,-.24),.012)
     elif style=="spiderman":
         # Red/blue panels and raised web lines give the mask/body a recognizable classic suit read.
         sphere(head,key+" Spider-Man Mask",(0,.01,.03),(.275,.31,.235),primary,24,16)
