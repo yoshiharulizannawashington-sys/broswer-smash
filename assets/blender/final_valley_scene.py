@@ -164,6 +164,12 @@ scene.render.resolution_x = 1280
 scene.render.resolution_y = 720
 scene.render.resolution_percentage = 100
 
+# Convert the script's game-style Y-up layout to Blender Z-up for the editable .blend.
+from mathutils import Matrix
+y_up_to_blender_z_up = Matrix.Rotation(math.radians(90), 4, 'X')
+for obj in list(bpy.context.scene.objects):
+    obj.matrix_world = y_up_to_blender_z_up @ obj.matrix_world
+
 bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT_DIR,'final_valley.blend'))
 bpy.ops.object.select_all(action='SELECT')
 bpy.context.view_layer.objects.active = None
