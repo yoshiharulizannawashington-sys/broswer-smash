@@ -74,6 +74,7 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     ursula:{body:0x482760,armor:0x3b214f,accent:0xb89bdb,skin:0x8871b0,head:'hair',feature:'ursula',scale:1.2},
     edna_mode:{body:0x11151b,armor:0x2a3038,accent:0xe8e5df,head:'hair',feature:'edna',scale:.83},
     captain_jack_sparrow:{body:0x68513e,armor:0x272e38,accent:0xb98f52,head:'hair',feature:'pirate'},
+    spider_man:{body:0xc62930,armor:0x154b91,accent:0xe54244,skin:0x8c99a7,head:'mask',feature:'spiderman',scale:1.0},
     sesshomaru:{body:0xe6e1d5,armor:0xe8e1d1,accent:0x9973ad,skin:0xe6d8c9,head:'hair',feature:'sesshomaru'},
     norman_bates:{body:0x454b55,armor:0x6c6558,accent:0xc4baa3,head:'hair',feature:'knife'},
     han_solo:{body:0xe6e1d4,armor:0x28313c,accent:0xb78e4f,head:'hair',feature:'blaster'},
@@ -257,6 +258,35 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   if(feature==='ursula'){for(let i=0;i<6;i++){const arm=part(g,new THREE.CylinderGeometry(.08,.16,.9,8),mat(0x2b183a,.2,.4),[-.55+i*.22,.2,-.12]);arm.rotation.z=(i-2.5)*.12;}}
   if(feature==='edna'){const lens=mat(0x0a0a0a,.15,.15);for(const side of [-1,1])part(head,new THREE.TorusGeometry(.14,.03,8,20),lens,[side*.15,.02,.25]);part(head,new THREE.BoxGeometry(.12,.035,.04),lens,[0,.02,.25]);}
   if(feature==='pirate'){part(head,new THREE.CylinderGeometry(.24,.3,.14,12),dark,[0,.23,-.02]);part(head,new THREE.SphereGeometry(.28,12,8),dark,[0,.3,-.03],[1,.4,1]);part(g,new THREE.BoxGeometry(.48,.05,.05),mat(0xb68f53,.65,.2),[0,1.08,.29]);}
+  if(feature==='spiderman'){
+    const webBlack=mat(0x10131a,.12,.5),lens=mat(0xeaf6ff,.12,.22,.08),spiderSilver=mat(0x96a9c1,.45,.38);
+    // Angular white lenses with dark raised rims are readable at fighting-camera distance.
+    for(const side of [-1,1]){
+      const rim=part(head,new THREE.BoxGeometry(.24,.145,.045),webBlack,[side*.132,.055,.235]);
+      rim.rotation.z=side*.15;
+      const eyeShape=new THREE.Shape();
+      if(side<0){eyeShape.moveTo(-.09,-.025);eyeShape.lineTo(-.015,.07);eyeShape.lineTo(.075,.045);eyeShape.lineTo(.04,-.055);eyeShape.closePath();}
+      else{eyeShape.moveTo(.09,-.025);eyeShape.lineTo(.015,.07);eyeShape.lineTo(-.075,.045);eyeShape.lineTo(-.04,-.055);eyeShape.closePath();}
+      const lensMesh=part(head,new THREE.ShapeGeometry(eyeShape),lens,[side*.132,.055,.26]);
+      lensMesh.rotation.z=side*.1;
+    }
+    // Raised black spider emblem on the chest.
+    part(torso,new THREE.SphereGeometry(.075,12,8),webBlack,[0,.30,.347],[.68,1.8,.28]);
+    for(const side of [-1,1]){
+      const legTop=part(torso,new THREE.BoxGeometry(.035,.18,.025),webBlack,[side*.095,.34,.344]);legTop.rotation.z=side*.48;
+      const legMid=part(torso,new THREE.BoxGeometry(.03,.22,.025),webBlack,[side*.14,.23,.344]);legMid.rotation.z=-side*.38;
+      const wrist=part(g,new THREE.BoxGeometry(.15,.13,.18),webBlack,[side*.31,.94,.16]);
+      part(g,new THREE.CylinderGeometry(.06,.06,.09,12),spiderSilver,[side*.31,.94,.27],[1,1,1]);
+      for(let row=0;row<3;row++)part(g,new THREE.BoxGeometry(.12,.018,.02),webBlack,[side*.31,.90+row*.04,.285]);
+      // Web seams on the shoulders and boots establish the classic suit pattern.
+      for(let row=0;row<4;row++)part(torso,new THREE.BoxGeometry(.035,.24,.018),webBlack,[side*(.24-row*.018),.28-row*.018,.315]);
+      part(g,new THREE.BoxGeometry(.13,.055,.1),spiderSilver,[side*.21,.14,.17]);
+    }
+    for(let side=-1;side<=1;side+=2){
+      const waist=part(torso,new THREE.BoxGeometry(.35,.022,.025),webBlack,[0,.04,.334]);
+      waist.rotation.z=side*.08;
+    }
+  }
 
 
   if(feature==='fedora'){part(head,new THREE.CylinderGeometry(.28,.28,.11,16),mat(0x563521,.04,.8),[0,.24,0]);part(head,new THREE.CylinderGeometry(.15,.21,.26,12),mat(0x563521,.04,.8),[0,.4,-.03]);part(g,new THREE.BoxGeometry(.5,.035,.1),mat(0x563521),[0,1.1,.25]);}
@@ -280,7 +310,7 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','weapon-library-stormbreaker-flight-20261018');
+      url.searchParams.set('v','weapon-library-spiderman-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{if(node.name&&node.name.startsWith('weapon_'))prefabs.set(node.name,node);});
