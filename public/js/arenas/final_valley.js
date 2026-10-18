@@ -39,8 +39,9 @@ export function createFinalValley(THREE) {
   const toonFlat = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp});
   // Prefer the Blender-exported GLB when it exists; keep the procedural scene as a no-download fallback.
   const blenderLoader = new GLTFLoader();
-  const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url).href;
-  blenderLoader.load(blenderAssetUrl, (gltf) => {
+  const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url);
+  blenderAssetUrl.searchParams.set('v', 'blender-hd-20261018');
+  blenderLoader.load(blenderAssetUrl.href, (gltf) => {
     for (const child of group.children) child.visible = false;
     gltf.scene.name = 'Final Valley Blender environment';
     gltf.scene.traverse((node) => {
