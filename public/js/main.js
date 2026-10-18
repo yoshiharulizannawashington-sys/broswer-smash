@@ -1,15 +1,15 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-signature-locomotion-v18-20261018';
-import SmashCamera from './SmashCamera.js?v=browser-smash-signature-locomotion-v18-20261018';
-import InputManager from './InputManager.js?v=browser-smash-signature-locomotion-v18-20261018';
-import Fighter3D from './fighter3D.js?v=browser-smash-signature-locomotion-v18-20261018';
-import { createCombatItems } from './combat_items.js?v=browser-smash-signature-locomotion-v18-20261018';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-signature-locomotion-v18-20261018';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-signature-locomotion-v18-20261018';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-signature-locomotion-v18-20261018';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-signature-locomotion-v18-20261018';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-signature-combat-v19-20261018';
+import SmashCamera from './SmashCamera.js?v=browser-smash-signature-combat-v19-20261018';
+import InputManager from './InputManager.js?v=browser-smash-signature-combat-v19-20261018';
+import Fighter3D from './fighter3D.js?v=browser-smash-signature-combat-v19-20261018';
+import { createCombatItems } from './combat_items.js?v=browser-smash-signature-combat-v19-20261018';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-signature-combat-v19-20261018';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-signature-combat-v19-20261018';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-signature-combat-v19-20261018';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-signature-combat-v19-20261018';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -113,6 +113,7 @@ kratos:{label:'LEVIATHAN AXE',type:'frost',color:0x8ee6ff,damage:21,speed:26,coo
 link:{label:'HERO ARROW',type:'arrow',color:0xffdc78,damage:15,speed:38,cooldown:.75,stun:.3,knockback:4.7},
 master_chief:{label:'PLASMA GRENADE',type:'grenade',color:0x6effb0,damage:20,speed:18,cooldown:1.1,stun:.6,knockback:8.8},
 thor:{label:'STORMBREAKER LIGHTNING',type:'lightning',color:0x7be6ff,damage:23,speed:34,cooldown:1.08,stun:.55,knockback:9.1,behavior:'thunderStrike',range:34},
+kratos:{label:'LEVIATHAN AXE RUSH',type:'frost',color:0x8ee6ff,damage:22,speed:30,cooldown:1.05,stun:.55,knockback:9,behavior:'dashStrike',dashSpeed:35,range:13.5},
 aang:{label:'AIR SCOOTER',type:'wind',color:0xb7fff0,damage:12,speed:27,cooldown:.72,stun:.36,knockback:4.2,behavior:'airScooter',dashSpeed:23,range:9.5,lift:5.2},
 madara_uchiha:{label:'GREAT FIRE ANNIHILATION',type:'fireball',color:0xff4b2e,damage:22,speed:25,cooldown:1.12,stun:.55,knockback:8.7},
 hashirama_senju:{label:'WOOD DRAGON',type:'wood',color:0x78d18a,damage:18,speed:22,cooldown:1.05,stun:.75,knockback:4.8},
@@ -120,7 +121,7 @@ lord_voldemort:{label:'AVADA KEDAVRA',type:'curse',color:0x55ff86,damage:20,spee
 sasuke_uchiha:{label:'CHIDORI',type:'lightning',color:0x78d8ff,damage:20,speed:33,cooldown:.95,stun:.42,knockback:7.2,behavior:'dashStrike',dashSpeed:39,range:15.5},
 edna_mode:{label:'FASHION EMERGENCY GADGET',type:'gadget',color:0xff5ca8,damage:9,speed:25,cooldown:.8,stun:.38,knockback:2.8},
 captain_jack_sparrow:{label:'PIRATE PISTOL',type:'bullet',color:0xffd39a,damage:14,speed:40,cooldown:.9,stun:.32,knockback:4.5},
-spider_man:{label:'WEB SNARE',type:'web',color:0xf5fbff,damage:8,speed:29,cooldown:.68,stun:1,knockback:1}
+spider_man:{label:'WEB ZIP STRIKE',type:'web',color:0xf5fbff,damage:13,speed:34,cooldown:.78,stun:.62,knockback:5.4,behavior:'dashStrike',dashSpeed:43,range:16}
 };
 const COMBAT_PROFILES={hulk_bruce_banner:{damage:1.28,knockback:1.28,weight:1.35,launch:1.18},saitama:{damage:1.38,knockback:1.3,weight:1.18,launch:1.2},all_might:{damage:1.24,knockback:1.22,weight:1.24,launch:1.14},kratos:{damage:1.22,knockback:1.2,weight:1.25,launch:1.1},superman:{damage:1.12,knockback:1.12,weight:1.16,launch:1.1},goku:{damage:1.14,knockback:1.12,weight:1.04,launch:1.12},vegeta:{damage:1.12,knockback:1.1,weight:1.04,launch:1.1},the_flash_barry_allen:{damage:.92,knockback:.9,weight:.92,launch:.92},professor_x_charles_xavier:{damage:.86,knockback:.78,weight:.86,launch:.8},l_death_note_style:{damage:.78,knockback:.74,weight:.82,launch:.72},edna_mode:{damage:.8,knockback:.78,weight:.8,launch:.8},spider_man:{damage:.96,knockback:.9,weight:.92,launch:.92},thor:{damage:1.18,knockback:1.2,weight:1.18,launch:1.14},master_chief:{damage:1.1,knockback:1.08,weight:1.12,launch:1.08}};
 function spawn(name,x,archetype,player){const model=makeProceduralCharacter(archetype,name);model.position.set(x,0,0);scene.add(model);const identityKey=String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');const combatProfile=COMBAT_PROFILES[identityKey]||{damage:1,knockback:1,weight:1,launch:1};const f=new Fighter3D({name,model,weight:(player?88:82)*combatProfile.weight,player});f.archetype=archetype;f.identity=name;f.identityKey=identityKey;f.combatProfile=combatProfile;f.specialProfile=SPECIAL_MOVES[identityKey]||{label:'SIGNATURE STRIKE',type:'orb',color:0x62caff,damage:14,speed:22,cooldown:.82,stun:.42,knockback:4.5};f.canFly=canCharacterFly(name);f.canWebSwing=name==='Spider-Man';f.flightMode=false;f.webSwinging=false;window.fighters.push(f);upgradeCharacterWithBlenderModel(f).catch(err=>console.warn('Blender model upgrade unavailable; keeping fallback:',err));return f;}
