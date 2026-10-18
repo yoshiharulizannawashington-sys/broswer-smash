@@ -37,10 +37,10 @@ stone = material('Weathered slate', (.28,.36,.37))
 shadow = material('Deep cliff shadow', (.12,.18,.2))
 moss = material('Moss and forest', (.15,.31,.19))
 pine = material('Pine green', (.08,.23,.14))
-water = material('River turquoise', (.025,.31,.48), .18, .25, .18)
-foam = material('Waterfall foam', (.42,.82,.91), .2, .05, .2)
+water = material('River slate turquoise', (.10,.27,.32), .42, .05, .04)
+foam = material('Waterfall mist', (.58,.68,.68), .42, .02, .03)
 statue = material('Ancient statue stone', (.43,.47,.45))
-rune = material('Carved cyan runes', (.03,.56,.68), .25, .3, 1.2)
+rune = material('Old mineral inlay', (.22,.43,.44), .48, .1, .18)
 
 def finish(obj, name, mat, loc, scale=None):
     obj.name = name
@@ -75,7 +75,7 @@ def cyl(name, loc, radius, depth, mat, verts=8):
 # Broad playable clearing and river channel.
 bpy.ops.mesh.primitive_cylinder_add(vertices=64, radius=57, depth=.5, location=(0,-.36,-30))
 finish(bpy.context.object, 'Arena clearing', stone, (0,-.36,-30))
-box('Central river', (0,.02,-48), (12,.06,145), water)
+box('Central river', (0,.02,-48), (8.5,.06,136), water)
 
 # Layered cliff walls, waterfall curtains and pools frame the arena.
 for side in (-1,1):
@@ -85,12 +85,12 @@ for side in (-1,1):
         h = random.uniform(16,31)
         ico('Jagged cliff', (x,h*.42,z), (random.uniform(7,13),h,random.uniform(8,15)), stone if i%2 else shadow, 2)
         ico('Moss cap', (x-side*2,h*.86,z+1), (random.uniform(4,8),1.5,random.uniform(4,8)), moss, 1)
-    box('Waterfall sheet', (side*17,9,-82), (11,18,.16), foam)
-    cyl('Waterfall basin', (side*17,.02,-70), 8, .08, water, 32)
+    box('Side waterfall sheet', (side*21,11,-97), (10,22,.16), foam)
+    cyl('Side waterfall basin', (side*21,.02,-85), 7, .08, water, 32)
 
 # Two original giant shinobi guardian statues, built from editable primitives.
 def guardian(x, mirror):
-    z = -51
+    z = -76
     box('Statue plinth', (x,1,z), (8,2,7), shadow)
     cyl('Layered pedestal', (x,3,z), 3.8, 2.2, stone, 8)
     cyl('Carved robe torso', (x,7,z), 2.3, 6.5, statue, 8)
@@ -109,8 +109,19 @@ def guardian(x, mirror):
     for side in (-1,1):
         box('Eye rune', (x+side*.52,12.4,z+1.92), (.16,.14,.05), rune)
 
-guardian(-38,1)
-guardian(38,-1)
+guardian(-36,1)
+guardian(36,-1)
+
+# Different silhouettes make the two founders readable at a distance.
+hair_stone = material('Carved hair shadow', (.20,.25,.25), .96, .01)
+for i in range(-2,3):
+    cone('Hashirama swept-back hair', (-36+i*.52,13.5,-77.05-abs(i)*.12), .62, 5.4, hair_stone, 6)
+for i in range(11):
+    angle=(i/10)*math.pi*1.45-math.pi*.72
+    px=math.sin(angle)*2.0
+    py=14.0+math.cos(angle)*1.0
+    cone('Madara spiked hair', (36+px,py,-76.35), .58, 3.9, hair_stone, 5)
+ico('Madara war fan silhouette', (31.6,10.8,-77.55), (1.7,1.9,.22), shadow, 1)
 
 # Forested outer ridges and a stepping-stone trail across the river.
 for side in (-1,1):
@@ -129,6 +140,10 @@ for i in range(16):
     x = -105+i*14
     h = random.uniform(25,45)
     cone('Distant ridgeline', (x,h*.45,-124), random.uniform(8,14), h, shadow, 6)
+
+box('High central waterfall', (0,14,-100), (20,28,.12), foam)
+ico('Rear waterfall cliff', (0,15,-110), (25,18,8), shadow, 2)
+cyl('Central waterfall pool', (0,.03,-84), 10, .08, water, 48)
 
 # A lighting rig and camera make the .blend immediately inspectable.
 world = bpy.data.worlds.new('Final Valley dusk') if not bpy.data.worlds else bpy.data.worlds[0]
