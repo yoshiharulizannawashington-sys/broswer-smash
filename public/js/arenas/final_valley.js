@@ -319,6 +319,28 @@ export function createFinalValley(THREE) {
     }
   }
 
+  // Soft alpha-textured spray clouds pool at the base of the falls instead of using hard white boxes.
+  const mistCanvas=document.createElement('canvas');mistCanvas.width=256;mistCanvas.height=128;
+  const mistCtx=mistCanvas.getContext('2d');
+  const mistGrad=mistCtx.createRadialGradient(128,64,5,128,64,118);
+  mistGrad.addColorStop(0,'rgba(220,229,220,.46)');mistGrad.addColorStop(.42,'rgba(194,210,205,.25)');mistGrad.addColorStop(1,'rgba(180,199,197,0)');
+  mistCtx.fillStyle=mistGrad;mistCtx.fillRect(0,0,256,128);
+  for(let i=0;i<42;i++){
+    const x=Math.random()*256,y=20+Math.random()*88;
+    mistCtx.strokeStyle='rgba(235,239,229,'+(.025+Math.random()*.07)+')';mistCtx.lineWidth=1+Math.random()*4;
+    mistCtx.beginPath();mistCtx.moveTo(x,y);mistCtx.lineTo(x+(Math.random()-.5)*28,y+(Math.random()-.5)*5);mistCtx.stroke();
+  }
+  const mistTexture=new THREE.CanvasTexture(mistCanvas);mistTexture.colorSpace=THREE.SRGBColorSpace;
+  const mistCloudMaterial=new THREE.MeshBasicMaterial({map:mistTexture,transparent:true,opacity:.58,depthWrite:false,side:THREE.DoubleSide});
+  const mistClouds=new THREE.Group();mistClouds.name='Waterfall spray';group.add(mistClouds);
+  const mistBillboards=[];
+  for(let i=0;i<7;i++){
+    const x=(i%3-1)*11+(rng()-.5)*4,y=1.1+(i%3)*.9,z=-84-(i%4)*5;
+    const cloud=new THREE.Mesh(new THREE.PlaneGeometry(17+(i%3)*5,4.2+(i%2)*1.7),mistCloudMaterial);
+    cloud.position.set(x,y,z);cloud.rotation.y=(rng()-.5)*.34;cloud.userData.phase=rng()*Math.PI*2;
+    mistClouds.add(cloud);mistBillboards.push(cloud);
+  }
+
   // Small luminous river glints and mist particles make the waterfalls read at game distance.
   const mist = new THREE.Group();
   group.add(mist);
@@ -338,6 +360,7 @@ export function createFinalValley(THREE) {
       waterTexture.offset.y = (waterTexture.offset.y + dt * .035) % 1;
       waterNormal.offset.y = (waterNormal.offset.y + dt * .11) % 1;
       fallTexture.offset.y = (fallTexture.offset.y + dt * .24) % 1;
+      for(const cloud of mistBillboards)cloud.position.y+=Math.sin(time*.65+cloud.userData.phase)*dt*.045;
       for(const ribbon of waterfallRibbons)ribbon.position.y+=Math.sin(time*1.5+ribbon.userData.flow)*dt*.025;
       river.position.y = .025 + Math.sin(time * 1.7) * .012;
       for (const p of mistPoints) {
