@@ -391,10 +391,12 @@ for key, info in WEAPONS.items():
     mats=(metallic,gold,wood,glow,dark)
     display=DISPLAY_POS[key]
     right=root_for(key,'right',label,display)
+    right['kind']=right_kind
     build_kind(right,right_kind,mats)
     weapon_roots.append(right)
     if left_kind:
         left=root_for(key,'left',label+' · offhand', (display[0]+1.2,display[1],display[2]))
+        left['kind']=left_kind
         build_kind(left,left_kind,mats)
         weapon_roots.append(left)
 
