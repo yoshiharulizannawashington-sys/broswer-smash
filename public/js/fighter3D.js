@@ -593,7 +593,7 @@ export default class Fighter3D {
             lightning:0xffec9d,repulsor:0x59eaff,staff:0x9df1ff
           };
           const sparkColor=impactColors[h.weaponKind]||(h.aerial?0xb8a0ff:h.comboStep>=3?0xffb56b:0x70ddff);
-          window.spawnImpact?.(h.pos, guarding ? 3 : h.damage, sparkColor);
+          window.spawnImpact?.(h.pos, guarding ? 3 : h.damage, sparkColor, h.weaponKind);
           remove = true;
           break;
         }
