@@ -43,8 +43,8 @@ export default class SmashCamera {
     const targetZ = forward ? a.position.z + 25.5 * this.zoom : midZ + trailing;
     const targetY = forward ? 14.2 * this.zoom : height;
     this.positionTarget.set(targetX, targetY, targetZ);
-    if (forward && (Math.abs(this.orbitYaw) > .001 || Math.abs(this.orbitPitch) > .001)) {
-      const anchor = new THREE.Vector3(a.position.x, a.position.y, a.position.z);
+    if (Math.abs(this.orbitYaw) > .001 || Math.abs(this.orbitPitch) > .001) {
+      const anchor = new THREE.Vector3(forward ? a.position.x : midX, forward ? a.position.y : 0, forward ? a.position.z : midZ);
       const offset = this.positionTarget.clone().sub(anchor);
       const length = Math.max(1, offset.length());
       const yaw = Math.atan2(offset.x, offset.z) + this.orbitYaw;
