@@ -16,7 +16,7 @@ scene.add(new THREE.HemisphereLight(0x9ecfff,0x191421,1.5));
 const sun=new THREE.DirectionalLight(0xffaa44,2.8);sun.position.set(-18,7,-20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-24;sun.shadow.camera.right=24;sun.shadow.camera.top=24;sun.shadow.camera.bottom=-24;scene.add(sun);const rim=new THREE.DirectionalLight(0x218cff,2.5);rim.position.set(10,7,-12);scene.add(rim);
 const mat=(color,metalness=.1,roughness=.8,emissive=0)=>new THREE.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:1});
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(700,700),createWetStoneMaterial(0x26313b));floor.rotation.x=-Math.PI/2;floor.position.y=-.04;floor.receiveShadow=true;scene.add(floor);
-const platform=new THREE.Mesh(new THREE.BoxGeometry(700,.65,700),mat(0x343a42,.18,.78));platform.position.y=-.36;platform.receiveShadow=true;scene.add(platform);
+const platform=new THREE.Mesh(new THREE.BoxGeometry(700,.65,700),mat(0x343a42,.18,.78));platform.position.y=-.36;platform.receiveShadow=true;platform.visible=false;scene.add(platform);
 // The old close-up rows of giant low-poly rocks and box towers were removed: they crowded the camera and obscured the valley.
 const grassCanvas=document.createElement('canvas');grassCanvas.width=512;grassCanvas.height=512;const grassCtx=grassCanvas.getContext('2d');
 grassCtx.fillStyle='#536d3b';grassCtx.fillRect(0,0,512,512);
