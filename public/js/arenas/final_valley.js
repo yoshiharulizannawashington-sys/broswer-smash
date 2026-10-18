@@ -397,6 +397,70 @@ export function createFinalValley(THREE) {
     mistPoints.push(p);
   }
 
+  // Continuous rear canyon wall closes the horizon so the arena never feels like a platform in empty space.
+  const rearWall = new THREE.Mesh(new THREE.PlaneGeometry(116, 72, 28, 18), canyonWallMaterial);
+  rearWall.name = 'Enclosing rear cliff face';
+  const rearPos = rearWall.geometry.attributes.position;
+  for (let i = 0; i < rearPos.count; i++) {
+    const px = rearPos.getX(i), py = rearPos.getY(i);
+    rearPos.setZ(i, Math.sin(px * .19) * 1.7 + Math.cos(py * .23) * 1.2 + (rng() - .5) * .7);
+  }
+  rearPos.needsUpdate = true;
+  rearWall.geometry.computeVertexNormals();
+  rearWall.position.set(0, 35, -139);
+  rearWall.castShadow = true; rearWall.receiveShadow = true;
+  group.add(rearWall);
+
+  // Broken skyline boulders overlap the top of the rear wall to hide straight edges.
+  for (let i = 0; i < 23; i++) {
+    const x = -59 + i * 5.35 + (rng() - .5) * 2.5;
+    const h = 8 + rng() * 17;
+    const crown = add(new THREE.DodecahedronGeometry(1, 2), i % 3 ? darkStone : stone,
+      x, 61 + rng() * 5, -137 + (rng() - .5) * 4,
+      3.5 + rng() * 4.5, h * .65, 3 + rng() * 4);
+    crown.rotation.set((rng() - .5) * .18, rng() * Math.PI, (rng() - .5) * .16);
+  }
+
+  // Side-wall waterfalls: several distinct curtains descend from high ledges into hidden pools.
+  const sideFalls = [];
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      const z = -101 + i * 36 + (rng() - .5) * 8;
+      const width = 3.4 + rng() * 2.6;
+      const height = 19 + rng() * 9;
+      const sheet = add(new THREE.PlaneGeometry(width, height, 1, 8), foamMat,
+        side * 48.4, height * .5 + 2.5, z);
+      sheet.name = (side < 0 ? 'West' : 'East') + ' cliff waterfall ' + (i + 1);
+      sheet.rotation.y = -side * Math.PI / 2;
+      sheet.userData.flow = .12 + rng() * .18;
+      sideFalls.push(sheet);
+
+      const pool = add(new THREE.CircleGeometry(4.1 + rng() * 1.8, 36), riverMat,
+        side * 45.1, .045, z + 1.8);
+      pool.rotation.x = -Math.PI / 2;
+      pool.name = 'Waterfall plunge pool';
+      for (let p = 0; p < 3; p++) {
+        const spray = add(new THREE.PlaneGeometry(5 + rng() * 4, 1.4 + rng()),
+          mistCloudMaterial, side * (43.2 + rng() * 1.5), 1.2 + rng() * 2.2, z + (rng() - .5) * 4);
+        spray.rotation.y = -side * Math.PI / 2;
+        spray.userData.phase = rng() * Math.PI * 2;
+        mistBillboards.push(spray);
+      }
+    }
+  }
+
+  // High broken shelves and mineral seams add scale cues to both canyon walls.
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 20; i++) {
+      const z = -132 + i * 6.1 + (rng() - .5) * 2;
+      const y = 22 + rng() * 30;
+      const ledge = add(new THREE.DodecahedronGeometry(1, 1), i % 4 ? strataMaterial : moss,
+        side * (47.5 + rng() * 2.5), y, z,
+        2.5 + rng() * 4, .35 + rng() * .9, 2.5 + rng() * 3.8);
+      ledge.rotation.set((rng() - .5) * .18, rng() * Math.PI, (rng() - .5) * .18);
+    }
+  }
+
   return {
     group,
     obstacles,
