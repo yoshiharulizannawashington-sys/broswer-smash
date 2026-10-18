@@ -9,7 +9,7 @@ export default class SmashCamera {
     this.minHeight = minHeight;
     this.maxHeight = maxHeight;
     // Elevated player-anchored default; mouse wheel and right-drag remain available.
-    this.zoom = 3.8;
+    this.zoom = 4.6;
     this.minZoom = 0.7;
     this.maxZoom = 6.0;
     this.orbitYaw = 0;
