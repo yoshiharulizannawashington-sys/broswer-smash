@@ -3,8 +3,8 @@ import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 export function createSmashRenderPipeline(canvas, scene) {
  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(window.innerWidth,window.innerHeight);
- renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;
- renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.setClearColor(0x111b30,1);
+ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.info.autoReset=true;
  const camera=new THREE.PerspectiveCamera(49,window.innerWidth/window.innerHeight,.1,500);camera.position.set(0,12,18);
  const bloom={strength:.4,setSize(){}};
  return {renderer,camera,composer:{render(){renderer.render(scene,camera)},setSize(){}},bloom,enableSSR(){return null}};
