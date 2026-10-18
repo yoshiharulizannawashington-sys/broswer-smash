@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "assets/blender/final_valley_scene.py"
+      - "assets/blender/character_weapons.py"
       - ".github/workflows/build-final-valley.yml"
   workflow_dispatch:
 
@@ -32,6 +33,7 @@ jobs:
         run: |
           mkdir -p public/assets
           blender --background --factory-startup --python assets/blender/final_valley_scene.py
+          blender --background --factory-startup --python assets/blender/character_weapons.py
 
       - name: Validate Blender file and GLB structure
         run: |
@@ -39,6 +41,8 @@ jobs:
           import json, pathlib, struct
           blend = pathlib.Path("assets/blender/final_valley.blend")
           glb = pathlib.Path("public/assets/final_valley.glb")
+          weapons_blend = pathlib.Path("assets/blender/character_weapons.blend")
+          weapons_glb = pathlib.Path("public/assets/character_weapons.glb")
           assert blend.is_file() and blend.stat().st_size > 100_000, "Missing/empty .blend export"
           assert blend.read_bytes()[:7] == b"BLENDER", "Output is not a Blender project"
           data = glb.read_bytes()
@@ -53,16 +57,29 @@ jobs:
           assert document.get("materials"), "GLB has no materials"
           print(f"Blender: {blend.stat().st_size/1024/1024:.1f} MiB")
           print(f"Game GLB: {glb.stat().st_size/1024/1024:.1f} MiB; {len(document['meshes'])} meshes; {len(document['materials'])} materials")
+          assert weapons_blend.is_file() and weapons_blend.stat().st_size > 100_000, "Missing/empty weapon .blend export"
+          assert weapons_blend.read_bytes()[:7] == b"BLENDER", "Weapon output is not a Blender project"
+          wdata = weapons_glb.read_bytes()
+          assert len(wdata) > 50_000, "Missing/empty weapon GLB export"
+          wmagic, wversion, wlength = struct.unpack_from("<4sII", wdata, 0)
+          assert wmagic == b"glTF" and wversion == 2 and wlength == len(wdata), "Invalid weapon GLB header"
+          wjson_len, wjson_type = struct.unpack_from("<II", wdata, 12)
+          assert wjson_type == 0x4E4F534A, "Weapon GLB has no JSON chunk"
+          wdoc = json.loads(wdata[20:20+wjson_len].decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+          assert len(wdoc.get("meshes", [])) >= 100, "Weapon GLB missing detailed weapon geometry"
+          assert wdoc.get("materials"), "Weapon GLB has no materials"
+          print(f"Weapon Blender library: {weapons_blend.stat().st_size/1024/1024:.1f} MiB")
+          print(f"Weapon GLB: {weapons_glb.stat().st_size/1024/1024:.1f} MiB; {len(wdoc['meshes'])} meshes; {len(wdoc['materials'])} materials")
           PY
 
       - name: Commit generated assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/blender/final_valley.blend public/assets/final_valley.glb
+          git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb
           if git diff --cached --quiet; then
             echo "Generated assets are already up to date."
             exit 0
           fi
-          git commit -m "Export high-definition Final Valley Blender scene"
+          git commit -m "Export Final Valley and character weapon Blender libraries"
           git push origin HEAD:main
