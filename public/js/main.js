@@ -1,15 +1,15 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-signature-combat-v19-20261018';
-import SmashCamera from './SmashCamera.js?v=browser-smash-signature-combat-v19-20261018';
-import InputManager from './InputManager.js?v=browser-smash-signature-combat-v19-20261018';
-import Fighter3D from './fighter3D.js?v=browser-smash-signature-combat-v19-20261018';
-import { createCombatItems } from './combat_items.js?v=browser-smash-signature-combat-v19-20261018';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-signature-combat-v19-20261018';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-signature-combat-v19-20261018';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-signature-combat-v19-20261018';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-signature-combat-v19-20261018';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-impact-polish-v20-20261018';
+import SmashCamera from './SmashCamera.js?v=browser-smash-impact-polish-v20-20261018';
+import InputManager from './InputManager.js?v=browser-smash-impact-polish-v20-20261018';
+import Fighter3D from './fighter3D.js?v=browser-smash-impact-polish-v20-20261018';
+import { createCombatItems } from './combat_items.js?v=browser-smash-impact-polish-v20-20261018';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-impact-polish-v20-20261018';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-impact-polish-v20-20261018';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-impact-polish-v20-20261018';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-impact-polish-v20-20261018';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -166,7 +166,11 @@ function applySignatureHit(owner,target,profile,kind='dashStrike'){
  target.velocity.z=away.z*force;
  target.velocity.y=guarded?1.0:(kind==='shockwave'?Math.max(3.2,force*.36):Math.max(2.5,force*.26));
  target.isGrounded=false;
+ const impactPoint=target.position.clone().add(new THREE.Vector3(0,.22,0));
  window.spawnImpact?.(target.position.clone().add(new THREE.Vector3(0,1.15,0)),damage,profile.color||0x79e9ff,owner.model?.userData?.weaponKind||'unarmed');
+ const impactRing=new THREE.Mesh(new THREE.TorusGeometry(.42,.055,8,32),new THREE.MeshBasicMaterial({color:profile.color||0x79e9ff,transparent:true,opacity:.95,depthWrite:false}));
+ impactRing.position.copy(impactPoint);impactRing.rotation.x=Math.PI/2;scene.add(impactRing);
+ signatureMoves.push({kind:'impactPulse',age:0,life:.24,outer:impactRing});
  if(!guarded&&owner.comboWindow>0)owner.comboHitCount=Math.max(owner.comboHitCount,1);
  return true;
 }
@@ -256,6 +260,8 @@ window.updateSignatureMoves=(dt)=>{
          move.hitTargets.add(other);applySignatureHit(owner,other,profile,'shockwave');
        }
      }
+   }else if(move.kind==='impactPulse'){
+     const t=Math.min(1,move.age/move.life);move.outer.scale.setScalar(1+t*3.8);move.outer.material.opacity=.95*(1-t);move.outer.position.y+=dt*.55;
    }else if(move.kind==='thunderStrike'){
      move.visual.traverse(node=>{if(node.material)node.material.opacity=Math.max(0,1-move.age/move.life);});
      if(move.visual.children[0])move.visual.children[0].geometry.computeBoundingSphere();
