@@ -25,11 +25,13 @@ export default class Fighter3D {
     this.attackPose = 0;
     this.landPulse = 0;
     this.guardBreak = 0;
+    this.guardHeld = false;
   }
 
   simulate(dt, inputHandler) {
     this.t += dt;
     const inputs = inputHandler.getInputs();
+    this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
     this.dodgeTimer = Math.max(0, this.dodgeTimer - dt);
     this.guardBreak = Math.max(0, this.guardBreak - dt);
@@ -206,7 +208,6 @@ export default class Fighter3D {
         const d = h.pos.distanceTo(targetPoint);
         if (d < h.radius + other.hurtboxRadius) {
           h.hit = true;
-          const targetInputs = other.player ? null : null;
           const guarding = other.guardHeld && other.guardBreak <= 0;
           const damageScale = guarding ? 0.28 : 1;
           other.percent += h.damage * damageScale;
