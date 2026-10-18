@@ -190,7 +190,7 @@ export default class Fighter3D {
         t: 0,
         start: (aerial ? .08 : (heavy || finisher ? .14 : .065)) * style.windup,
         end: (aerial ? (finisher ? .40 : .31) : (heavy || finisher ? .31 : .19)) * style.windup,
-        damage: baseDamage * style.damage * (aerial ? 1.12 : 1),
+        damage: baseDamage * style.damage * (aerial ? 1.12 : 1) * (this.itemDamageMultiplier || 1),
         reach,
         kbs: (heavy || finisher ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (aerial ? 1.12 : 1),
         aerial,
