@@ -141,7 +141,8 @@ export default class Fighter3D {
     const len = Math.hypot(x, z);
     const nx = len ? x / len : 0;
     const nz = len ? z / len : 0;
-    const topSpeed = i.sprint ? (this.roamMode ? 15.5 : 12.5) : i.run ? (this.roamMode ? 10.8 : 8.8) : (this.roamMode ? 6.8 : 5.1);
+    const signatureSpeed=this.identityKey==='the_flash_barry_allen'?1.38:this.identityKey==='spider_man'?1.12:1;
+    const topSpeed = (i.sprint ? (this.roamMode ? 15.5 : 12.5) : i.run ? (this.roamMode ? 10.8 : 8.8) : (this.roamMode ? 6.8 : 5.1))*signatureSpeed;
     this.moveBlend = THREE.MathUtils.damp(this.moveBlend, len ? 1 : 0, len ? 5.5 : 9, dt);
     this.runBlend = THREE.MathUtils.damp(this.runBlend, len ? (i.sprint ? 1 : i.run ? .65 : .25) : 0, 8, dt);
 
@@ -266,7 +267,9 @@ export default class Fighter3D {
     }
 
     if (i.special && this.specialCooldown <= 0 && this.guardBreak <= 0) {
-      window.spawnProjectile?.(this, this.canWebSwing ? {source:'special',weaponKind:'webshooters',...this.specialProfile,type:'web'} : {source:'special',...this.specialProfile});
+      const profile=this.specialProfile||{};
+      const moveHandled=profile.behavior&&!this.canWebSwing?window.performSignatureMove?.(this,profile):false;
+      if(!moveHandled)window.spawnProjectile?.(this,this.canWebSwing?{source:'special',weaponKind:'webshooters',...profile,type:'web'}:{source:'special',...profile});
       const cooldowns = {warrior:.82,ninja:.68,brawler:1.02,mage:.9,cyborg:.76};
       this.specialCooldown = this.specialProfile?.cooldown || (this.canWebSwing ? .72 : cooldowns[this.archetype] || .82);
       window.showCombatCallout?.(this.specialProfile?.label || 'SPECIAL ATTACK', '#9deeff');
@@ -375,6 +378,37 @@ export default class Fighter3D {
       }
     }
 
+    if(this.attackQueue.length===0&&!guard){
+      const identity=this.identityKey||'';
+      if(identity==='spider_man'){
+        if(airborne||this.webSwinging){
+          u.torso.rotation.z=THREE.MathUtils.damp(u.torso.rotation.z,.12,7,dt);
+          u.leftArm.rotation.x=-1.0;u.leftArm.rotation.z=.58;
+          u.rightArm.rotation.x=-.72;u.rightArm.rotation.z=-.6;
+          u.leftLeg.rotation.x=-.65;u.rightLeg.rotation.x=.72;
+          u.leftShin.rotation.x=.35;u.rightShin.rotation.x=.12;
+        }else{
+          u.torso.rotation.z=THREE.MathUtils.damp(u.torso.rotation.z,0,8,dt);
+          u.leftArm.rotation.x-=.08;u.rightArm.rotation.x-=.08;
+        }
+      }else if(identity==='the_flash_barry_allen'){
+        const burstLean=Math.min(.42,Math.hypot(this.velocity.x,this.velocity.z)*.022);
+        u.torso.rotation.x=-burstLean;
+        u.leftArm.rotation.x=-.4+Math.sin(this.t*24)*.16;
+        u.rightArm.rotation.x=-.4-Math.sin(this.t*24)*.16;
+        u.leftLeg.rotation.x=Math.sin(this.t*20)*.65;
+        u.rightLeg.rotation.x=-Math.sin(this.t*20)*.65;
+      }else if(['hulk_bruce_banner','saitama','all_might','kratos'].includes(identity)){
+        const plant=THREE.MathUtils.clamp(Math.hypot(this.velocity.x,this.velocity.z)/11,0,1);
+        u.pelvis.rotation.x=THREE.MathUtils.damp(u.pelvis.rotation.x,plant*.08,6,dt);
+        u.leftArm.rotation.x=-.12;u.rightArm.rotation.x=-.12;
+        u.leftLeg.rotation.x=-.05;u.rightLeg.rotation.x=.08;
+      }else if(identity==='goku'||identity==='vegeta'||identity==='naruto_uzumaki'||identity==='sasuke_uchiha'){
+        const power= .035+.025*Math.sin(this.t*7);
+        u.leftArm.rotation.x=-.28-power;u.rightArm.rotation.x=-.34-power;
+        u.leftFore.rotation.x=-.46;u.rightFore.rotation.x=-.46;
+      }
+    }
     if (u.torso) {
       const breathing = Math.sin(this.t * 2.7) * 0.018;
       u.torso.rotation.z = -this.velocity.x * 0.018 + hit * 0.12;
@@ -423,6 +457,7 @@ export default class Fighter3D {
       pos, owner: this, reach, height, facingDir: dir.clone(),
       radius: a.aerial ? (a.comboStep===3 ? 2.45 : 2.05) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
       damage: a.damage, kbs: a.kbs, launchY: a.launchY || 3.4, aerial: !!a.aerial,
+      kind:a.kind||'melee',weaponKind:a.weaponKind||this.model?.userData?.weaponKind||'unarmed',identityKey:this.identityKey||'',
       launcher: !!a.launcher, countering: !!a.countering, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
     });
   }
@@ -486,7 +521,13 @@ export default class Fighter3D {
           other.velocity.y = Math.max(other.velocity.y, guarding ? 1.2 : h.launchY);
           if (h.aerial && !guarding) { other.velocity.x += this.facing * 1.1; other.velocity.y += .85; }
           other.isGrounded = false;
-          window.spawnImpact?.(h.pos, guarding ? 3 : h.damage);
+          const impactColors={
+            stormbreaker:0x91eaff,hammer:0xffd18a,axe:0xffc46f,sword:0xffe1a1,katana:0xffe1a1,cyber_blade:0x87d8ff,
+            war_fan:0xf4d4a0,whip:0xffd36a,trident:0x70e8ff,webshooters:0xf7fbff,energy_gauntlet:0x7ce6ff,
+            lightning:0xffec9d,repulsor:0x59eaff,staff:0x9df1ff
+          };
+          const sparkColor=impactColors[h.weaponKind]||(h.aerial?0xb8a0ff:h.comboStep>=3?0xffb56b:0x70ddff);
+          window.spawnImpact?.(h.pos, guarding ? 3 : h.damage, sparkColor);
           remove = true;
           break;
         }
