@@ -475,6 +475,7 @@ export function createFinalValley(THREE) {
       fallTexture.offset.y = (fallTexture.offset.y + dt * .24) % 1;
       for(const cloud of mistBillboards)cloud.position.y+=Math.sin(time*.65+cloud.userData.phase)*dt*.045;
       for(const ribbon of waterfallRibbons)ribbon.position.y+=Math.sin(time*1.5+ribbon.userData.flow)*dt*.025;
+      for(const sheet of sideFalls)sheet.position.y+=Math.sin(time*1.25+sheet.userData.flow)*dt*.018;
       river.position.y = .025 + Math.sin(time * 1.7) * .012;
       for (const p of mistPoints) {
         p.position.y += dt * (.25 + Math.sin(time + p.userData.phase) * .1);
