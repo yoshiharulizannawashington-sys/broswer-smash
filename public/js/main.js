@@ -1,16 +1,18 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 import { RoomEnvironment } from 'https://unpkg.com/three@0.152.2/examples/jsm/environments/RoomEnvironment.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=cinematic-combo-signature-v7-20261018';
-import SmashCamera from './SmashCamera.js?v=cinematic-combo-signature-v7-20261018';
-import InputManager from './InputManager.js?v=cinematic-combo-signature-v7-20261018';
-import Fighter3D from './fighter3D.js?v=cinematic-combo-signature-v7-20261018';
-import { createCombatItems } from './combat_items.js?v=cinematic-combo-signature-v7-20261018';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=cinematic-combo-signature-v7-20261018';
-import { createFinalValley } from './arenas/final_valley.js?v=cinematic-combo-signature-v7-20261018';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=cinematic-combo-signature-v7-20261018';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=cinematic-combo-signature-v7-20261018';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=cinematic-combo-signature-v8-20261018';
+import SmashCamera from './SmashCamera.js?v=cinematic-combo-signature-v8-20261018';
+import InputManager from './InputManager.js?v=cinematic-combo-signature-v8-20261018';
+import Fighter3D from './fighter3D.js?v=cinematic-combo-signature-v8-20261018';
+import { createCombatItems } from './combat_items.js?v=cinematic-combo-signature-v8-20261018';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=cinematic-combo-signature-v8-20261018';
+import { createFinalValley } from './arenas/final_valley.js?v=cinematic-combo-signature-v8-20261018';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=cinematic-combo-signature-v8-20261018';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=cinematic-combo-signature-v8-20261018';
 const $=s=>document.querySelector(s);
+window.__browserSmashAssets=window.__browserSmashAssets||{};
+window.__browserSmashAssets.app={status:'initializing',frames:0};
 const canvas=$('#gl');const scene=new THREE.Scene();scene.background=new THREE.Color(0x111b30);scene.fog=new THREE.FogExp2(0x253448,.012);
 const {renderer,camera,composer,bloom,enableSSR}=createSmashRenderPipeline(canvas,scene);
 const studioPMREM=new THREE.PMREMGenerator(renderer);
@@ -855,6 +857,28 @@ for(let i=impactRings.length-1;i>=0;i--){
  ring.mesh.scale.setScalar(.35+(ring.max-.35)*p);ring.mesh.material.opacity=.92*(1-p);
  if(p>=1){scene.remove(ring.mesh);ring.mesh.geometry.dispose();ring.mesh.material.dispose();impactRings.splice(i,1);}
 }
-smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'over-p1':cameraMode);composer.render();}
+smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'over-p1':cameraMode);composer.render();const assetDiagnostics=window.__browserSmashAssets;if(assetDiagnostics){assetDiagnostics.app=assetDiagnostics.app||{};assetDiagnostics.app.status='running';assetDiagnostics.app.frames=(assetDiagnostics.app.frames||0)+1;}}
 addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
-$('#loading').textContent='ARENA READY · CHOOSE YOUR FIGHTER AND MAP';setTimeout(()=>$('#loading').style.opacity='0',3200);frame();
+const loadingLabel=$('#loading');let loadingNoticeIssued=false;
+function checkAssetLoadingStatus(){
+ const assets=window.__browserSmashAssets||{};
+ const critical=[assets.characters,assets.weapons,assets.finalValley];
+ const failed=critical.some(a=>a&&['error','fallback','partial'].includes(a.status));
+ const pending=critical.some(a=>!a||a.status==='loading');
+ if(failed){
+   const names=[['CHARACTERS',assets.characters],['WEAPONS',assets.weapons],['FINAL VALLEY',assets.finalValley]];
+   const details=names.filter(([,a])=>a&&['error','fallback','partial'].includes(a.status)).map(([name,a])=>name+' '+a.status.toUpperCase()).join(' · ');
+   loadingLabel.textContent='ASSET FALLBACK ACTIVE · '+details;
+   if(!loadingNoticeIssued){loadingNoticeIssued=true;setTimeout(()=>loadingLabel.style.opacity='0',4800);}
+   return;
+ }
+ if(assets.app?.status==='running'&&!pending&&critical.every(a=>a.status==='loaded')){
+   loadingLabel.textContent='3D WORLD + FIGHTER ASSETS READY';
+   if(!loadingNoticeIssued){loadingNoticeIssued=true;setTimeout(()=>loadingLabel.style.opacity='0',1900);}
+   return;
+ }
+ const status=(a)=>a?.status?.toUpperCase()||'WAITING';
+ loadingLabel.textContent='LOADING 3D ASSETS · CHARACTERS '+status(assets.characters)+' · WEAPONS '+status(assets.weapons)+' · VALLEY '+status(assets.finalValley);
+ setTimeout(checkAssetLoadingStatus,400);
+}
+frame();checkAssetLoadingStatus();
