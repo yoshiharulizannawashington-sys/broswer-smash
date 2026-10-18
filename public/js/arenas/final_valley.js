@@ -39,18 +39,25 @@ export function createFinalValley(THREE) {
   const toonFlat = (color) => new THREE.MeshToonMaterial({color,gradientMap:toonRamp});
   // Prefer the Blender-exported GLB when it exists; keep the procedural scene as a no-download fallback.
   const blenderLoader = new GLTFLoader();
+  const runtimeAssetState = typeof window !== 'undefined'
+    ? (window.__browserSmashAssets ||= {})
+    : {};
   const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url);
-  blenderAssetUrl.searchParams.set('v', 'blender-hd-20261018');
+  blenderAssetUrl.searchParams.set('v', 'browser-smash-final-valley-hd-v2-20261018');
+  runtimeAssetState.finalValley={status:'loading',url:blenderAssetUrl.href};
   blenderLoader.load(blenderAssetUrl.href, (gltf) => {
+    let meshCount=0;
     // Keep the procedural cliffs, waterfalls, mist, and giant guardian statues visible.
     // Add the optional Blender environment on top instead of hiding the handcrafted scenery.
     gltf.scene.name = 'Final Valley Blender environment';
     gltf.scene.traverse((node) => {
-      if (node.isMesh) { node.castShadow = true; node.receiveShadow = true; }
+      if (node.isMesh) { node.castShadow = true; node.receiveShadow = true; meshCount++; }
     });
     group.add(gltf.scene);
-  }, undefined, () => {
+    runtimeAssetState.finalValley={status:meshCount>0?'loaded':'partial',meshCount,url:blenderAssetUrl.href};
+  }, undefined, (error) => {
     // The optional Blender export may not be present yet; the procedural arena remains active.
+    runtimeAssetState.finalValley={status:'fallback',message:String(error?.message||error),url:blenderAssetUrl.href};
   });
   const obstacles = [
     [-36, -76, 9], [36, -76, 9],
