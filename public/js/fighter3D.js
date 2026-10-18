@@ -351,6 +351,21 @@ export default class Fighter3D {
         u.leftShin.rotation.x = .34;
         u.rightShin.rotation.x = .24;
       }
+      if (this.webSwinging) {
+        // Web-swing silhouette: wrists overhead, knees tucked, torso leaned into the pendulum.
+        u.leftArm.rotation.x = -2.38;
+        u.rightArm.rotation.x = -2.52;
+        u.leftArm.rotation.z = .26;
+        u.rightArm.rotation.z = -.26;
+        u.leftFore.rotation.x = -.65;
+        u.rightFore.rotation.x = -.78;
+        u.leftLeg.rotation.x = -.66 + Math.sin(this.t*7)*.12;
+        u.rightLeg.rotation.x = .72 + Math.sin(this.t*7+1.2)*.16;
+        u.leftShin.rotation.x = .32;
+        u.rightShin.rotation.x = .22;
+        u.torso.rotation.x = -.18;
+        u.pelvis.rotation.x = -.19;
+      }
     }
 
     if (u.torso) {
