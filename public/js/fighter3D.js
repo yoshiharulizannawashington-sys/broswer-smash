@@ -67,8 +67,8 @@ export default class Fighter3D {
       this.isGrounded = false;
     }
 
-    this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -300 : -17, this.roamMode ? 300 : 17);
-    this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -300 : -8, this.roamMode ? 300 : 8);
+    this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -125 : -17, this.roamMode ? 125 : 17);
+    this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -125 : -8, this.roamMode ? 125 : 8);
     this.velocity.x *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
     this.velocity.z *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
     this.updateProceduralPose(inputs, dt);
