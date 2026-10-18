@@ -21,14 +21,14 @@ function addArmor(root, archetype){
   const armor=mat(p.main,p.metal,.28), trim=mat(p.trim,.8,.24), glow=new THREE.MeshStandardMaterial({color:p.glow,emissive:p.glow,emissiveIntensity:2.8,metalness:.25,roughness:.22});
   const add=(geo,m,pos,scale,rot)=>{const o=new THREE.Mesh(geo,m);o.position.set(...pos);if(scale)o.scale.set(...scale);if(rot)o.rotation.set(...rot);o.castShadow=true;o.receiveShadow=true;gear.add(o);return o;};
   // Sculpted chest shell, layered collar, shoulder guards, and gauntlets sit over the rigged body.
-  add(new THREE.BoxGeometry(.72,.48,.24),armor,[0,1.28,.015],[1,1,1],[0,0,0]);
+  add(new THREE.SphereGeometry(1,24,16),armor,[0,1.29,.015],[.405,.29,.17],[0,0,0]);
   add(new THREE.BoxGeometry(.54,.1,.27),trim,[0,1.52,.015]);
   add(new THREE.OctahedronGeometry(.105,1),glow,[0,1.31,.17],[1,1.15,.45]);
   for(const side of [-1,1]){
     add(new THREE.SphereGeometry(.19,12,9),armor,[side*.43,1.43,0],[1.25,.7,1.05]);
-    add(new THREE.BoxGeometry(.18,.34,.2),trim,[side*.48,1.12,.015],[1,.92,1]);
-    add(new THREE.BoxGeometry(.17,.24,.18),armor,[side*.53,.85,.035]);
-    add(new THREE.BoxGeometry(.24,.2,.28),armor,[side*.19,.18,.015]);
+    add(new THREE.CapsuleGeometry(.085,.22,5,10),trim,[side*.48,1.12,.015],[1,.92,1]);
+    add(new THREE.CapsuleGeometry(.08,.16,5,10),armor,[side*.53,.85,.035]);
+    add(new THREE.SphereGeometry(1,16,12),armor,[side*.19,.18,.015],[.15,.12,.14]);
     add(new THREE.BoxGeometry(.075,.42,.055),glow,[side*.48,1.42,.13]);
   }
   // Different silhouettes and signature weapon language for each fighter archetype.
@@ -52,7 +52,7 @@ function addArmor(root, archetype){
     const emitter=add(new THREE.CylinderGeometry(.1,.16,.28,10),glow,[.6,1.1,.03],[1,1,1],[0,0,-Math.PI/2]);
     gear.userData.weapon=emitter;gear.userData.weaponKind='emitter';
   }else{
-    add(new THREE.BoxGeometry(.82,.11,.2),trim,[0,1.65,-.02]);
+    add(new THREE.TorusGeometry(.27,.045,8,28),trim,[0,1.62,-.02],[1.6,.55,.8],[0,0,0]);
     if(archetype==='brawler'){
       for(const side of [-1,1])add(new THREE.DodecahedronGeometry(.17,1),trim,[side*.58,.77,.04],[1.25,.8,1]);
     }else{
