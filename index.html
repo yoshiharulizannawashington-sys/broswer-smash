@@ -1,41 +1,18 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Browser Smash — 3D Fighter Prototype</title>
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-  <canvas id="game-canvas" aria-label="3D fighting game"></canvas>
-  <main id="menu" class="menu">
-    <p class="eyebrow">THREE.JS COMBAT PROTOTYPE</p>
-    <h1>NEBULA <span>CLASH</span></h1>
-    <p class="subhead">Choose a fighter and enter the arena.</p>
-    <section class="panel">
-      <h2>Player 1 roster</h2>
-      <p id="selected-fighter">Player 1: Crimson Sentinel</p>
-      <div id="char-list" class="roster-grid"></div>
-    </section>
-    <section class="panel controls">
-      <label>Player 2
-        <select id="player-two"></select>
-      </label>
-      <label>Arena
-        <select id="map-select">
-          <option value="rainbow_road">Rainbow Road Space Station</option>
-          <option value="grand_archive">The Grand Archive</option>
-          <option value="valley_of_ends">Valley of the End Gorge</option>
-        </select>
-      </label>
-      <button id="start-match" class="primary">Start Match</button>
-      <p id="status" role="status">Loading roster…</p>
-    </section>
-  </main>
-  <aside id="hud" class="hud hidden">
-    <span>PLAYER 1 · A/D move · W jump</span>
-    <span>PLAYER 2 · J/L move · U jump</span>
-  </aside>
-  <script type="module" src="/js/main.js"></script>
-</body>
-</html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080c18">
+<title>Browser Smash — Valley Clash</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080c18;color:#f3f7ff;font-family:Inter,system-ui,sans-serif}#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}.top{display:flex;justify-content:space-between;align-items:flex-start;padding:20px 24px;gap:20px}.fighter{width:min(38vw,540px);padding:12px 16px;background:linear-gradient(100deg,#071323ef,#10243bbd);border:1px solid #4ddfff88;clip-path:polygon(0 0,95% 0,100% 100%,4% 100%)}.fighter.right{border-color:#ff9a4d99;text-align:right;background:linear-gradient(260deg,#26120fee,#10243bbd)}.name{font-weight:900;letter-spacing:.12em;font-size:clamp(10px,1.4vw,17px)}.meter{height:13px;margin-top:9px;background:#172638;border:1px solid #9edcff55;overflow:hidden}.fill{height:100%;width:100%;background:linear-gradient(90deg,#00b8ff,#65f6ff);transition:width .12s}.right .fill{margin-left:auto;background:linear-gradient(90deg,#ff6b22,#ffd36a)}#timer{font-size:clamp(25px,4vw,44px);font-weight:1000;text-shadow:0 2px 20px #00cfff;text-align:center;min-width:72px}.bottom{position:absolute;bottom:18px;left:24px;right:24px;display:flex;justify-content:space-between;gap:14px;color:#e3f1ff;font-size:12px;text-shadow:0 2px 8px #000}
+#menu{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 68%,#143b5a99,transparent 58%),linear-gradient(180deg,#03081277,#03081233);transition:opacity .35s}#menu.hidden{opacity:0;pointer-events:none}.panel{text-align:center;padding:28px;max-width:650px}.eyebrow{color:#64eaff;letter-spacing:.3em;font-size:11px;font-weight:900}.title{font-size:clamp(44px,8vw,88px);font-weight:1000;line-height:.9;letter-spacing:-.06em;text-shadow:0 0 35px #00bfff99}.title span{color:#65eaff}.sub{color:#c3d5e8;margin:18px auto 24px;max-width:430px;line-height:1.5}.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}button{pointer-events:auto;border:1px solid #5ee6ff99;background:#08192be8;color:#f4fbff;padding:13px 19px;font-weight:900;letter-spacing:.06em;cursor:pointer}button:hover{background:#123954}.primary{background:linear-gradient(100deg,#087ba5,#13bfd9);color:#03101a;border:0}#result{font-size:18px;font-weight:900;color:#7af2ff;margin:12px}#loading{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);font-size:11px;color:#8ba8c1;z-index:20}
+@media(max-width:600px){.top{padding:10px;gap:6px}.fighter{padding:8px;width:40vw}.bottom{left:10px;right:10px;bottom:8px;font-size:10px}.panel{padding:18px}}
+</style>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.152.2/build/three.module.js","three/addons/":"https://unpkg.com/three@0.152.2/examples/jsm/"}}</script>
+</head><body>
+<canvas id="gl" aria-label="Browser Smash 3D fighting arena"></canvas>
+<div id="hud"><div class="top"><div class="fighter"><div class="name">P1 · CRIMSON VANGUARD</div><div class="meter"><div id="p1bar" class="fill"></div></div></div><div id="timer">99</div><div class="fighter right"><div class="name">SHADOW SHINOBI · CPU</div><div class="meter"><div id="p2bar" class="fill"></div></div></div></div><div class="bottom"><div> A/D MOVE · SHIFT RUN · SPACE JUMP<br>J LIGHT ATTACK · K ENERGY BLAST · Q DODGE</div><div id="status">VALLEY OF ECHOES · ROUND 01</div></div></div>
+<div id="menu"><div class="panel"><div class="eyebrow">A CINEMATIC ARENA FIGHTER</div><div class="title">BROWSER<br><span>SMASH</span></div><div class="sub">Fight in the Valley of Echoes. Dash, jump, fire energy blasts, and launch your rival across a glowing sci-fi arena.</div><div class="actions"><button class="primary" id="play">START FIGHT</button><button id="practice">PRACTICE MODE</button></div><div id="result"></div></div></div><div id="loading">INITIALIZING 3D RENDERER…</div>
+<script type="module" src="./public/js/main.js"></script>
+</body></html>
