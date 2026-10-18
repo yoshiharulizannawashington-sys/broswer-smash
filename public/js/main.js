@@ -20,7 +20,7 @@ scene.environment=studioTarget.texture;
 studioRoom.dispose();
 studioPMREM.dispose();
 const cinematicEnvironment=addCinematicEnvironment(THREE,scene);
-const smashCamera=new SmashCamera(camera,{height:12,trailing:18,minHeight:10,maxHeight:38};
+const smashCamera=new SmashCamera(camera,{height:12,trailing:18,minHeight:10,maxHeight:38});
 const hemisphere=new THREE.HemisphereLight(0xb5c7c2,0x4d5047,1.65);scene.add(hemisphere);
 const sun=new THREE.DirectionalLight(0xffaa44,2.8);sun.position.set(-18,7,-20);sun.castShadow=true;sun.shadow.radius=3.5;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-110;sun.shadow.camera.right=110;sun.shadow.camera.top=110;sun.shadow.camera.bottom=-110;sun.shadow.camera.near=.1;sun.shadow.camera.far=280;sun.shadow.camera.updateProjectionMatrix();scene.add(sun);const rim=new THREE.DirectionalLight(0x218cff,2.5);rim.position.set(10,7,-12);scene.add(rim);
 const mat=(color,metalness=.1,roughness=.8,emissive=0)=>new THREE.MeshStandardMaterial({color,metalness,roughness,emissive,emissiveIntensity:1});
