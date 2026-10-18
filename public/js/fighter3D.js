@@ -33,6 +33,10 @@ export default class Fighter3D {
     this.comboHitCount = 0;
     this.comboHitFlash = 0;
     this.invulnerable = 0;
+    this.parryTimer = 0;
+    this.parryCooldown = 0;
+    this.counterWindow = 0;
+    this.counterFlash = 0;
     this.runBlend = 0;
     this.moveBlend = 0;
     this.dashCooldown = 0;
@@ -50,6 +54,10 @@ export default class Fighter3D {
   simulate(dt, inputHandler) {
     this.t += dt;
     this.invulnerable = Math.max(0, this.invulnerable - dt);
+    this.parryTimer = Math.max(0, this.parryTimer - dt);
+    this.parryCooldown = Math.max(0, this.parryCooldown - dt);
+    this.counterWindow = Math.max(0, this.counterWindow - dt);
+    this.counterFlash = Math.max(0, this.counterFlash - dt);
     this.dashCooldown = Math.max(0, this.dashCooldown - dt);
     this.dashTimer = Math.max(0, this.dashTimer - dt);
     this.comboWindow = Math.max(0, this.comboWindow - dt);
@@ -74,6 +82,10 @@ export default class Fighter3D {
       window.endWebSwing?.(this, false);
     }
     this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
+    if (inputs.parry && this.parryCooldown <= 0 && this.hitstun <= 0 && this.guardBreak <= 0) {
+      this.parryTimer = 0.22;
+      this.parryCooldown = 0.32;
+    }
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
     this.grabCooldown = Math.max(0, this.grabCooldown - dt);
     this.dodgeTimer = Math.max(0, this.dodgeTimer - dt);
@@ -180,26 +192,32 @@ export default class Fighter3D {
       if (this.comboWindow <= 0) { this.comboStep = 0; this.comboHitCount = 0; }
       this.comboStep = (this.comboStep % 3) + 1;
       const finisher = this.comboStep === 3;
-      const launcher = finisher && !aerial && !heavy;
+      const countering = this.counterWindow > 0;
+      const launcher = (finisher && !aerial && !heavy) || (countering && !aerial);
       this.comboWindow = style.combo;
       const baseDamage = heavy ? 17 : finisher ? 20 : 8 + this.comboStep;
       const reach = aerial ? (finisher ? 6.0 : 4.6) + reachBonus*.62 : (finisher ? style.reach * 1.42 : style.reach) + reachBonus;
       this.attackQueue.push({
-        kind: aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
-        total: (aerial ? (finisher ? .56 : .43) : (heavy || finisher ? .56 : .34)) * style.windup,
+        kind: countering ? 'counter-strike' : aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
+        total: (aerial ? (finisher ? .56 : .43) : (heavy || finisher || countering ? .56 : .34)) * style.windup,
         t: 0,
-        start: (aerial ? .08 : (heavy || finisher ? .14 : .065)) * style.windup,
-        end: (aerial ? (finisher ? .40 : .31) : (heavy || finisher ? .31 : .19)) * style.windup,
-        damage: baseDamage * style.damage * (aerial ? 1.12 : 1) * (this.itemDamageMultiplier || 1),
-        reach,
-        kbs: (heavy || finisher ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (aerial ? 1.12 : 1),
+        start: countering ? .035 : (aerial ? .08 : (heavy || finisher ? .14 : .065)) * style.windup,
+        end: countering ? .34 : (aerial ? (finisher ? .40 : .31) : (heavy || finisher ? .31 : .19)) * style.windup,
+        damage: baseDamage * style.damage * (aerial ? 1.12 : 1) * (countering ? 1.42 : 1) * (this.itemDamageMultiplier || 1),
+        reach: reach + (countering ? .25 : 0),
+        kbs: (heavy || finisher || countering ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (aerial ? 1.12 : 1) * (countering ? 1.32 : 1),
         aerial,
         launcher,
-        launchY: aerial ? (finisher ? 11.2 : 7.2) : (launcher ? 8.6 : 3.4),
+        countering,
+        launchY: aerial ? (finisher ? 11.2 : 7.2) : (countering ? 9.2 : (launcher ? 8.6 : 3.4)),
         comboStep: this.comboStep,
         weaponKind,
         hit: false
       });
+      if (countering) {
+        this.counterWindow = 0;
+        window.showCombatCallout?.('COUNTER STRIKE', '#ffe18a');
+      }
       const dirX = this.facing || (this.player ? 1 : -1);
       const dirZ = this.facingZ || 0;
       if (aerial) {
@@ -383,7 +401,7 @@ export default class Fighter3D {
       pos, owner: this, reach, height, facingDir: dir.clone(),
       radius: a.aerial ? (a.comboStep===3 ? 2.45 : 2.05) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
       damage: a.damage, kbs: a.kbs, launchY: a.launchY || 3.4, aerial: !!a.aerial,
-      launcher: !!a.launcher, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
+      launcher: !!a.launcher, countering: !!a.countering, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
     });
   }
 
@@ -410,12 +428,34 @@ export default class Fighter3D {
         if (d < h.radius + other.hurtboxRadius) {
           h.hit = true;
           if (other.invulnerable > 0) continue;
+          if (other.parryTimer > 0 && other.hitstun <= 0 && other.guardBreak <= 0) {
+            other.parryTimer = 0;
+            other.counterWindow = 1.2;
+            other.counterFlash = 0.52;
+            other.invulnerable = Math.max(other.invulnerable, 0.16);
+            this.hitstun = Math.max(this.hitstun, 0.48);
+            this.attackQueue.length = 0;
+            const recoilX = this.position.x - other.position.x;
+            const recoilZ = this.position.z - other.position.z;
+            const recoilLength = Math.hypot(recoilX, recoilZ) || 1;
+            this.velocity.x = recoilX / recoilLength * 7.2;
+            this.velocity.z = recoilZ / recoilLength * 7.2;
+            this.velocity.y = Math.max(this.velocity.y, 3.6);
+            this.isGrounded = false;
+            window.spawnImpact?.(h.pos, 18);
+            window.showCombatCallout?.('PERFECT PARRY', '#75f5ff');
+            remove = true;
+            break;
+          }
           const guarding = other.guardHeld && other.guardBreak <= 0;
           const damageScale = guarding ? 0.28 : 1;
           other.percent += h.damage * damageScale;
           this.comboHitCount = (this.comboWindow > 0 && this.comboHitCount > 0) ? this.comboHitCount + 1 : 1;
           this.comboHitFlash = .7;
           this.comboWindow = Math.max(this.comboWindow, .82);
+          if (h.countering) window.showCombatCallout?.('COUNTER HIT!', '#ffe18a');
+          else if (h.comboStep >= 3 && !guarding) window.showCombatCallout?.('COMBO FINISHER!', '#ffbd72');
+          else if (this.comboHitCount >= 2 && !guarding) window.showCombatCallout?.(`${this.comboHitCount} HIT COMBO`, '#b9f7ff');
           other.hitstun = guarding ? 0.1 : .3 + Math.min(1.05, other.percent / 165) + (h.aerial || h.launcher ? .12 : 0);
           other.guardBreak = guarding ? Math.max(other.guardBreak, 0.08) : other.guardBreak;
           const knockbackScale = guarding ? 0.25 : 1;
