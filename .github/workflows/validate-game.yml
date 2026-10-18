@@ -38,7 +38,7 @@ jobs:
           const root = readFileSync('index.html', 'utf8');
           const page = readFileSync('public/index.html', 'utf8');
           const input = readFileSync('public/js/InputManager.js', 'utf8');
-          const version = 'signature-combat-specials-v3-20261018';
+          const version = 'blender-character-combat-v4-20261018';
 
           const launchMatch = main.match(/const roster=(\[\[[\s\S]*?\]\]);const dlcRoster/);
           const allMatch = main.match(/const allRoster=(\[\[[\s\S]*?\]\]);const roster/);
