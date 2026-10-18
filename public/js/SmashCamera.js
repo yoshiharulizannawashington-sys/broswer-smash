@@ -9,9 +9,9 @@ export default class SmashCamera {
     this.minHeight = minHeight;
     this.maxHeight = maxHeight;
     // Elevated player-anchored default; mouse wheel and right-drag remain available.
-    this.zoom = 4.6;
-    this.minZoom = 0.7;
-    this.maxZoom = 6.0;
+    this.zoom = 1.35;
+    this.minZoom = 0.75;
+    this.maxZoom = 3.2;
     this.orbitYaw = 0;
     this.orbitPitch = 0;
     this.shake = 0;
@@ -39,9 +39,9 @@ export default class SmashCamera {
     const height = THREE.MathUtils.clamp(this.baseHeight + spread * 7, this.minHeight, this.maxHeight) * this.zoom;
     const trailing = (this.baseTrailing + spread * 9) * this.zoom;
     const forward = mode === 'over-p1';
-    const targetX = forward ? a.position.x - a.facing * 8.5 : midX;
-    const targetZ = forward ? a.position.z + 13.5 * this.zoom : midZ + trailing;
-    const targetY = forward ? 10.5 + 2.1 * this.zoom : height;
+    const targetX = forward ? a.position.x - a.facing * 5.0 : midX;
+    const targetZ = forward ? a.position.z + 12.5 * this.zoom : midZ + trailing;
+    const targetY = forward ? 7.5 + 4.2 * this.zoom : height;
     this.positionTarget.set(targetX, targetY, targetZ);
     if (Math.abs(this.orbitYaw) > .001 || Math.abs(this.orbitPitch) > .001) {
       const anchor = new THREE.Vector3(forward ? a.position.x : midX, forward ? a.position.y : 0, forward ? a.position.z : midZ);
@@ -51,7 +51,7 @@ export default class SmashCamera {
       const pitch = THREE.MathUtils.clamp(Math.asin(THREE.MathUtils.clamp(offset.y / length, -1, 1)) + this.orbitPitch, .12, .82);
       this.positionTarget.set(anchor.x + Math.sin(yaw) * length * Math.cos(pitch), anchor.y + length * Math.sin(pitch), anchor.z + Math.cos(yaw) * length * Math.cos(pitch));
     }
-    this.lookTarget.set(forward ? a.position.x * .42 + b.position.x * .58 : midX, forward ? 1.8 : 1.2, forward ? a.position.z * .72 + b.position.z * .28 - 1.2 : midZ - 2.4);
+    this.lookTarget.set(forward ? a.position.x * .42 + b.position.x * .58 : midX, forward ? 1.35 : 1.2, forward ? a.position.z * .72 + b.position.z * .28 - .5 : midZ - 2.4);
     this.camera.position.x = THREE.MathUtils.damp(this.camera.position.x, this.positionTarget.x, 3.8, dt);
     this.camera.position.y = THREE.MathUtils.damp(this.camera.position.y, this.positionTarget.y, 3.4, dt);
     this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, this.positionTarget.z, 3.4, dt);
