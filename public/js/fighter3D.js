@@ -200,7 +200,7 @@ export default class Fighter3D {
         u.leftArm.rotation.z = 0;
         u.rightArm.rotation.z = 0;
       }
-      if (this.attackPose > 0) {
+      if (this.attackPose > 0 || this.attackQueue.length > 0) {
         const activeAttack=this.attackQueue[this.attackQueue.length-1];
         const progress=activeAttack?THREE.MathUtils.clamp(activeAttack.t/activeAttack.total,0,1):Math.min(1,this.attackPose);
         const punch=activeAttack?(progress<.24?-(progress/.24):progress<.62?((progress-.24)/.38):(1-progress)/.38):Math.sin(progress*Math.PI);
@@ -254,7 +254,8 @@ export default class Fighter3D {
     this.model.rotation.y = Math.atan2(this.facingZ, this.facing);
     this.model.position.y += 0; // root stays grounded; vertical motion remains in the physics body
     this.model.rotation.z = THREE.MathUtils.damp(this.model.rotation.z, dodge * -0.2 + hit * 0.12, 12, dt);
-    this.model.scale.y = THREE.MathUtils.damp(this.model.scale.y, 1 - this.landPulse * 0.08, 14, dt);
+    const visualScale=this.model.userData.visualScale||this.model.userData.characterScale||1;
+    this.model.scale.y = THREE.MathUtils.damp(this.model.scale.y, visualScale * (1 - this.landPulse * 0.08), 14, dt);
   }
 
   updateAttackQueue(dt) {
