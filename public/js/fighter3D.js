@@ -37,6 +37,9 @@ export default class Fighter3D {
     this.moveBlend = 0;
     this.dashCooldown = 0;
     this.dashTimer = 0;
+    this.canFly = false;
+    this.flightMode = false;
+    this.airChaseTime = 0;
   }
 
   simulate(dt, inputHandler) {
@@ -48,6 +51,16 @@ export default class Fighter3D {
     this.comboHitFlash = Math.max(0, this.comboHitFlash - dt);
     if (this.comboWindow <= 0) { this.comboStep = 0; this.comboHitCount = 0; }
     const inputs = inputHandler.getInputs();
+    if (this.canFly && inputs.flightToggle && this.hitstun <= 0) {
+      this.flightMode = !this.flightMode;
+      if (this.flightMode) {
+        this.isGrounded = false;
+        this.velocity.y = Math.max(this.velocity.y, 2.6);
+      } else {
+        // Release flight gracefully rather than snapping to the floor.
+        this.velocity.y = Math.max(this.velocity.y, -1.2);
+      }
+    }
     this.guardHeld = !!inputs.shield && this.hitstun <= 0 && this.guardBreak <= 0;
     this.specialCooldown = Math.max(0, this.specialCooldown - dt);
     this.grabCooldown = Math.max(0, this.grabCooldown - dt);
@@ -59,7 +72,16 @@ export default class Fighter3D {
     if (this.hitstun <= 0) this.handleInput(inputs, dt);
 
     this.wasGrounded = this.isGrounded;
-    this.velocity.y -= (this.roamMode ? 19 : 24) * dt;
+    const assistedFlight = this.canFly && this.flightMode && this.hitstun <= 0;
+    if (assistedFlight) {
+      const needsTakeoff = this.position.y < 1.25 && !inputs.descend;
+      const verticalTarget = inputs.ascend ? (inputs.sprint ? 13 : 8.5)
+        : inputs.descend ? -7.5 : needsTakeoff ? 4.2 : 0;
+      this.velocity.y = THREE.MathUtils.damp(this.velocity.y, verticalTarget,
+        inputs.ascend || inputs.descend ? 5.5 : 3.2, dt);
+    } else {
+      this.velocity.y -= (this.roamMode ? 19 : 24) * dt;
+    }
     this.position.addScaledVector(this.velocity, dt);
     if (this.position.y <= 0) {
       if (!this.wasGrounded && this.velocity.y < -3) this.landPulse = 1;
@@ -68,6 +90,13 @@ export default class Fighter3D {
       this.isGrounded = true;
     } else {
       this.isGrounded = false;
+    }
+    if (this.canFly && this.flightMode && this.hitstun <= 0) {
+      const altitudeLimit = this.roamMode ? 72 : 14;
+      if (this.position.y > altitudeLimit) {
+        this.position.y = altitudeLimit;
+        this.velocity.y = Math.min(0, this.velocity.y);
+      }
     }
 
     this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -125 : -17, this.roamMode ? 125 : 17);
@@ -99,7 +128,7 @@ export default class Fighter3D {
       this.velocity.z = THREE.MathUtils.damp(this.velocity.z, 0, this.isGrounded ? 11 : 2.5, dt);
     }
 
-    if (i.jump && this.isGrounded) {
+    if (i.jump && this.isGrounded && !this.flightMode) {
       this.velocity.y = this.roamMode ? 9.4 : 10.8;
       this.velocity.x *= 1.08;
       this.isGrounded = false;
@@ -107,11 +136,12 @@ export default class Fighter3D {
       this.velocity.z *= 1.08;
     }
 
-    if (i.dodge && this.isGrounded && this.dodgeTimer <= 0) {
+    if (i.dodge && this.dashCooldown <= 0 && this.dodgeTimer <= 0) {
       const mag = Math.hypot(this.facing, this.facingZ) || 1;
       this.velocity.x = (len ? nx : this.facing / mag) * (this.roamMode ? 17 : 13);
       this.velocity.z = (len ? nz : this.facingZ / mag) * (this.roamMode ? 17 : 13);
-      this.velocity.y = 2.1;
+      if (this.isGrounded) this.velocity.y = 2.1;
+      else this.velocity.y = Math.max(this.velocity.y, 1.0);
       this.invulnerable = .2;
       this.dodgeTimer = this.roamMode ? .62 : .48;
       this.dashTimer = this.roamMode ? .24 : .16;
@@ -138,27 +168,54 @@ export default class Fighter3D {
       const launcher = finisher && !aerial && !heavy;
       this.comboWindow = style.combo;
       const baseDamage = heavy ? 17 : finisher ? 20 : 8 + this.comboStep;
-      const reach = aerial ? (finisher ? 4.25 : 3.2) + reachBonus*.42 : (finisher ? style.reach * 1.42 : style.reach) + reachBonus;
+      const reach = aerial ? (finisher ? 6.0 : 4.6) + reachBonus*.62 : (finisher ? style.reach * 1.42 : style.reach) + reachBonus;
       this.attackQueue.push({
         kind: aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
-        total: (aerial ? (finisher ? .5 : .38) : (heavy || finisher ? .56 : .34)) * style.windup,
+        total: (aerial ? (finisher ? .56 : .43) : (heavy || finisher ? .56 : .34)) * style.windup,
         t: 0,
         start: (aerial ? .08 : (heavy || finisher ? .14 : .065)) * style.windup,
-        end: (aerial ? (finisher ? .34 : .25) : (heavy || finisher ? .31 : .19)) * style.windup,
+        end: (aerial ? (finisher ? .40 : .31) : (heavy || finisher ? .31 : .19)) * style.windup,
         damage: baseDamage * style.damage * (aerial ? 1.12 : 1),
         reach,
         kbs: (heavy || finisher ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (aerial ? 1.12 : 1),
         aerial,
         launcher,
-        launchY: aerial ? (finisher ? 8.8 : 6.4) : (launcher ? 8.6 : 3.4),
+        launchY: aerial ? (finisher ? 11.2 : 7.2) : (launcher ? 8.6 : 3.4),
         comboStep: this.comboStep,
         weaponKind,
         hit: false
       });
       const dirX = this.facing || (this.player ? 1 : -1);
       const dirZ = this.facingZ || 0;
-      if (aerial) { this.velocity.x += dirX * (finisher ? 2.8 : 1.65); this.velocity.z += dirZ * (finisher ? 2.4 : 1.35); }
-      else if (launcher) { this.velocity.x += dirX * 1.2; this.velocity.y = Math.max(this.velocity.y, .9); }
+      if (aerial) {
+        // Air attacks actively chase a launched rival, creating a followable juggle instead
+        // of whiffing when the opponent has drifted away from the attacker.
+        const target = (window.fighters || []).find(f => f !== this && f.model?.visible !== false);
+        let chased = false;
+        if (target) {
+          const dx = target.position.x - this.position.x;
+          const dz = target.position.z - this.position.z;
+          const horizontal = Math.hypot(dx, dz);
+          if (horizontal > 1.6 && horizontal < 14) {
+            const chaseSpeed = finisher ? 5.2 : 3.6;
+            this.velocity.x += dx / horizontal * chaseSpeed;
+            this.velocity.z += dz / horizontal * chaseSpeed;
+            if (Math.abs(dx) > .2) this.facing = Math.sign(dx);
+            if (Math.abs(dz) > .2) this.facingZ = Math.sign(dz);
+            const heightGap = target.position.y - this.position.y;
+            this.velocity.y = Math.max(this.velocity.y, heightGap > .8
+              ? Math.min(10.5, 4.2 + heightGap * .5) : 2.8);
+            chased = true;
+          }
+        }
+        if (!chased) {
+          this.velocity.x += dirX * (finisher ? 3.4 : 2.0);
+          this.velocity.z += dirZ * (finisher ? 2.8 : 1.6);
+        }
+      } else if (launcher) {
+        this.velocity.x += dirX * 1.2;
+        this.velocity.y = Math.max(this.velocity.y, .9);
+      }
       if(rangedWeapon&&!heavy&&!aerial) window.spawnProjectile?.(this,{source:'weapon',weaponKind});
       this.attackPose = 1;
     }
@@ -185,6 +242,8 @@ export default class Fighter3D {
     const hit = this.hitstun > 0 ? Math.sin(this.t * 36) * Math.min(1, this.hitstun * 2) : 0;
     const airborne = !this.isGrounded;
     const guard = !!i.shield && this.hitstun <= 0 && this.guardBreak <= 0;
+    if (u.rightArm) u.rightArm.rotation.y = 0;
+    if (u.rightFore) { u.rightFore.rotation.y = 0; u.rightFore.rotation.z = 0; }
 
     if (u.leftLeg) {
       const stride = Math.sin(phase) * 0.68 * speed;
@@ -212,24 +271,29 @@ export default class Fighter3D {
         const punch=activeAttack?(progress<.24?-(progress/.24):progress<.62?((progress-.24)/.38):(1-progress)/.38):Math.sin(progress*Math.PI);
         const archetype = this.archetype || 'warrior';
         const combo = this.comboStep || 1;
-        const slash = archetype === 'ninja' || combo === 3;
-        const heavy = archetype === 'brawler' || combo === 3;
+        const weaponKind=this.model.userData.weaponKind||'unarmed';
+        const bladed=['sword','katana','cyber_blade','giant_sword','scimitar','trident','staff','axe','hammer','stormbreaker','war_fan','whip','nunchaku','knife','claws','tentacle'].includes(weaponKind);
+        const ranged=['blaster','rifle','shotgun','plasma_rifle','pistol'].includes(weaponKind);
+        const slash = archetype === 'ninja' || combo === 3 || bladed;
+        const heavy = archetype === 'brawler' || combo === 3 || weaponKind === 'stormbreaker';
         const arc = archetype === 'mage';
         const mechanical = archetype === 'cyborg';
         const aerialAttack=!!activeAttack?.aerial;
-        const weaponKind=this.model.userData.weaponKind||'unarmed';
-        const bladed=['sword','katana','cyber_blade','giant_sword','scimitar','trident','staff','axe','hammer','war_fan','whip','nunchaku','knife','claws','tentacle'].includes(weaponKind);
-        const ranged=['blaster','rifle','shotgun','plasma_rifle','pistol'].includes(weaponKind);
-        // Anticipation and follow-through vary by fighter archetype and combo step.
+        const swing = Math.sin(progress * Math.PI);
+        // Long anticipation, shoulder-led sweep, and a real follow-through arc keep weapons
+        // readable at distance; Stormbreaker has a heavier two-stage cut.
         u.rightArm.rotation.x = (heavy ? -2.05 : arc ? -1.15 : ranged ? -1.0 : bladed ? -1.86 : aerialAttack ? -1.72 : -1.5) * punch - 0.18;
-        u.rightArm.rotation.z = (slash ? -0.62 : mechanical ? -0.12 : 0.08) * punch;
+        u.rightArm.rotation.z = (slash ? -0.62 : mechanical ? -0.12 : 0.08) * punch
+          + (weaponKind === 'stormbreaker' ? .34 * swing : 0);
+        u.rightArm.rotation.y = (weaponKind === 'stormbreaker' ? .86 : bladed ? .48 : .12) * swing * (combo % 2 ? 1 : -1);
         u.rightFore.rotation.x = (ranged ? -.32 : slash ? -1.0 : arc ? -0.25 : bladed ? -1.08 : aerialAttack ? -1.08 : -0.68) * punch;
-        u.rightFore.rotation.z = slash ? -0.3 * punch : 0;
+        u.rightFore.rotation.y = (weaponKind === 'stormbreaker' ? -.58 : bladed ? -.25 : 0) * swing;
+        u.rightFore.rotation.z = weaponKind === 'stormbreaker' ? -.42 * punch : slash ? -0.3 * punch : 0;
         u.leftArm.rotation.x = -0.25 - (heavy ? 0.55 : arc ? 0.15 : 0.3) * punch;
         u.leftArm.rotation.z = (slash ? 0.45 : 0.18) * punch;
         u.leftFore.rotation.x = -0.25 - 0.25 * punch;
-        u.torso.rotation.x = -(heavy ? 0.23 : 0.14) * punch;
-        u.torso.rotation.y = (slash || bladed ? 0.32 : mechanical ? 0.08 : -0.17) * punch * (combo % 2 ? 1 : -1);
+        u.torso.rotation.x = -(heavy ? 0.28 : aerialAttack ? 0.20 : 0.14) * punch;
+        u.torso.rotation.y = (slash || bladed ? 0.42 : mechanical ? 0.08 : -0.17) * punch * (combo % 2 ? 1 : -1);
         if(aerialAttack){u.leftLeg.rotation.x=-.55-.18*punch;u.rightLeg.rotation.x=.62+.24*punch;u.leftShin.rotation.x=.25;u.rightShin.rotation.x=.3;u.pelvis.rotation.x=-.16-.09*punch;}
         if (heavy) {
           u.leftLeg.rotation.x = -0.35 * punch;
@@ -243,16 +307,27 @@ export default class Fighter3D {
         u.leftArm.rotation.x -= dodge * 0.45;
         u.rightArm.rotation.x -= dodge * 0.45;
       }
+      if (this.flightMode && this.attackQueue.length === 0 && !guard) {
+        // A stable superhero hover/glide silhouette while the flight controls hold altitude.
+        u.leftArm.rotation.x = -0.62;
+        u.rightArm.rotation.x = -0.72;
+        u.leftArm.rotation.z = .36;
+        u.rightArm.rotation.z = -.36;
+        u.leftLeg.rotation.x = -.43;
+        u.rightLeg.rotation.x = .52;
+        u.leftShin.rotation.x = .34;
+        u.rightShin.rotation.x = .24;
+      }
     }
 
     if (u.torso) {
       const breathing = Math.sin(this.t * 2.7) * 0.018;
       u.torso.rotation.z = -this.velocity.x * 0.018 + hit * 0.12;
-      if (!(this.attackPose > 0)) u.torso.rotation.x = airborne ? -0.12 : 0;
+      if (!(this.attackPose > 0)) u.torso.rotation.x = this.flightMode ? THREE.MathUtils.clamp(-this.velocity.y * .018, -.22, .12) : airborne ? -0.12 : 0;
       u.torso.position.y = 0.28 + (this.isGrounded ? breathing : 0.03);
     }
     if (u.pelvis) {
-      u.pelvis.rotation.x = airborne ? -0.12 : 0;
+      u.pelvis.rotation.x = this.flightMode ? -.16 : airborne ? -0.12 : 0;
       u.pelvis.position.y = 1.02 - this.landPulse * 0.12;
       u.pelvis.scale.y = 1 + this.landPulse * 0.08;
     }
@@ -284,13 +359,16 @@ export default class Fighter3D {
     if (dir.lengthSq() < 0.01) dir.set(this.player ? 1 : -1, 0, 0);
     dir.normalize();
     const reach = a.reach || (a.kind === 'heavy' ? 1.45 : 1.2);
-    const height = a.aerial ? 1.32 : a.launcher ? 1.38 : 1.25;
-    const pos = this.position.clone().add(dir.multiplyScalar(reach)).add(new THREE.Vector3(0, height, 0));
+    const target = (window.fighters || []).find(other => other !== this && other.model?.visible !== false);
+    const verticalTrack = a.aerial && target
+      ? THREE.MathUtils.clamp((target.position.y - this.position.y) * .82, -2, 4) : 0;
+    const height = (a.aerial ? 1.32 : a.launcher ? 1.38 : 1.25) + verticalTrack;
+    const pos = this.position.clone().add(dir.clone().multiplyScalar(reach)).add(new THREE.Vector3(0, height, 0));
     this.hitboxes.push({
-      pos,
-      radius: a.aerial ? (a.comboStep===3 ? 1.8 : 1.55) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
+      pos, owner: this, reach, height, facingDir: dir.clone(),
+      radius: a.aerial ? (a.comboStep===3 ? 2.45 : 2.05) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
       damage: a.damage, kbs: a.kbs, launchY: a.launchY || 3.4, aerial: !!a.aerial,
-      launcher: !!a.launcher, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .18 : .15, hit: false
+      launcher: !!a.launcher, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
     });
   }
 
@@ -298,6 +376,17 @@ export default class Fighter3D {
     for (let n = this.hitboxes.length - 1; n >= 0; n--) {
       const h = this.hitboxes[n];
       h.lifetime -= dt;
+      if (h.aerial && h.owner) {
+        const owner = h.owner;
+        const direction = new THREE.Vector3(owner.facing, 0, owner.facingZ);
+        if (direction.lengthSq() < .01) direction.set(owner.player ? 1 : -1, 0, 0);
+        direction.normalize();
+        const target = (window.fighters || []).find(other => other !== owner && other.model?.visible !== false);
+        const verticalTrack = target
+          ? THREE.MathUtils.clamp((target.position.y - owner.position.y) * .82, -2, 4) : 0;
+        h.pos.copy(owner.position).add(direction.multiplyScalar(h.reach))
+          .add(new THREE.Vector3(0, 1.32 + verticalTrack, 0));
+      }
       let remove = h.lifetime <= 0;
       for (const other of (window.fighters || [])) {
         if (other === this || h.hit) continue;
