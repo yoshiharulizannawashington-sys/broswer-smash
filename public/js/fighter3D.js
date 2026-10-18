@@ -200,7 +200,8 @@ export default class Fighter3D {
       const countering = this.counterWindow > 0;
       const launcher = (finisher && !aerial && !heavy) || (countering && !aerial);
       this.comboWindow = style.combo;
-      const baseDamage = heavy ? 17 : finisher ? 20 : 8 + this.comboStep;
+      const combatProfile=this.combatProfile||{damage:1,knockback:1,launch:1};
+      const baseDamage = (heavy ? 17 : finisher ? 20 : 8 + this.comboStep) * combatProfile.damage;
       const reach = aerial ? (finisher ? 6.0 : 4.6) + reachBonus*.62 : (finisher ? style.reach * 1.42 : style.reach) + reachBonus;
       this.attackQueue.push({
         kind: countering ? 'counter-strike' : aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
@@ -210,11 +211,11 @@ export default class Fighter3D {
         end: countering ? .34 : (aerial ? (finisher ? .40 : .31) : (heavy || finisher ? .31 : .19)) * style.windup,
         damage: baseDamage * style.damage * (aerial ? 1.12 : 1) * (countering ? 1.42 : 1) * (this.itemDamageMultiplier || 1),
         reach: reach + (countering ? .25 : 0),
-        kbs: (heavy || finisher || countering ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (aerial ? 1.12 : 1) * (countering ? 1.32 : 1),
+        kbs: (heavy || finisher || countering ? 112 : 76 + this.comboStep * 4) * (this.archetype === 'brawler' ? 1.15 : 1) * (combatProfile.knockback||1) * (aerial ? 1.12 : 1) * (countering ? 1.32 : 1),
         aerial,
         launcher,
         countering,
-        launchY: aerial ? (finisher ? 11.2 : 7.2) : (countering ? 9.2 : (launcher ? 8.6 : 3.4)),
+        launchY: (aerial ? (finisher ? 11.2 : 7.2) : (countering ? 9.2 : (launcher ? 8.6 : 3.4))) * (combatProfile.launch||1),
         comboStep: this.comboStep,
         weaponKind,
         hit: false
@@ -265,9 +266,10 @@ export default class Fighter3D {
     }
 
     if (i.special && this.specialCooldown <= 0 && this.guardBreak <= 0) {
-      window.spawnProjectile?.(this, this.canWebSwing ? {source:'web',weaponKind:'webshooters'} : {});
+      window.spawnProjectile?.(this, this.canWebSwing ? {source:'special',weaponKind:'webshooters',...this.specialProfile,type:'web'} : {source:'special',...this.specialProfile});
       const cooldowns = {warrior:.82,ninja:.68,brawler:1.02,mage:.9,cyborg:.76};
-      this.specialCooldown = this.canWebSwing ? .72 : cooldowns[this.archetype] || .82;
+      this.specialCooldown = this.specialProfile?.cooldown || (this.canWebSwing ? .72 : cooldowns[this.archetype] || .82);
+      window.showCombatCallout?.(this.specialProfile?.label || 'SPECIAL ATTACK', '#9deeff');
       this.attackPose = Math.max(this.attackPose, 0.65);
     }
   }
