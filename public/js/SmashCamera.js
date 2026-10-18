@@ -9,7 +9,7 @@ export default class SmashCamera {
     this.minHeight = minHeight;
     this.maxHeight = maxHeight;
     // Start wider than the old close-up framing; mouse wheel can zoom between 0.7x and 3.2x.
-    this.zoom = 2.25;
+    this.zoom = 2.6;
     this.minZoom = 0.7;
     this.maxZoom = 5.0;
     this.shake = 0;
