@@ -311,7 +311,7 @@ function loadCharacterModelLibrary(){
   if(!characterModelLibraryState.promise){
     characterModelLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_models.glb',import.meta.url);
-      url.searchParams.set('v','blender-character-library-v1-20261018');
+      url.searchParams.set('v','blender-character-combat-v4-20261018');
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
         gltf.scene.traverse(node=>{
