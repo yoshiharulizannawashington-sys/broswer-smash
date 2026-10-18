@@ -70,6 +70,7 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
         if (kind === 'power') { fighter.itemDamageMultiplier = 1.65; fighter.itemPowerTimer = 8; }
         if (kind === 'shield') { fighter.invulnerable = Math.max(fighter.invulnerable || 0, 2.6); fighter.itemShieldTimer = 2.6; }
         if (kind === 'blade') {
+          if (fighter.itemWeaponTimer <= 0) fighter.itemPreviousWeaponKind = fighter.model.userData.weaponKind || null;
           fighter.model.userData.weaponKind = 'sword';
           fighter.itemDamageMultiplier = 1.35;
           fighter.itemPowerTimer = 10;
@@ -99,7 +100,9 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
       fighter.itemWeaponTimer = Math.max(0, (fighter.itemWeaponTimer || 0) - dt);
       if (fighter.itemPowerTimer <= 0) fighter.itemDamageMultiplier = 1;
       if (fighter.itemWeaponTimer <= 0 && fighter.model?.userData?.weaponKind === 'sword') {
-        delete fighter.model.userData.weaponKind;
+        if (fighter.itemPreviousWeaponKind) fighter.model.userData.weaponKind = fighter.itemPreviousWeaponKind;
+        else delete fighter.model.userData.weaponKind;
+        fighter.itemPreviousWeaponKind = null;
         if (fighter.model.userData.pickupBlade) {
           fighter.model.userData.pickupBlade.parent?.remove(fighter.model.userData.pickupBlade);
           fighter.model.userData.pickupBlade = null;
