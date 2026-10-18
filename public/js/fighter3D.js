@@ -1,5 +1,5 @@
 // Active fighter simulation with responsive movement, articulated animation, guarding and combat.
-import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
+import * as THREE from 'three';
 
 export default class Fighter3D {
   constructor({ name = 'Fighter', model, weight = 85, player = false }) {
