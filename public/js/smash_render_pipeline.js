@@ -17,13 +17,13 @@ export function createSmashRenderPipeline(canvas,scene){
  renderer.info.autoReset=true;
  const camera=new THREE.PerspectiveCamera(49,window.innerWidth/window.innerHeight,.1,650);
  camera.position.set(0,12,18);
- const composer=new EffectComposer(renderer);
- composer.addPass(new RenderPass(scene,camera));
- const bloom=new UnrealBloomPass(new THREE.Vector2(window.innerWidth,window.innerHeight),.58,.68,.82);
- composer.addPass(bloom);
- // Use Three.js's official output pass so tone mapping and color-space chunks
- // are included exactly once by the renderer's supported post-processing path.
- composer.addPass(new OutputPass());
+ // Safe rendering fallback: render the scene directly instead of compiling the
+ // post-processing chain. The current browser build is duplicating Three.js
+ // tone-mapping/color-space shader chunks in the composer, which prevents all
+ // 3D materials from drawing. Keep the composer-shaped API so gameplay code
+ // remains unchanged while the arena and fighters render again.
+ const composer={render(){renderer.render(scene,camera);}};
+ const bloom={enabled:false};
  return {renderer,camera,composer,bloom,enableSSR(){return null;}};
 }
 function makeDetailNormalTexture(){const size=256,data=new Uint8Array(size*size*4);for(let y=0;y<size;y++)for(let x=0;x<size;x++){const i=(y*size+x)*4;const ripple=Math.sin(x*.21+Math.sin(y*.09)*2)*.18+Math.cos(y*.17+x*.03)*.13+Math.sin(x*.055)*Math.cos(y*.065)*.12;const crack=((x%64<2||y%64<2)?-.16:0);data[i]=128+(ripple+crack)*100;data[i+1]=128+Math.cos(x*.16+y*.23)*16;data[i+2]=246;data[i+3]=255;}const texture=new THREE.DataTexture(data,size,size,THREE.RGBAFormat);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(18,12);texture.colorSpace=THREE.NoColorSpace;texture.needsUpdate=true;return texture;}
