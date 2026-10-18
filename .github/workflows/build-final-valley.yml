@@ -96,10 +96,11 @@ jobs:
           cjson_len, cjson_type = struct.unpack_from("<II", cdata, 12)
           assert cjson_type == 0x4E4F534A, "Character GLB has no JSON chunk"
           cdoc = json.loads(cdata[20:20+cjson_len].decode("utf-8").rstrip(" \\t\\r\\n\\0"))
-          assert len(cdoc.get("meshes", [])) >= 300, "Character GLB missing detailed character geometry"
+          assert len(cdoc.get("meshes", [])) >= 500, "Character GLB missing detailed character geometry"
           assert len(cdoc.get("materials", [])) >= 20, "Character GLB missing individualized materials"
           char_nodes = {node.get("name", "") for node in cdoc.get("nodes", [])}
-          for key in ("superman", "iron_man_tony_stark", "thor", "aang", "madara_uchiha", "spider_man"):
+          assert len([name for name in char_nodes if name.startswith("character_")]) >= 57, "DLC character prefabs missing from Blender archive"
+          for key in ("superman", "iron_man_tony_stark", "thor", "aang", "madara_uchiha", "spider_man", "the_rock", "wolverine_logan", "sephiroth", "shrek", "lara_croft", "indiana_jones"):
               assert "character_" + key in char_nodes, f"Missing character model prefab: {key}"
               for joint in ("torso", "pelvis", "head", "leftArm", "rightArm", "leftFore", "rightFore", "leftLeg", "rightLeg", "leftShin", "rightShin"):
                   assert "joint_" + key + "_" + joint in char_nodes, f"Missing articulated joint {joint} on {key}"
