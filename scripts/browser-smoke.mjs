@@ -26,6 +26,10 @@ const server = createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname);
     let relative = normalize(pathname).replace(/^[/\\]+/, '');
     if (!relative) relative = 'index.html';
+    // Match Vite's public/ behavior: /js and /assets are served from public/js and public/assets.
+    if (relative === 'js' || relative.startsWith('js' + sep) || relative === 'assets' || relative.startsWith('assets' + sep)) {
+      relative = 'public' + sep + relative;
+    }
     const filePath = resolve(root, relative);
     if (filePath !== root && !filePath.startsWith(root + sep)) {
       res.writeHead(403); res.end('Forbidden'); return;
