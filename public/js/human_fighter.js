@@ -13,9 +13,8 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
  const find=prefix=>Object.entries(root.userData.humanAnimations).find(([n])=>n.includes(prefix))?.[1];
  const idle=find('idle')||gltf.animations[0]&&mixer.clipAction(gltf.animations[0]);const walk=find('walk');const run=find('run');
  if(idle){idle.play();root.userData.activeAction=idle;}
- const previous=fighter.model;previous.parent?.remove(previous);root.position.copy(fighter.position);root.userData.humanMixer=mixer;root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;root.userData.lastMoveAction=idle;
- const parent=previous.parent;
- if(parent)parent.add(root);else if(typeof window!=='undefined'&&window.__smashScene)window.__smashScene.add(root);
+ const previous=fighter.model;const parent=previous.parent;root.position.copy(fighter.position);root.userData.humanMixer=mixer;root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;root.userData.lastMoveAction=idle;
+ if(parent){parent.add(root);parent.remove(previous);}else if(typeof window!=='undefined'&&window.__smashScene)window.__smashScene.add(root);
  fighter.model=root;return root;
 }
 export function animateHumanFighter(fighter,dt){const root=fighter.model;if(!root?.userData?.humanMixer)return;root.userData.humanMixer.update(dt);const speed=Math.hypot(fighter.velocity.x,fighter.velocity.z);const target=speed>8?root.userData.runAction:speed>.45?root.userData.walkAction:root.userData.idleAction;if(target&&target!==root.userData.lastMoveAction){const old=root.userData.lastMoveAction;target.reset().fadeIn(.18).play();if(old&&old!==target)old.fadeOut(.18);root.userData.lastMoveAction=target;}}
