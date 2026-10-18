@@ -11,6 +11,7 @@ on:
       - "assets/blender/final_valley_scene.py"
       - "assets/blender/character_weapons.py"
       - "assets/blender/character_models.py"
+      - "assets/blender/cinematic_arenas.py"
       - ".github/workflows/build-final-valley.yml"
   workflow_dispatch:
 
@@ -41,6 +42,7 @@ jobs:
           blender --background --factory-startup --python assets/blender/final_valley_scene.py
           blender --background --factory-startup --python assets/blender/character_weapons.py
           blender --background --factory-startup --python assets/blender/character_models.py
+          blender --background --factory-startup --python assets/blender/cinematic_arenas.py
 
       - name: Validate Blender file and GLB structure
         run: |
@@ -107,6 +109,30 @@ jobs:
           print(f"Character Blender library: {characters_blend.stat().st_size/1024/1024:.1f} MiB")
           print(f"Character GLB: {characters_glb.stat().st_size/1024/1024:.1f} MiB; {len(cdoc['meshes'])} meshes; {len(cdoc['materials'])} materials")
           print(f"Character prefabs found: {sum(1 for name in char_nodes if name.startswith('character_'))}")
+          arena_specs = {
+              "asgard": ("Asgardian golden city", 80),
+              "helicarrier": ("Helicarrier and Manhattan", 80),
+              "deathstar": ("Two connected Death Star rooms", 80),
+              "hogwarts": ("Hogwarts Great Hall", 80),
+              "tournament": ("World Martial Arts Tournament", 80),
+          }
+          for key, (label, min_meshes) in arena_specs.items():
+              blend_path = pathlib.Path(f"assets/blender/arenas/{key}.blend")
+              glb_path = pathlib.Path(f"public/assets/arenas/{key}.glb")
+              assert blend_path.is_file() and blend_path.stat().st_size > 100_000, f"Missing Blender source for {label}"
+              assert blend_path.read_bytes()[:7] == b"BLENDER", f"Invalid Blender source for {label}"
+              adata = glb_path.read_bytes()
+              assert len(adata) > 100_000, f"Missing or empty arena GLB for {label}"
+              amagic, aversion, alength = struct.unpack_from("<4sII", adata, 0)
+              assert amagic == b"glTF" and aversion == 2 and alength == len(adata), f"Invalid GLB header for {label}"
+              ajlen, ajtype = struct.unpack_from("<II", adata, 12)
+              assert ajtype == 0x4E4F534A, f"Missing GLB JSON for {label}"
+              adoc = json.loads(adata[20:20+ajlen].decode("utf-8").rstrip(" \\t\\r\\n\\0"))
+              assert len(adoc.get("meshes", [])) >= min_meshes, f"Arena GLB geometry incomplete for {label}"
+              assert len(adoc.get("materials", [])) >= 5, f"Arena GLB materials incomplete for {label}"
+              node_names = {node.get("name", "") for node in adoc.get("nodes", [])}
+              assert "arena_" + key in node_names, f"Arena root node missing for {label}"
+              print(f"{label}: {glb_path.stat().st_size/1024/1024:.2f} MiB; {len(adoc['meshes'])} meshes; {len(adoc['materials'])} materials")
           PY
 
       - name: Commit generated assets
@@ -120,6 +146,9 @@ jobs:
           cp public/assets/character_weapons.glb /tmp/browser-smash-exports/character_weapons.glb
           cp assets/blender/character_models.blend /tmp/browser-smash-exports/character_models.blend
           cp public/assets/character_models.glb /tmp/browser-smash-exports/character_models.glb
+          mkdir -p /tmp/browser-smash-exports/arenas-blend /tmp/browser-smash-exports/arenas-glb
+          cp assets/blender/arenas/*.blend /tmp/browser-smash-exports/arenas-blend/
+          cp public/assets/arenas/*.glb /tmp/browser-smash-exports/arenas-glb/
           for attempt in 1 2 3 4 5; do
             git fetch origin main
             git reset --hard origin/main
@@ -129,12 +158,15 @@ jobs:
             cp /tmp/browser-smash-exports/character_weapons.glb public/assets/character_weapons.glb
             cp /tmp/browser-smash-exports/character_models.blend assets/blender/character_models.blend
             cp /tmp/browser-smash-exports/character_models.glb public/assets/character_models.glb
-            git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb assets/blender/character_models.blend public/assets/character_models.glb
+            mkdir -p assets/blender/arenas public/assets/arenas
+            cp /tmp/browser-smash-exports/arenas-blend/*.blend assets/blender/arenas/
+            cp /tmp/browser-smash-exports/arenas-glb/*.glb public/assets/arenas/
+            git add assets/blender/final_valley.blend public/assets/final_valley.glb assets/blender/character_weapons.blend public/assets/character_weapons.glb assets/blender/character_models.blend public/assets/character_models.glb assets/blender/arenas/*.blend public/assets/arenas/*.glb
             if git diff --cached --quiet; then
               echo "Generated assets are already up to date."
               exit 0
             fi
-            git commit -m "Export Final Valley and character weapon Blender libraries"
+            git commit -m "Export Blender environments, articulated characters, and weapons"
             if git push origin HEAD:main; then
               exit 0
             fi
