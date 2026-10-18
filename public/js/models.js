@@ -361,7 +361,9 @@ export async function upgradeCharacterWithBlenderModel(fighter){
   const avatar=template.clone(true);
   avatar.name='Blender fighter '+(fighter.identity||fighter.name);
   avatar.position.copy(oldModel.position);
-  avatar.rotation.copy(oldModel.rotation);
+  // Keep the Blender-to-glTF axis correction authored on each prefab; take the live fighter
+  // heading from the fallback, otherwise its zero rotation lays the prefab flat.
+  avatar.rotation.set(template.rotation.x, oldModel.rotation.y + template.rotation.y, template.rotation.z);
   avatar.scale.copy(oldModel.scale);
   avatar.userData={...avatar.userData,
     identity:fighter.identity||fighter.name,
