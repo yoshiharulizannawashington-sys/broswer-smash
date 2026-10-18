@@ -1,4 +1,4 @@
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js';
 // Final Valley-inspired arena: procedural geometry, native materials, and collision proxies.
 // Original fan-inspired scenery; no external model or texture downloads are required.
 export function createFinalValley(THREE) {
