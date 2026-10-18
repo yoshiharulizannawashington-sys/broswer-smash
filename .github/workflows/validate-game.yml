@@ -68,7 +68,7 @@ jobs:
           ]) assert.ok(main.includes(required), 'Missing game feature: ' + required);
 
           for (const [name, html, expectedPrefix] of [
-            ['root', root, './public/js/main.js?v='],
+            ['root', root, './js/main.js?v='],
             ['public', page, './js/main.js?v=']
           ]) {
             const script = html.match(/<script type="module" src="([^"]+)/)?.[1];
