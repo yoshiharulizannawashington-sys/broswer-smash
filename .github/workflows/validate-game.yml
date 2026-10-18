@@ -38,7 +38,7 @@ jobs:
           const root = readFileSync('index.html', 'utf8');
           const page = readFileSync('public/index.html', 'utf8');
           const input = readFileSync('public/js/InputManager.js', 'utf8');
-          const versions = [...main.matchAll(/from '\\.\\/[^']+\\.js\\?v=([^']+)'/g)].map(match => match[1]);
+          const versions = [...main.matchAll(/from '\.\/[^']+\.js\?v=([^']+)'/g)].map(match => match[1]);
           assert.ok(versions.length > 0, 'No versioned local game modules were found');
           const version = versions[0];
           assert.ok(versions.every(candidate => candidate === version), 'Game modules use inconsistent cache versions: ' + [...new Set(versions)].join(', '));
