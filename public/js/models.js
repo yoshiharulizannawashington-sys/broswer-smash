@@ -383,6 +383,10 @@ export async function upgradeCharacterWithBlenderModel(fighter){
   const parent=oldModel.parent;
   if(!parent)return false;
   avatar.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+  avatar.updateMatrixWorld(true);
+  const modelBounds=new THREE.Box3().setFromObject(avatar);
+  const modelSize=modelBounds.getSize(new THREE.Vector3());
+  runtimeAssetState.lastCharacter={key,loaded:true,bounds:{width:modelSize.x,height:modelSize.y,depth:modelSize.z},upright:modelSize.y>Math.max(modelSize.x,modelSize.z)*1.2};
   parent.add(avatar);
   parent.remove(oldModel);
   fighter.model=avatar;
