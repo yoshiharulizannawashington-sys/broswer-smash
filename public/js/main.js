@@ -113,6 +113,31 @@ function applyMap(key){const t=mapThemes[key]||mapThemes.valley;scene.background
    landmark(0,-105,2.2);addProp(new THREE.BoxGeometry(26,1,5),gold,0,15,-105);
  }
  $status.textContent=t.label+' · ROUND 01';localStorage.setItem('browserSmashMap',key);}
+// Lightweight arena collision proxies keep fighters from walking through major landmarks while preserving free-roam movement.
+const arenaCollision={
+ valley:[[-27,-24,8],[25,-24,8],[-7,-48,2.2],[-3.5,-48,1.8],[0,-48,1.8],[3.5,-48,1.8],[7,-48,2.2],[-22,-16,2],[22,-18,2],[-36,8,2.5],[36,12,2.5],[-12,-32,2],[15,-38,2]],
+ volcano:[[-32,-38,12],[-90,-65,11]],
+ ice:[[-34,-35,9],[95,-75,12]],
+ neon:[[0,-100,12]],
+ deathstar:[[10,38,8],[-28,-38,3],[-20,-38,3],[-12,-38,3],[-4,-38,3],[4,-38,3],[12,-38,3],[20,-38,3],[28,-38,3]],
+ finalvalley:[[-34,-46,13],[34,-46,13],[-52,-74,10],[53,-72,10]],
+ tournament:[[-15,-20,1.2],[-15,-4,1.2],[15,-20,1.2],[15,-4,1.2]],
+ starktower:[[0,-58,10],[-55,-75,4],[-47,-83,4],[-39,-91,4],[-31,-75,4],[25,-83,4],[33,-91,4]],
+ asgard:[[-10,-78,2.2],[-10,-66,2.2],[-10,-54,2.2],[-10,-42,2.2],[-10,-30,2.2],[-10,-18,2.2],[-10,-6,2.2],[10,-78,2.2],[10,-66,2.2],[10,-54,2.2],[10,-42,2.2],[10,-30,2.2],[10,-18,2.2],[10,-6,2.2]]
+};
+function resolveArenaCollision(fighter){
+ const key=mapSelect?.value||'valley', obstacles=arenaCollision[key]||[];
+ for(const [ox,oz,radius] of obstacles){
+  const dx=fighter.position.x-ox,dz=fighter.position.z-oz,d=Math.hypot(dx,dz);
+  const min=radius+(fighter.hurtboxRadius||.7);
+  if(d<min){
+   const nx=d>.001?dx/d:1,nz=d>.001?dz/d:0;
+   fighter.position.x=ox+nx*min;fighter.position.z=oz+nz*min;
+   const inward=fighter.velocity.x*nx+fighter.velocity.z*nz;
+   if(inward<0){fighter.velocity.x-=inward*nx;fighter.velocity.z-=inward*nz;}
+  }
+ }
+}
 if(mapSelect){mapSelect.value=localStorage.getItem('browserSmashMap')||'valley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);});}applyMap(mapSelect.value);}
 function reset(isPractice=false){exploration=false;player.roamMode=false;cpu.model.visible=true;floor.scale.set(1,1,1);platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const spawnAngle=Math.random()*Math.PI*2,spawnRadius=24+Math.random()*12;const sx=Math.cos(spawnAngle)*spawnRadius,sz=Math.sin(spawnAngle)*spawnRadius;player.position.set(sx,0,sz);cpu.position.set(-sx+(Math.random()-.5)*5,0,-sz+(Math.random()-.5)*5);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
 $('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',()=>{exploration=true;practice=true;started=true;player.roamMode=true;player.position.set((Math.random()-.5)*34,0,(Math.random()-.5)*34);player.velocity.set(0,0,0);cpu.model.visible=false;floor.scale.set(1,1,1);platform.visible=false;remaining=0;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');$('#timer').style.display='none';$('#energyHUD').style.opacity='0';$('#exploreHint').style.display='block';$('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');});addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration){exploration=false;player.roamMode=false;cpu.model.visible=true;floor.scale.set(1,1,1);platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';}});
@@ -120,7 +145,7 @@ function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=
 function updateHud(){$('#p1bar').style.width=Math.max(0,100-player.percent*.72)+'%';$('#p2bar').style.width=Math.max(0,100-cpu.percent*.72)+'%';const seconds=Math.ceil(remaining);$('#timer').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');const energy=Math.max(0,Math.min(100,(1-player.specialCooldown/.82)*100));const ef=$('#energyFill'),eh=$('#energyHUD');if(ef)ef.style.width=energy+'%';if(eh){eh.classList.toggle('ready',player.specialCooldown<=0);eh.style.opacity=exploration?'0':'1';}const combo=$('#comboNotice');if(combo){const show=player.comboStep>=2&&player.comboWindow>0;if(show){combo.textContent=player.comboStep===3?'FINISHER!':' '+player.comboStep+' HIT COMBO';combo.classList.add('show');}else combo.classList.remove('show');}}
 const clock=new THREE.Clock();
 function frame(){requestAnimationFrame(frame);const elapsed=Math.min(clock.getDelta(),.05);clockDelta=elapsed;accumulator+=elapsed;
-while(accumulator>=1/60){input.update();if(started){player.simulate(1/60,input);cpu.simulate(1/60,ai);if(!practice&&!exploration)remaining=Math.max(0,remaining-1/60);if(!exploration&&cpu.percent>=140)finish('VICTORY · '+fighterDisplay(playerType).toUpperCase());else if(!exploration&&player.percent>=140)finish('DEFEAT · '+fighterDisplay(cpuType).toUpperCase());else if(!exploration&&remaining<=0)finish(player.percent<=cpu.percent?'TIME UP · YOU WIN':'TIME UP · CPU WINS');updateHud();}accumulator-=1/60;}
+while(accumulator>=1/60){input.update();if(started){player.simulate(1/60,input);cpu.simulate(1/60,ai);resolveArenaCollision(player);if(!exploration)resolveArenaCollision(cpu);if(!practice&&!exploration)remaining=Math.max(0,remaining-1/60);if(!exploration&&cpu.percent>=140)finish('VICTORY · '+fighterDisplay(playerType).toUpperCase());else if(!exploration&&player.percent>=140)finish('DEFEAT · '+fighterDisplay(cpuType).toUpperCase());else if(!exploration&&remaining<=0)finish(player.percent<=cpu.percent?'TIME UP · YOU WIN':'TIME UP · CPU WINS');updateHud();}accumulator-=1/60;}
 
 for(const f of window.fighters)animateHumanFighter(f,elapsed);
 cinematicEnvironment.userData.update(elapsed,clock.elapsedTime,camera);
