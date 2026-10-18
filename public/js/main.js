@@ -2,7 +2,7 @@
 import * as THREE from 'https://unpkg.com/three@0.152.2/build/three.module.js';
 import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js';
 import SmashCamera from './SmashCamera.js?v=fv-weapons-v2-20261018';
-import InputManager from './InputManager.js';
+import InputManager from './InputManager.js?v=parry-counter-items-20261018';
 import Fighter3D from './fighter3D.js';
 import { createCombatItems } from './combat_items.js';
 import { makeProceduralCharacter, equipCharacterWeapons } from './models.js?v=weapon-library-spiderman-20261018';
