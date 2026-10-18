@@ -27,10 +27,10 @@ export function createSmashRenderPipeline(canvas,scene){
   vertexShader:`varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
   fragmentShader:`uniform sampler2D tDiffuse; varying vec2 vUv;
    #include <tonemapping_pars_fragment>
-   #include <colorspace_pars_fragment>
+   #include <encodings_pars_fragment>
    void main(){gl_FragColor=texture2D(tDiffuse,vUv);
     #include <tonemapping_fragment>
-    #include <colorspace_fragment>
+    #include <encodings_fragment>
    }`
  }));
  return {renderer,camera,composer,bloom,enableSSR(){return null;}};
