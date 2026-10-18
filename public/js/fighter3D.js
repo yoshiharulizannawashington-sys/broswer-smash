@@ -31,11 +31,16 @@ export default class Fighter3D {
     this.comboWindow = 0;
     this.invulnerable = 0;
     this.runBlend = 0;
+    this.moveBlend = 0;
+    this.dashCooldown = 0;
+    this.dashTimer = 0;
   }
 
   simulate(dt, inputHandler) {
     this.t += dt;
     this.invulnerable = Math.max(0, this.invulnerable - dt);
+    this.dashCooldown = Math.max(0, this.dashCooldown - dt);
+    this.dashTimer = Math.max(0, this.dashTimer - dt);
     this.comboWindow = Math.max(0, this.comboWindow - dt);
     if (this.comboWindow <= 0) this.comboStep = 0;
     const inputs = inputHandler.getInputs();
@@ -49,7 +54,7 @@ export default class Fighter3D {
     if (this.hitstun <= 0) this.handleInput(inputs, dt);
 
     this.wasGrounded = this.isGrounded;
-    this.velocity.y -= 24 * dt;
+    this.velocity.y -= (this.roamMode ? 19 : 24) * dt;
     this.position.addScaledVector(this.velocity, dt);
     if (this.position.y <= 0) {
       if (!this.wasGrounded && this.velocity.y < -3) this.landPulse = 1;
@@ -62,8 +67,8 @@ export default class Fighter3D {
 
     this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -85 : -17, this.roamMode ? 85 : 17);
     this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -55 : -8, this.roamMode ? 55 : 8);
-    this.velocity.x *= Math.pow(this.isGrounded ? 0.84 : 0.992, dt * 60);
-    this.velocity.z *= Math.pow(this.isGrounded ? 0.84 : 0.992, dt * 60);
+    this.velocity.x *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
+    this.velocity.z *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
     this.updateProceduralPose(inputs, dt);
     this.updateAttackQueue(dt);
     this.updateHitboxes(dt);
@@ -75,7 +80,8 @@ export default class Fighter3D {
     const len = Math.hypot(x, z);
     const nx = len ? x / len : 0;
     const nz = len ? z / len : 0;
-    const topSpeed = i.sprint ? 12.5 : i.run ? 8.8 : 5.1;
+    const topSpeed = i.sprint ? (this.roamMode ? 15.5 : 12.5) : i.run ? (this.roamMode ? 10.8 : 8.8) : (this.roamMode ? 6.8 : 5.1);
+    this.moveBlend = THREE.MathUtils.damp(this.moveBlend, len ? 1 : 0, len ? 5.5 : 9, dt);
     this.runBlend = THREE.MathUtils.damp(this.runBlend, len ? (i.sprint ? 1 : i.run ? .65 : .25) : 0, 8, dt);
 
     if (len) {
@@ -89,7 +95,7 @@ export default class Fighter3D {
     }
 
     if (i.jump && this.isGrounded) {
-      this.velocity.y = 10.8;
+      this.velocity.y = this.roamMode ? 9.4 : 10.8;
       this.velocity.x *= 1.08;
       this.isGrounded = false;
       this.velocity.x *= 1.08;
@@ -98,11 +104,13 @@ export default class Fighter3D {
 
     if (i.dodge && this.isGrounded && this.dodgeTimer <= 0) {
       const mag = Math.hypot(this.facing, this.facingZ) || 1;
-      this.velocity.x = (this.facing / mag) * 13;
-      this.velocity.z = (this.facingZ / mag) * 13;
+      this.velocity.x = (len ? nx : this.facing / mag) * (this.roamMode ? 17 : 13);
+      this.velocity.z = (len ? nz : this.facingZ / mag) * (this.roamMode ? 17 : 13);
       this.velocity.y = 2.1;
       this.invulnerable = .2;
-      this.dodgeTimer = 0.48;
+      this.dodgeTimer = this.roamMode ? .62 : .48;
+      this.dashTimer = this.roamMode ? .24 : .16;
+      this.dashCooldown = this.roamMode ? .55 : .4;
     }
 
     if (i.attack && this.attackQueue.length === 0 && this.guardBreak <= 0) {
