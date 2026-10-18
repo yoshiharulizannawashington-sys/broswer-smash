@@ -42,7 +42,8 @@ export function createFinalValley(THREE) {
   const blenderAssetUrl = new URL('../../assets/final_valley.glb', import.meta.url);
   blenderAssetUrl.searchParams.set('v', 'blender-hd-20261018');
   blenderLoader.load(blenderAssetUrl.href, (gltf) => {
-    for (const child of group.children) child.visible = false;
+    // Keep the procedural cliffs, waterfalls, mist, and giant guardian statues visible.
+    // Add the optional Blender environment on top instead of hiding the handcrafted scenery.
     gltf.scene.name = 'Final Valley Blender environment';
     gltf.scene.traverse((node) => {
       if (node.isMesh) { node.castShadow = true; node.receiveShadow = true; }
