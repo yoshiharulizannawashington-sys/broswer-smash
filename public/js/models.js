@@ -321,6 +321,48 @@ function loadWeaponLibrary(){
   }
   return weaponLibraryState.promise;
 }
+function makeProceduralWeapon(key, side='right') {
+  const group=new THREE.Group();
+  const accentColor=key.includes('iron_man')||key.includes('master_chief')?0x38eaff:key.includes('thor')||key.includes('kratos')?0xffc35a:key.includes('naruto')||key.includes('sasuke')?0x56a9ff:0xb9d9ed;
+  const metal=new THREE.MeshStandardMaterial({color:0x394959,metalness:.88,roughness:.24});
+  const edge=new THREE.MeshStandardMaterial({color:accentColor,metalness:.48,roughness:.2,emissive:accentColor,emissiveIntensity:1.15});
+  const grip=new THREE.MeshStandardMaterial({color:0x171d28,metalness:.18,roughness:.76});
+  const add=(geometry,material,x,y,z,rx=0,ry=0,rz=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
+  const staff=['doctor_strange','green_lantern','aang','lord_voldemort','edward_elric'].some(n=>key.includes(n));
+  const blaster=['iron_man','master_chief','solid_snake','han_solo','the_flash'].some(n=>key.includes(n));
+  const hammer=['thor','kratos','hulk','all_might'].some(n=>key.includes(n));
+  const katana=['naruto','sasuke','levi','link','geralt','sephiroth','sesshomaru','captain_jack','indiana_jones'].some(n=>key.includes(n));
+  add(new THREE.CylinderGeometry(.045,.055,.55,10),grip,0,-.19,0,0,0,Math.PI*.04);
+  if(blaster){
+    add(new THREE.BoxGeometry(.19,.23,.5),metal,0,.08,.02);
+    add(new THREE.BoxGeometry(.11,.27,.13),grip,0,-.12,.08,.12);
+    add(new THREE.BoxGeometry(.09,.07,.28),edge,0,.1,.31);
+    add(new THREE.BoxGeometry(.22,.045,.14),edge,0,.22,-.02);
+    add(new THREE.BoxGeometry(.05,.05,.18),metal,0,.08,.34);
+    group.userData.kind='blaster';
+  }else if(hammer){
+    add(new THREE.BoxGeometry(.43,.34,.34),metal,0,.34,0);
+    add(new THREE.BoxGeometry(.12,.4,.39),edge,0,.34,0);
+    add(new THREE.BoxGeometry(.48,.06,.37),edge,0,.53,0);
+    group.userData.kind=key.includes('thor')?'stormbreaker':'hammer';
+  }else if(staff){
+    add(new THREE.CylinderGeometry(.055,.075,.82,10),metal,0,.32,0);
+    add(new THREE.OctahedronGeometry(.16,1),edge,0,.79,0);
+    add(new THREE.TorusGeometry(.2,.025,7,24),edge,0,.79,0,0,0,Math.PI/2);
+    group.userData.kind='staff';
+  }else{
+    add(new THREE.BoxGeometry(.12,.22,.1),metal,0,.08,0);
+    add(new THREE.BoxGeometry(.065,.13,.09),edge,0,.08,.07);
+    const blade=add(new THREE.ConeGeometry(.105,.86,6),edge,0,.61,0,0,0,Math.PI);
+    blade.scale.set(1,.95,.48);
+    add(new THREE.BoxGeometry(.31,.075,.14),metal,0,.2,0);
+    add(new THREE.BoxGeometry(.035,.16,.07),edge,0,.2,.02);
+    group.userData.kind=katana?'katana':'sword';
+  }
+  group.userData.display_name=key.replace(/_/g,' ').replace(/\\b\\w/g,c=>c.toUpperCase())+(side==='left'?' Offhand':' Signature Weapon');
+  group.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+  return group;
+}
 function weaponSize(kind){
   if(kind==='stormbreaker')return 1.05;
   if(kind==='giant_sword'||kind==='war_fan')return 1.02;
@@ -344,24 +386,22 @@ export async function equipCharacterWeapons(fighter){
   clearEquippedWeapon(rightMount,model.userData.equippedWeaponRight);
   clearEquippedWeapon(leftMount,model.userData.equippedWeaponLeft);
   const key=characterWeaponKey(fighter.identity||fighter.name);
-  const prefabs=await loadWeaponLibrary();
+  const prefabs=await loadWeaponLibrary().catch(error=>{console.warn('Weapon GLB unavailable; using procedural signature gear.',error);return new Map();});
   // A character may have been switched while the asset was loading.
   if(fighter.model!==model)return false;
   const rightTemplate=prefabs.get('weapon_'+key+'_right');
-  if(rightTemplate){
-    const weapon=rightTemplate.clone(true);
-    const kind=rightTemplate.userData.kind||'sword';
+  {
+    const template=rightTemplate||makeProceduralWeapon(key,'right');
+    const weapon=template.clone(true);
+    const kind=template.userData.kind||'sword';
     model.userData.weaponKind=kind;
-    model.userData.weaponLabel=rightTemplate.userData.display_name||key;
-    weapon.name='Equipped '+(rightTemplate.userData.display_name||key);
+    model.userData.weaponLabel=template.userData.display_name||key;
+    weapon.name='Equipped '+(template.userData.display_name||key);
     weapon.position.set(0,-.39,.065);
     weapon.scale.setScalar(weaponSize(kind));
     weapon.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
     rightMount.add(weapon);
     model.userData.equippedWeaponRight=weapon;
-  }else{
-    model.userData.weaponKind='unarmed';
-    console.warn('No signature weapon prefab for',key);
   }
   const leftTemplate=prefabs.get('weapon_'+key+'_left');
   if(leftTemplate&&leftMount){
@@ -374,6 +414,6 @@ export async function equipCharacterWeapons(fighter){
     leftMount.add(weapon);
     model.userData.equippedWeaponLeft=weapon;
   }
-  return !!rightTemplate;
+  return true;
 }
 
