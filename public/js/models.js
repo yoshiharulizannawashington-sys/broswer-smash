@@ -81,7 +81,7 @@ export function makeProceduralCharacter(archetype='warrior') {
   const pack=part(torso,new THREE.BoxGeometry(.36,.48,.18),dark,[0,.24,-.3]);
   part(torso,new THREE.BoxGeometry(.18,.34,.08),glow,[0,.24,-.405]);
   const blade=part(torso,new THREE.BoxGeometry(.08,.82,.12),glow,[.72,-.02,-.08]); blade.rotation.z=-.22;
-  const shadow=part(g,new THREE.CircleGeometry(.72,24),new THREE.MeshBasicMaterial({color:0x02040a,transparent:true,opacity:.48}),[0,.018,0]); shadow.rotation.x=-Math.PI/2;
+  // Circular ground markers removed; the environment lighting supplies contact shadows.
   g.userData={...g.userData,archetype,torso,pelvis,head,blade};
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   return g;
