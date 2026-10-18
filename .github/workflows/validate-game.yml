@@ -1,0 +1,73 @@
+name: Validate Browser Smash
+
+on:
+  push:
+    paths:
+      - "public/js/**/*.js"
+      - "public/index.html"
+      - "index.html"
+      - ".github/workflows/validate-game.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out game
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Parse every browser module
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done < <(find public/js -type f -name '*.js' -print0)
+      - name: Verify launch roster, DLC reserve, and cache versions
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+
+          const main = readFileSync('public/js/main.js', 'utf8');
+          const root = readFileSync('index.html', 'utf8');
+          const page = readFileSync('public/index.html', 'utf8');
+          const input = readFileSync('public/js/InputManager.js', 'utf8');
+          const version = 'cinematic-fighter-polish-v2-20261018';
+
+          const launchMatch = main.match(/const roster=(\[\[[\s\S]*?\]\]);const dlcRoster/);
+          const allMatch = main.match(/const allRoster=(\[\[[\s\S]*?\]\]);const roster/);
+          assert.ok(launchMatch, 'Launch roster array was not found');
+          assert.ok(allMatch, 'Complete character archive was not found');
+          const launch = JSON.parse(launchMatch[1]);
+          const all = JSON.parse(allMatch[1]);
+          const launchNames = launch.map(([name]) => name);
+          assert.equal(launch.length, 32, 'Expected 32 launch fighters');
+          assert.equal(new Set(launchNames).size, 32, 'Launch fighter names must be unique');
+          assert.ok(launchNames.includes('Spider-Man'), 'Spider-Man must be in launch roster');
+          assert.equal(all.length - launch.length, 25, 'DLC reserve should retain 25 characters');
+
+          for (const required of [
+            'RoomEnvironment', 'composer.render()', 'Tenkaichi Budokai-inspired Papaya Island',
+            'Added monumental skyline', 'enchantedSkyCanvas', 'Airborne Helicarrier underside',
+            'window.beginWebSwing=(fighter)=>', 'window.updateWebSwing=(fighter,dt,inputs={})',
+            'flightCapable=new Set'
+          ]) assert.ok(main.includes(required), 'Missing game feature: ' + required);
+
+          for (const [name, html, expectedPrefix] of [
+            ['root', root, './public/js/main.js?v='],
+            ['public', page, './js/main.js?v=']
+          ]) {
+            const script = html.match(/<script type="module" src="([^"]+)/)?.[1];
+            assert.ok(script?.startsWith(expectedPrefix), name + ' entry script path is wrong');
+            assert.ok(script.includes(version), name + ' entrypoint cache is stale');
+            assert.ok(html.includes('value="Spider-Man"'), name + ' character selector is missing Spider-Man');
+          }
+          assert.ok(input.includes('smash_input.js?v=' + version), 'InputManager cache is stale');
+          console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
+          NODE
