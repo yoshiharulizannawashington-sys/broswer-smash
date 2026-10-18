@@ -242,6 +242,51 @@ export function createFinalValley(THREE) {
   makeStatue(-36,-76,1,'madara');
   makeStatue(36,-76,-1,'hashirama');
 
+  // A subtle worn combat circle gives the free-roam environment a deliberate fighting-game stage.
+  const combatRing=new THREE.Mesh(
+    new THREE.RingGeometry(27.2,27.65,128),
+    new THREE.MeshBasicMaterial({color:0x45534d,transparent:true,opacity:.32,side:THREE.DoubleSide,depthWrite:false})
+  );
+  combatRing.name='Worn stone arena boundary';combatRing.rotation.x=-Math.PI/2;combatRing.position.set(0,.006,-30);group.add(combatRing);
+  const ringStones=[];
+  for(let i=0;i<48;i++){
+    const angle=(i/48)*Math.PI*2,r=27.45+(rng()-.5)*.8;
+    const stoneMark=add(new THREE.DodecahedronGeometry(1,0),i%4?darkStone:moss,Math.cos(angle)*r,.015, -30+Math.sin(angle)*r,.38+rng()*.42,.035+rng()*.045,.22+rng()*.35);
+    stoneMark.rotation.y=angle;ringStones.push(stoneMark);
+  }
+  // Rounded broadleaf trees, exposed roots and layered canopies frame the playable channel.
+  // Shared meshes keep the richer environment inexpensive to draw.
+  const bark=toon(0x53463d),branchGeo=new THREE.CylinderGeometry(.06,.16,2.5,6);
+  const trunkGeo=new THREE.CylinderGeometry(.22,.48,6.4,7);
+  const canopyGeo=new THREE.IcosahedronGeometry(1,1);
+  const canopyMats=[toon(0x36523a),toon(0x496746),toon(0x617950),toon(0x334b3c)];
+  for(const side of [-1,1]){
+    for(let i=0;i<22;i++){
+      const x=side*(43+rng()*34),z=-112+rng()*145,h=5.2+rng()*5.2;
+      const trunk=add(trunkGeo,bark,x,h*.48,z,.85+rng()*.35,h/6,.85+rng()*.35);
+      trunk.rotation.z=side*(rng()-.5)*.12;
+      for(let b=0;b<3;b++){
+        const branch=add(branchGeo,bark,x+side*(b-1)*.7,h*.58+b*.5,z+(rng()-.5)*1.1,.7,.8,.7);
+        branch.rotation.z=side*(b-1)*.36;
+      }
+      for(let leaf=0;leaf<9;leaf++){
+        const angle=leaf*2.399+i*.37,rad=.8+rng()*1.65;
+        const crown=add(canopyGeo,canopyMats[(i+leaf)%canopyMats.length],x+Math.cos(angle)*rad,h+Math.sin(angle*.8)*1.0+((leaf%3)-1)*.55,z+Math.sin(angle)*rad*.72,1.25+rng()*.65,.95+rng()*.62,1.15+rng()*.55);
+        crown.rotation.y=angle;crown.rotation.x=(rng()-.5)*.18;
+      }
+      for(let root=-1;root<=1;root++){
+        const foot=add(new THREE.CylinderGeometry(.07,.22,1.9,5),bark,x+root*.48,.3,z+.4,.7,1,.8);
+        foot.rotation.z=root*.34;
+      }
+    }
+  }
+  // Weathered broken slabs and bank rubble keep the clearing tactile while preserving a safe combat lane.
+  for(let i=0;i<76;i++){
+    const side=i%2?1:-1,z=-112+rng()*124,x=side*(7.1+rng()*17);
+    const rock=add(new THREE.DodecahedronGeometry(.7+rng()*.45,1),i%5?stone:moss,x,.06+rng()*.16,z,1.3+rng()*1.8,.28+rng()*.48,.9+rng()*1.3);
+    rock.rotation.set((rng()-.5)*.13,rng()*Math.PI,(rng()-.5)*.16);
+  }
+
   // Broken stepping stones cross the shallow channel; they are scenery, not fighter blockers.
   for (let i = 0; i < 13; i++) {
     const z = 12 - i * 5.2;
