@@ -1,5 +1,6 @@
 // Rigged human fighters with original archetype-specific armor, weapons, and readable combat motion.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const MODEL_URL='https://threejs.org/examples/models/gltf/Soldier.glb';
 // Tripo exports can be dropped into public/models/characters/<character_slug>.glb.
@@ -19,10 +20,11 @@ async function loadCharacterModel(fighter, archetype, GLTFLoader){
   }
   throw lastError||new Error('No character model could be loaded.');
 }
-let loaderPromise;
 async function getLoader(){
-  if(!loaderPromise) loaderPromise=import('https://esm.sh/three@0.152.2/examples/jsm/loaders/GLTFLoader.js');
-  return loaderPromise;
+  // Use the same import-map-resolved Three.js instance as the renderer and fighter models.
+  // Loading GLTFLoader from esm.sh creates a second Three.js module instance and can break
+  // shader/material identity checks in the active renderer.
+  return { GLTFLoader };
 }
 const palettes={
   warrior:{main:0x9a3029,trim:0xd7a45a,glow:0xff713c,metal:.78},
