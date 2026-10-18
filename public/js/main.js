@@ -107,18 +107,46 @@ window.beginWebSwing=(fighter)=>{
  const facing=new THREE.Vector3(fighter.facing,0,fighter.facingZ);
  if(facing.lengthSq()<.01)facing.set(fighter.player?1:-1,0,0);
  facing.normalize();
- const anchor=fighter.position.clone().addScaledVector(facing,8).add(new THREE.Vector3(0,13.5,0));
+ const origin=fighter.position.clone().add(new THREE.Vector3(0,1.6,0));
+ const up=new THREE.Vector3(0,1,0);
+ const aims=[
+   facing.clone().multiplyScalar(.9).addScaledVector(up,.44).normalize(),
+   facing.clone().multiplyScalar(.55).addScaledVector(up,.84).normalize(),
+   facing.clone().multiplyScalar(.18).addScaledVector(up,.98).normalize()
+ ];
+ const roots=[mapDecor,finalValleyArena.group,explorationWorld,horizon].filter(root=>root&&root.visible);
+ const raycaster=new THREE.Raycaster();
+ raycaster.near=2.2;
+ raycaster.far=58;
+ let anchorHit=null;
+ scene.updateMatrixWorld(true);
+ for(const aim of aims){
+   raycaster.set(origin,aim);
+   const hits=raycaster.intersectObjects(roots,true);
+   anchorHit=hits.find(hit=>hit.object?.isMesh&&hit.distance>4&&hit.distance<54&&hit.point.y>origin.y+2.8);
+   if(anchorHit)break;
+ }
+ const anchor=anchorHit
+   ? anchorHit.point.clone().addScaledVector(anchorHit.face?.normal||up,.12)
+   : fighter.position.clone().addScaledVector(facing,10).add(new THREE.Vector3(0,15,0));
  fighter.webSwingAnchor=anchor;
- fighter.webSwingLength=Math.max(7,fighter.position.clone().add(new THREE.Vector3(0,1.6,0)).distanceTo(anchor)*.94);
- const geometry=new THREE.BufferGeometry().setFromPoints([fighter.position.clone().add(new THREE.Vector3(0,1.65,0)),anchor]);
- const material=new THREE.LineBasicMaterial({color:0xf5fbff,transparent:true,opacity:.95});
+ const hand=fighter.position.clone().add(new THREE.Vector3(facing.x*.28,1.62,facing.z*.28));
+ fighter.webSwingLength=Math.max(6.5,hand.distanceTo(anchor)*.96);
+ const geometry=new THREE.BufferGeometry().setFromPoints([hand,anchor]);
+ const material=new THREE.LineBasicMaterial({color:0xf5fbff,transparent:true,opacity:.98});
+ const glowGeometry=new THREE.BufferGeometry().setFromPoints([hand,anchor]);
+ const glowMaterial=new THREE.LineBasicMaterial({color:0x65cfff,transparent:true,opacity:.58,depthWrite:false});
+ const glowLine=new THREE.Line(glowGeometry,glowMaterial);glowLine.frustumCulled=false;scene.add(glowLine);
  const line=new THREE.Line(geometry,material);line.frustumCulled=false;scene.add(line);
- fighter.webSwingLine=line;fighter.webSwinging=true;fighter.isGrounded=false;
+ fighter.webSwingLine=line;fighter.webSwingGlowLine=glowLine;
+ fighter.webSwinging=true;fighter.isGrounded=false;
 };
 window.endWebSwing=(fighter,launch=false)=>{
  if(!fighter)return;
- if(fighter.webSwingLine){scene.remove(fighter.webSwingLine);fighter.webSwingLine.geometry?.dispose();fighter.webSwingLine.material?.dispose();}
- fighter.webSwingLine=null;fighter.webSwingAnchor=null;fighter.webSwingLength=0;fighter.webSwinging=false;
+ for(const line of [fighter.webSwingLine,fighter.webSwingGlowLine]){
+   if(line){scene.remove(line);line.geometry?.dispose();line.material?.dispose();}
+ }
+ fighter.webSwingLine=null;fighter.webSwingGlowLine=null;fighter.webSwingAnchor=null;fighter.webSwingLength=0;fighter.webSwinging=false;
  if(launch){
    fighter.velocity.y=Math.max(fighter.velocity.y,5.8);
    fighter.velocity.x+=fighter.facing*2.8;
@@ -129,13 +157,16 @@ window.endWebSwing=(fighter,launch=false)=>{
 window.updateWebSwing=(fighter,dt,inputs={})=>{
  if(!fighter?.webSwinging||!fighter.webSwingAnchor)return;
  const anchor=fighter.webSwingAnchor,offset=fighter.position.clone().sub(anchor),distance=offset.length();
+ if(inputs.left)fighter.velocity.x-=2.2*dt;
+ if(inputs.right)fighter.velocity.x+=2.2*dt;
+ if(inputs.up)fighter.velocity.z-=2.2*dt;
+ if(inputs.down)fighter.velocity.z+=2.2*dt;
+ if(inputs.sprint){
+   // Preserve momentum and pump the pendulum in 3D instead of forcing it into the x/y plane.
+   const tangent=new THREE.Vector3(-offset.z,0,offset.x);
+   if(tangent.lengthSq()>.01){tangent.normalize();fighter.velocity.addScaledVector(tangent,6.2*dt);}
+ }
  if(distance>.001){
-   if(inputs.left)fighter.velocity.x-=2.2*dt;
-   if(inputs.right)fighter.velocity.x+=2.2*dt;
-   if(inputs.sprint){
-     const tangent=new THREE.Vector3(-offset.y,offset.x,0);
-     if(tangent.lengthSq()>.01){tangent.normalize();fighter.velocity.addScaledVector(tangent,5.5*dt);}
-   }
    const dir=offset.multiplyScalar(1/distance);
    if(distance>fighter.webSwingLength){
      fighter.position.copy(anchor).addScaledVector(dir,fighter.webSwingLength);
@@ -144,9 +175,11 @@ window.updateWebSwing=(fighter,dt,inputs={})=>{
    }
  }
  if(fighter.position.y<.3){window.endWebSwing(fighter,false);return;}
- if(fighter.webSwingLine){fighter.webSwingLine.geometry.setFromPoints([fighter.position.clone().add(new THREE.Vector3(0,1.65,0)),anchor]);fighter.webSwingLine.geometry.computeBoundingSphere();}
+ const hand=fighter.position.clone().add(new THREE.Vector3(fighter.facing*.28,1.62,fighter.facingZ*.28));
+ for(const line of [fighter.webSwingLine,fighter.webSwingGlowLine]){
+   if(line){line.geometry.setFromPoints([hand,anchor]);line.geometry.computeBoundingSphere();}
+ }
 };
-
 window.spawnProjectile=(owner,options={})=>{
  const palette={warrior:0xff713c,ninja:0x16bfff,brawler:0xff8d36,mage:0x9d67ff,cyborg:0x26e8e0};
  const weaponKind=options.weaponKind||owner.model?.userData?.weaponKind||'';
@@ -585,7 +618,7 @@ function resolveArenaCollision(fighter){
  }
 }
 if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&savedMap!=='valley')?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
-function reset(isPractice=false){exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';if($('#energyHUD'))$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const arenaKey=mapSelect?.value||'valley';const stageCenterZ=({valley:0,volcano:-20,ice:-20,neon:-20,deathstar:-31,finalvalley:-30,tournament:-12,starktower:-24,asgard:-26,hogwarts:-32})[arenaKey]??0;const stageCenterX=0;const startGap=arenaKey==='finalvalley'?6.2:5.4;player.position.set(stageCenterX-startGap,0,stageCenterZ);cpu.position.set(stageCenterX+startGap,0,stageCenterZ+.7);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
+function reset(isPractice=false){exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);window.endWebSwing?.(cpu,false);player.attackBuffer=0;cpu.attackBuffer=0;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';if($('#energyHUD'))$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const arenaKey=mapSelect?.value||'valley';const stageCenterZ=({valley:0,volcano:-20,ice:-20,neon:-20,deathstar:-31,finalvalley:-30,tournament:-12,starktower:-24,asgard:-26,hogwarts:-32})[arenaKey]??0;const stageCenterX=0;const startGap=arenaKey==='finalvalley'?6.2:5.4;player.position.set(stageCenterX-startGap,0,stageCenterZ);cpu.position.set(stageCenterX+startGap,0,stageCenterZ+.7);player.velocity.set(0,0,0);cpu.velocity.set(0,0,0);player.facing=Math.sign(cpu.position.x-player.position.x)||1;player.facingZ=Math.sign(cpu.position.z-player.position.z);cpu.facing=-player.facing;cpu.facingZ=-player.facingZ;player.percent=cpu.percent=0;player.hitstun=cpu.hitstun=0;player.attackQueue=[];cpu.attackQueue=[];player.attackBuffer=0;cpu.attackBuffer=0;player.hitboxes=[];cpu.hitboxes=[];remaining=105;started=true;practice=isPractice;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
 $('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',()=>{exploration=true;practice=true;started=true;player.roamMode=true;const roamKey=mapSelect?.value||'valley';const roamStart=({valley:[0,0],finalvalley:[0,-24],starktower:[0,-24],deathstar:[0,-22],asgard:[0,-20],hogwarts:[0,-26],tournament:[0,-12]})[roamKey]||[0,0];player.position.set(roamStart[0],0,roamStart[1]);player.velocity.set(0,0,0);cpu.model.visible=false;applyFloorFootprint();platform.visible=false;remaining=0;$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');$('#timer').style.display='none';if($('#energyHUD'))$('#energyHUD').style.opacity='0';$('#exploreHint').style.display='block';$('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');});addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration){exploration=false;player.roamMode=false;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';}});
 function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';$('#result').textContent=text;$('#play').textContent='REMATCH';}
 function updateHud(){$('#p1bar').style.width=Math.max(0,100-player.percent*.72)+'%';$('#p2bar').style.width=Math.max(0,100-cpu.percent*.72)+'%';const seconds=Math.ceil(remaining);$('#timer').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');const energy=Math.max(0,Math.min(100,(1-player.specialCooldown/.82)*100));const ef=$('#energyFill'),eh=$('#energyHUD');if(ef)ef.style.width=energy+'%';if(eh){eh.classList.toggle('ready',player.specialCooldown<=0);eh.style.opacity=exploration?'0':'1';}const combo=$('#comboNotice');if(combo){const show=player.comboHitCount>=2&&player.comboWindow>0;if(show){combo.textContent=player.comboStep===3?'AIR / GROUND FINISHER · '+player.comboHitCount+' HITS':player.comboHitCount+' HIT COMBO';combo.classList.add('show');}else combo.classList.remove('show');}}
