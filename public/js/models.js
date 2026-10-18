@@ -53,6 +53,30 @@ export function makeProceduralCharacter(archetype='warrior') {
     part(head,new THREE.BoxGeometry(.34,.075,.05),glow,[0,.025,.235]);
     if(d.head==='hair') for(let i=0;i<5;i++){const spike=part(head,new THREE.ConeGeometry(.09,.25,5),armor,[(i-2)*.1,.28,.02]);spike.rotation.z=(i-2)*-.25;}
   }
+  // Layered silhouette details: segmented chest plates, shoulder armor, knee guards and emissive seams.
+  const chestPlate=part(torso,new THREE.BoxGeometry(.62,.34,.12),armor,[0,.43,.31],[1,1,.7]);
+  part(torso,new THREE.BoxGeometry(.38,.055,.035),glow,[0,.44,.39]);
+  for(const s of [-1,1]){
+    const pauldron=part(torso,new THREE.SphereGeometry(.25,18,12),armor,[s*.58,.49,.015],[1.18,.78,1.05]);
+    pauldron.rotation.z=s*-.18;
+    part(torso,new THREE.BoxGeometry(.11,.22,.07),glow,[s*.57,.43,.235],[1,1,.8]);
+    const thigh=part(pelvis,new THREE.BoxGeometry(.24,.18,.33),armor,[s*.22,-.27,.08]);
+    thigh.rotation.z=s*.08;
+    part(pelvis,new THREE.BoxGeometry(.17,.07,.035),glow,[s*.22,-.27,.25]);
+  }
+  // Distinctive face visor and cheek guards help read the character at gameplay distance.
+  if(archetype==='warrior'||archetype==='cyborg'){
+    part(head,new THREE.BoxGeometry(.34,.075,.075),glow,[0,.02,.27]);
+    part(head,new THREE.BoxGeometry(.1,.13,.08),dark,[-.19,-.075,.245]);
+    part(head,new THREE.BoxGeometry(.1,.13,.08),dark,[.19,-.075,.245]);
+  } else {
+    part(head,new THREE.BoxGeometry(.28,.045,.06),glow,[0,-.015,.265]);
+  }
+  // Forearm emitters and boot caps reinforce the sci-fi fighter design.
+  for(const s of [-1,1]){
+    part(g,new THREE.BoxGeometry(.28,.11,.33),armor,[s*.22,.12,.09]);
+    part(g,new THREE.BoxGeometry(.18,.035,.035),glow,[s*.22,.17,.26]);
+  }
   // signature back-mounted blade / energy pack
   const pack=part(torso,new THREE.BoxGeometry(.36,.48,.18),dark,[0,.24,-.3]);
   part(torso,new THREE.BoxGeometry(.18,.34,.08),glow,[0,.24,-.405]);
