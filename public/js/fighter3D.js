@@ -15,6 +15,7 @@ export default class Fighter3D {
     this.hitstun = 0;
     this.hurtboxRadius = 0.7;
     this.attackQueue = [];
+    this.attackBuffer = 0;
     this.hitboxes = [];
     this.t = Math.random() * 10;
     this.facing = player ? 1 : -1;
@@ -47,6 +48,7 @@ export default class Fighter3D {
     this.webSwinging = false;
     this.webSwingAnchor = null;
     this.webSwingLine = null;
+    this.webSwingGlowLine = null;
     this.webSwingLength = 0;
     this.airChaseTime = 0;
   }
@@ -175,7 +177,10 @@ export default class Fighter3D {
       this.dashCooldown = this.roamMode ? .55 : .4;
     }
 
-    if (i.attack && this.attackQueue.length === 0 && this.guardBreak <= 0) {
+    if (i.attack && this.guardBreak <= 0) this.attackBuffer = Math.max(this.attackBuffer, .62);
+    this.attackBuffer = Math.max(0, this.attackBuffer - dt);
+    if (this.attackBuffer > 0 && this.attackQueue.length === 0 && this.guardBreak <= 0) {
+      this.attackBuffer = 0;
       const style = this.canWebSwing ? {reach:1.75,damage:.94,windup:.72,combo:.9,cooldown:.56} : {
         warrior:{reach:1.65,damage:1.12,windup:1,combo:.82,cooldown:.72},
         ninja:{reach:1.8,damage:.86,windup:.72,combo:.88,cooldown:.62},
