@@ -1,15 +1,15 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-combat-v22-20261018';
-import SmashCamera from './SmashCamera.js?v=browser-smash-combat-v22-20261018';
-import InputManager from './InputManager.js?v=browser-smash-combat-v22-20261018';
-import Fighter3D from './fighter3D.js?v=browser-smash-combat-v22-20261018';
-import { createCombatItems } from './combat_items.js?v=browser-smash-combat-v22-20261018';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-combat-v22-20261018';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-combat-v22-20261018';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-combat-v22-20261018';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-combat-v22-20261018';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-combat-v23-20261018';
+import SmashCamera from './SmashCamera.js?v=browser-smash-combat-v23-20261018';
+import InputManager from './InputManager.js?v=browser-smash-combat-v23-20261018';
+import Fighter3D from './fighter3D.js?v=browser-smash-combat-v23-20261018';
+import { createCombatItems } from './combat_items.js?v=browser-smash-combat-v23-20261018';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-combat-v23-20261018';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-combat-v23-20261018';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-combat-v23-20261018';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-combat-v23-20261018';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -865,7 +865,7 @@ for(let i=impactRings.length-1;i>=0;i--){
  if(p>=1){scene.remove(ring.mesh);ring.mesh.geometry.dispose();ring.mesh.material.dispose();impactRings.splice(i,1);}
 }
 smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'over-p1':cameraMode);composer.render();const assetDiagnostics=window.__browserSmashAssets;if(assetDiagnostics){assetDiagnostics.app=assetDiagnostics.app||{};assetDiagnostics.app.status='running';assetDiagnostics.app.frames=(assetDiagnostics.app.frames||0)+1;}}
-addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));composer.setSize(innerWidth,innerHeight);});
 const loadingLabel=$('#loading');let loadingNoticeIssued=false;
 function checkAssetLoadingStatus(){
  const assets=window.__browserSmashAssets||{};
