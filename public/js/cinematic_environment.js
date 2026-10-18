@@ -110,6 +110,58 @@ export function addCinematicEnvironment(THREE, scene) {
   const beaconHalo=new THREE.Mesh(new THREE.TorusGeometry(.8,.045,8,48),new THREE.MeshBasicMaterial({color:0x4de7ff}));
   beaconHalo.position.set(0,5,-53);group.add(beaconHalo);
 
+  // Lush valley framing: layered broadleaf trees, exposed roots, ferns and grass clumps.
+  const barkMat=new THREE.MeshStandardMaterial({color:0x493629,roughness:.98});
+  const leafMats=[
+    new THREE.MeshStandardMaterial({color:0x244b31,roughness:.92}),
+    new THREE.MeshStandardMaterial({color:0x356b3c,roughness:.9}),
+    new THREE.MeshStandardMaterial({color:0x568246,roughness:.88})
+  ];
+  const fernMat=new THREE.MeshStandardMaterial({color:0x397a42,roughness:.9,side:THREE.DoubleSide});
+  function makeTree(x,z,scale=1,variant=0){
+    const tree=new THREE.Group();tree.position.set(x,0,z);tree.scale.setScalar(scale);group.add(tree);
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22,.48,5.8,9),barkMat);trunk.position.y=2.9;trunk.castShadow=true;tree.add(trunk);
+    for(let r=0;r<4;r++){
+      const branch=new THREE.Mesh(new THREE.CylinderGeometry(.08,.18,2.2,7),barkMat);
+      branch.position.set((r%2?1:-1)*(.55+r*.12),3.1+r*.45,0);branch.rotation.z=(r%2?-.65:.65);tree.add(branch);
+    }
+    for(let i=0;i<11;i++){
+      const ang=i*2.399+variant,rad=(i%4)*.48;
+      const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(1.25+(i%3)*.22,2),leafMats[(i+variant)%leafMats.length]);
+      crown.position.set(Math.cos(ang)*rad,4.9+(i%4)*.55,Math.sin(ang)*rad*.72);
+      crown.scale.set(1.05,.78+((i+variant)%3)*.12,.95);crown.rotation.y=ang;crown.castShadow=true;tree.add(crown);
+    }
+    for(let r=0;r<3;r++){const root=new THREE.Mesh(new THREE.CylinderGeometry(.04,.15,1.8,6),barkMat);root.position.set((r-1)*.45,.28,.32);root.rotation.z=(r-1)*.45;tree.add(root);}
+  }
+  // Keep the immediate center readable for combat; trees frame the camera and trail.
+  for(let i=0;i<30;i++){
+    const side=i%2===0?-1:1;
+    const z=18-Math.floor(i/2)*4.2;
+    const x=side*(23+(i%5)*4.8+Math.random()*3);
+    makeTree(x,z,.78+Math.random()*.82,i%3);
+  }
+  for(let i=0;i<90;i++){
+    const x=(Math.random()-.5)*170,z=(Math.random()-.5)*125;
+    if(Math.abs(x)<11&&Math.abs(z)<15)continue;
+    const tuft=new THREE.Group();tuft.position.set(x,.015,z);group.add(tuft);
+    const h=.22+Math.random()*.48;
+    for(let b=0;b<5;b++){
+      const blade=new THREE.Mesh(new THREE.ConeGeometry(.055,h,4),fernMat);
+      blade.position.set((Math.random()-.5)*.34,h*.45,(Math.random()-.5)*.34);
+      blade.rotation.z=(Math.random()-.5)*.65;blade.rotation.x=(Math.random()-.5)*.5;tuft.add(blade);
+    }
+  }
+  // Layered mossy boulders and small flowers break up the terrain silhouette.
+  const mossMat=new THREE.MeshStandardMaterial({color:0x3c5140,roughness:1});
+  const flowerMats=[new THREE.MeshBasicMaterial({color:0xf5d58a}),new THREE.MeshBasicMaterial({color:0x8bdcf2})];
+  for(let i=0;i<42;i++){
+    const x=(Math.random()-.5)*150,z=(Math.random()-.5)*110;
+    if(Math.abs(x)<14&&Math.abs(z)<14)continue;
+    const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.55+Math.random()*.9,1),mossMat);
+    rock.position.set(x,.15+Math.random()*.28,z);rock.scale.set(1.2,.55,.85);rock.rotation.y=Math.random()*Math.PI;rock.castShadow=true;group.add(rock);
+    if(i%3===0){const flower=new THREE.Mesh(new THREE.SphereGeometry(.09,7,5),flowerMats[i%2]);flower.position.set(x+.35,.45,z+.1);group.add(flower);}
+  }
+
   // Small warm glints in the air add scale and depth.
   const glints=new THREE.Group();group.add(glints);
   const glintGeo=new THREE.SphereGeometry(.045,6,5);
