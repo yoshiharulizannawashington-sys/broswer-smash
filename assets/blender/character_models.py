@@ -74,6 +74,11 @@ def mat(name, hex_color, metallic=0.05, roughness=0.55, emission=0, coat=0.0, ba
     _materials[key]=m
     return m
 
+def as_material(value, label="Character Detail"):
+    if isinstance(value, int):
+        return mat(label + " " + format(value, "06x"), value, .22, .42)
+    return value
+
 def link_local(obj, parent, loc=(0,0,0), rot=(0,0,0), scale=(1,1,1)):
     obj.parent=parent
     obj.matrix_parent_inverse=Matrix.Identity(4)
@@ -108,14 +113,14 @@ def cube(parent,name,loc,size,material,rot=(0,0,0),bevel=.035):
         mod=o.modifiers.new("Rounded armor seam","BEVEL");mod.width=bevel;mod.segments=3
         try: bpy.ops.object.modifier_apply(modifier=mod.name)
         except Exception: pass
-    o.data.materials.append(material)
+    o.data.materials.append(as_material(material, name))
     return link_local(o,parent,loc,rot)
 
 def sphere(parent,name,loc,size,material,segments=20,rings=12):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=segments, ring_count=rings, location=(0,0,0))
     o=bpy.context.object;o.name=name;o.scale=size
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    o.data.materials.append(material)
+    o.data.materials.append(as_material(material, name))
     for poly in o.data.polygons: poly.use_smooth=True
     return link_local(o,parent,loc)
 
@@ -126,18 +131,18 @@ def cylinder(parent,name,loc,radius,height,material,rot=(0,0,0),vertices=16,beve
         mod=o.modifiers.new("Soft metal lip","BEVEL");mod.width=bevel;mod.segments=2
         try: bpy.ops.object.modifier_apply(modifier=mod.name)
         except Exception: pass
-    o.data.materials.append(material)
+    o.data.materials.append(as_material(material, name))
     return link_local(o,parent,loc,rot)
 
 def cone(parent,name,loc,radius,height,material,rot=(0,0,0),vertices=12):
     bpy.ops.mesh.primitive_cone_add(vertices=vertices, radius1=radius, radius2=.02, depth=height, location=(0,0,0))
-    o=bpy.context.object;o.name=name;o.data.materials.append(material)
+    o=bpy.context.object;o.name=name;o.data.materials.append(as_material(material, name))
     for p in o.data.polygons: p.use_smooth=True
     return link_local(o,parent,loc,rot)
 
 def torus(parent,name,loc,major,minor,material,rot=(0,0,0),scale=(1,1,1)):
     bpy.ops.mesh.primitive_torus_add(major_radius=major, minor_radius=minor, major_segments=28, minor_segments=8, location=(0,0,0))
-    o=bpy.context.object;o.name=name;o.data.materials.append(material)
+    o=bpy.context.object;o.name=name;o.data.materials.append(as_material(material, name))
     for p in o.data.polygons:p.use_smooth=True
     return link_local(o,parent,loc,rot,scale)
 
@@ -167,7 +172,7 @@ def cape(parent,name,material,width=.76,height=1.35):
             a=r*(cols+1)+c;b=a+1;d=(r+1)*(cols+1)+c;e=d+1
             faces.append((a,d,e,b))
     mesh=bpy.data.meshes.new(name+" Surface")
-    mesh.from_pydata(verts,[],faces);mesh.materials.append(material);mesh.update()
+    mesh.from_pydata(verts,[],faces);mesh.materials.append(as_material(material,name));mesh.update()
     o=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(o)
     o.parent=parent;o.matrix_parent_inverse=Matrix.Identity(4);o.location=(0,0,0)
     o["costume_detail"]="cloth_cape"
@@ -256,10 +261,16 @@ def create_character(key, data, index):
             joints[which].scale=(1.25,1.18,1.15)
         cube(pelvis,key+" Purple Shorts",(0,-.22,.015),(.76,.34,.46),secondary,bevel=.08)
         for side in (-1,1): sphere(joints["leftArm" if side==-1 else "rightArm"],key+" Heavy Fist",(0,-.38,.12),(.18,.17,.18),skin)
-    elif style in ("superman","allmight","goku","naruto","vegeta","saitama","madara","hashirama","thor"):
+    elif style in ("superman","allmight"):
         headcap(key+" Hair Cap",hair)
-        if style in ("goku","naruto","vegeta","allmight","madara","hashirama"):
-            spike_hair(hair,9 if style not in ("allmight","madara","hashirama") else 11,.45 if style in ("goku","vegeta","madara","allmight") else .32)
+        spike_hair(hair,7,.20 if style=="superman" else .48)
+        emblem(0xc52d3b if style=="superman" else accent)
+        if style=="superman":
+            cape(root,key+" Superman Red Cape",0x922733,.82,1.52)
+        else:
+            cape(root,key+" All Might White Cape",0xe6ded2,.80,1.45)
+            for side in (-1,1):
+                cube(torso,key+" All Might Red Shoulder Stripe",(side*.40,.43,.27),(.10,.40,.035),0xbe3039,bevel=.014)
     elif style=="ironman":
         sphere(head,key+" Helmet Dome",(0,.02,-.01),(.29,.32,.27),secondary,24,16)
         cube(head,key+" Gold Faceplate",(0,-.08,.225),(.31,.19,.075),accent,bevel=.045)
