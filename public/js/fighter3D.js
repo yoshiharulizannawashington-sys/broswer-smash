@@ -26,6 +26,7 @@ export default class Fighter3D {
     this.landPulse = 0;
     this.guardBreak = 0;
     this.guardHeld = false;
+    this.roamMode = false;
   }
 
   simulate(dt, inputHandler) {
@@ -52,8 +53,8 @@ export default class Fighter3D {
       this.isGrounded = false;
     }
 
-    this.position.x = THREE.MathUtils.clamp(this.position.x, -17, 17);
-    this.position.z = THREE.MathUtils.clamp(this.position.z, -8, 8);
+    this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -85 : -17, this.roamMode ? 85 : 17);
+    this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -55 : -8, this.roamMode ? 55 : 8);
     this.velocity.x *= Math.pow(this.isGrounded ? 0.82 : 0.985, dt * 60);
     this.velocity.z *= Math.pow(this.isGrounded ? 0.82 : 0.985, dt * 60);
     this.updateProceduralPose(inputs, dt);
