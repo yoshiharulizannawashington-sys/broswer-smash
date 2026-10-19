@@ -6,7 +6,7 @@
 - `assets/blender/character_animation_bake.py`: a Blender batch script that imports the supplied Goku FBX and Iron Man GLTF, authors named in-place animation clips on each existing rig, and exports animated GLBs.
 - `scripts/install-character-assets.mjs`: installs the extracted model/texture package into `public/models/characters`, validates the files, and enables the model manifest. It prefers the baked GLBs when they exist.
 
-The baked clips are authored procedural starter animation, not motion capture. They are meant to give the existing rig controller named clips to blend, then be refined in Blender's Dope Sheet/Action Editor. The web runtime still has procedural fallback poses if no baked GLB is present.
+The baked clips are authored procedural starter animation, not motion capture. They are meant to give the existing rig controller named clips to blend, then be refined in Blender's Dope Sheet/Action Editor. The web runtime still has procedural fallback poses if no baked GLB is present. Once the character source files are in the repository, the `Bake Goku and Iron Man animation clips` GitHub Actions workflow can run on asset changes or be started manually from Actions; it bakes the GLBs, updates the manifest, and uploads an artifact as a fallback if GitHub permissions prevent the generated binaries from being committed.
 
 ## 1. Install the supplied asset ZIP
 
