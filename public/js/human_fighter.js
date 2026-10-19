@@ -160,12 +160,16 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   root.traverse(o=>{
     if(!o.isMesh)return;
     o.castShadow=true;o.receiveShadow=true;
-    if(o.material){
-      o.material=o.material.clone();
-      if(o.material.color)o.material.color.lerp(new THREE.Color((palettes[archetype]||palettes.warrior).main),.08);
-      if('roughness' in o.material)o.material.roughness=Math.min(.82,Math.max(.24,o.material.roughness??.5));
-      if('envMapIntensity' in o.material)o.material.envMapIntensity=1.15;
-    }
+    const tuneMaterial=source=>{
+      if(!source)return source;
+      const material=source.clone();
+      if(material.color)material.color.lerp(new THREE.Color((palettes[archetype]||palettes.warrior).main),.08);
+      if('roughness' in material)material.roughness=Math.min(.9,Math.max(.24,material.roughness??.5));
+      if('envMapIntensity' in material)material.envMapIntensity=1.15;
+      return material;
+    };
+    if(Array.isArray(o.material))o.material=o.material.map(tuneMaterial);
+    else if(o.material)o.material=tuneMaterial(o.material);
   });
   root.position.copy(fighter.position);
   const mixer=new THREE.AnimationMixer(root),animations={};
@@ -183,12 +187,12 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
     const left=/(?:^|[._\-\s])(?:left|l)$/.test(raw)||raw.startsWith('left')||n.endsWith('left');
     const right=/(?:^|[._\-\s])(?:right|r)$/.test(raw)||raw.startsWith('right')||n.endsWith('right');
     const side=left?'L':right?'R':'';
-    if(/arm|shoulder|forearm|upperarm|hand|palm|finger|thumb/.test(n)&&side){
-      const part=(/hand|palm|finger|thumb/.test(n)?'hand':/forearm|lowerarm/.test(n)?'forearm':/shoulder|clavicle/.test(n)?'shoulder':'arm')+side;
+    if(/arm|shoulder|clavicle|elbow|wrist|hand|palm|finger|thumb/.test(n)&&side){
+      const part=(/hand|wrist|palm|finger|thumb/.test(n)?'hand':/forearm|lowerarm|elbow/.test(n)?'forearm':'arm')+side;
       joints[part] ||= {bone:o,base:o.rotation.clone()};
     }
     if(/thigh|upperleg|upleg/.test(n)&&side)joints['leg'+side] ||= {bone:o,base:o.rotation.clone()};
-    if(/shin|calf|lowerleg/.test(n)&&side)joints['shin'+side] ||= {bone:o,base:o.rotation.clone()};
+    if(/shin|calf|lowerleg|knee/.test(n)&&side)joints['shin'+side] ||= {bone:o,base:o.rotation.clone()};
     if(/spine|chest/.test(n))joints.torso ||= {bone:o,base:o.rotation.clone()};
     if(/hips|pelvis/.test(n))joints.pelvis ||= {bone:o,base:o.rotation.clone()};
     if(/head|neck/.test(n))joints.head ||= {bone:o,base:o.rotation.clone()};
