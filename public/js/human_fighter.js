@@ -249,25 +249,27 @@ export function animateHumanFighter(fighter,dt){
   const stride=Math.sin(fighter.t*(speed>7?10.5:7.2))*gait;
   const idleBreath=proceduralOnly&&!airborne&&gait<.08?Math.sin(fighter.t*2.15)*.025:0;
   const comboLean=fighter.comboStep===3?.1:.0;
+  const specialPose=root.userData.specialPoseTime>0?Math.sin(THREE.MathUtils.clamp(1-root.userData.specialPoseTime/.56,0,1)*Math.PI):0;
+  const landingPose=root.userData.landingPoseTime>0?Math.sin(THREE.MathUtils.clamp(root.userData.landingPoseTime/.24,0,1)*Math.PI):0;
   if(proceduralOnly)for(const [key,j] of Object.entries(joints)){
     j.bone.rotation.copy(j.base);
-    if(key==='shoulderR')j.bone.rotation.x+=strike*-.35+stride*.12+(guard?-.22:0);
-    if(key==='shoulderL')j.bone.rotation.x+=strike*-.12-stride*.12+(guard?-.22:0);
-    if(key==='armR')j.bone.rotation.x+=strike*(-.95-comboLean)-hitReact*.22+stride*.28+idleBreath+(guard?-.78:0);
-    if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12+(guard?-.82:0);
+    if(key==='shoulderR')j.bone.rotation.x+=strike*-.35+stride*.12+specialPose*-.3+(guard?-.22:0);
+    if(key==='shoulderL')j.bone.rotation.x+=strike*-.12-stride*.12+specialPose*-.28+(guard?-.22:0);
+    if(key==='armR')j.bone.rotation.x+=strike*(-.95-comboLean)-hitReact*.22+stride*.28+idleBreath+specialPose*-.86+(guard?-.78:0);
+    if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12+specialPose*-.35+(guard?-.82:0);
     if(key==='handR')j.bone.rotation.x+=strike*-.18+(guard?-.18:0);
-    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12-stride*.28-idleBreath+(guard?-.78:0);
-    if(key==='forearmL')j.bone.rotation.x+=strike*-.12+(guard?-.82:0);
+    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12-stride*.28-idleBreath+specialPose*-.82+(guard?-.78:0);
+    if(key==='forearmL')j.bone.rotation.x+=strike*-.12+specialPose*-.32+(guard?-.82:0);
     if(key==='handL')j.bone.rotation.x+=guard?-.18:0;
     if(key==='torso'){
-      j.bone.rotation.x+=strike*.14-hitReact*.22+(gait?Math.abs(stride)*.035:0)+idleBreath*1.8;
+      j.bone.rotation.x+=strike*.14-hitReact*.22+(gait?Math.abs(stride)*.035:0)+idleBreath*1.8+specialPose*-.08+landingPose*.16;
       j.bone.rotation.y+=strike*(fighter.comboStep===2?-.24:.16)+stride*.045;
       j.bone.rotation.z+=dodge*(fighter.facing>=0?-.3:.3);
     }
     if(key==='pelvis')j.bone.rotation.x+=airborne?-.12:stride*.035;
     if(key==='head')j.bone.rotation.x+=hitReact*.16-idleBreath*.7;
-    if(key==='legL')j.bone.rotation.x+=airborne?-.16:stride*.62+dodge*.15;
-    if(key==='legR')j.bone.rotation.x+=airborne?-.16:-stride*.62-dodge*.15;
+    if(key==='legL')j.bone.rotation.x+=airborne?-.16:stride*.62+dodge*.15+landingPose*.42;
+    if(key==='legR')j.bone.rotation.x+=airborne?-.16:-stride*.62-dodge*.15+landingPose*.42;
     if(key==='shinL')j.bone.rotation.x+=airborne?.24:Math.max(0,-stride)*.42;
     if(key==='shinR')j.bone.rotation.x+=airborne?.24:Math.max(0,stride)*.42;
   }
