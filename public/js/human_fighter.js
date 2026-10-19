@@ -31,7 +31,7 @@ async function loadCharacterModel(fighter,archetype,GLTFLoader,FBXLoader){
   for(const candidate of urls){
     const url=String(candidate).startsWith('/')?String(candidate):`${MODEL_BASE}${candidate}`;
     try{
-      const isFbx=/\\.fbx(?:[?#]|$)/i.test(url);
+      const isFbx=/\.fbx(?:[?#]|$)/i.test(url);
       const loader=isFbx?new FBXLoader():new GLTFLoader();
       const loaded=await new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
       const gltf=isFbx?{scene:loaded,animations:loaded.animations||[]}:loaded;
