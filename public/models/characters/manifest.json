@@ -1,4 +1,11 @@
 {
   "version": 1,
-  "characters": {}
+  "characters": {
+    "goku": {
+      "url": "/models/characters/goku/Goku.fbx"
+    },
+    "iron_man_tony_stark": {
+      "url": "/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf"
+    }
+  }
 }
