@@ -1,14 +1,25 @@
-# Character model assets for Browser Bros
+# Character model assets for Browser Smash
 
 The runtime reads `manifest.json` and loads only explicitly registered character-specific GLB/GLTF/FBX files. If a registered asset fails to load, the game falls back to its existing procedural character.
 
-## Install the supplied character package
+## Install the supplied Goku + Iron Man package
 
-Extract the prepared Goku + Iron Man character-assets ZIP at the repository root so its `public/` directory merges into the existing `public/` directory. That package contains the actual model binaries, their textures, and a manifest that registers both fighters. The source repository keeps an empty manifest until those binary assets are installed; this prevents missing model requests and keeps the game smoke test clean.
+1. Extract `browser-bros-goku-ironman-one-run-setup.zip` somewhere **outside** the repository. Keep the extracted `browser-bros-ready-setup/public/models/characters/` folder structure intact.
+2. From the repository root, run:
+
+   ```sh
+   node scripts/install-character-assets.mjs /path/to/browser-bros-ready-setup
+   ```
+
+   On Windows, run the included `SETUP-WINDOWS.ps1`; on macOS/Linux, run `SETUP-MAC-LINUX.sh`. Those scripts pull the latest repository, install the supplied files, commit them, and push the active branch.
+3. Inspect the generated diff before committing if you use the installer manually. The installer copies only the model folders, validates the GLTF's referenced binary/textures, merges the Goku and Iron Man entries into the existing manifest, and preserves this README and any other character registrations.
+4. After the character source files are pushed, open the [GitHub Actions workflows](https://github.com/yoshiharulizannawashington-sys/broswer-smash/actions) and inspect the **Bake Goku and Iron Man animation clips** run.
+
+The model binaries are not included in the repository until the package has actually been installed and pushed. The checked-in manifest keeps those entries disabled until then so the game can continue using its existing fallback models.
 
 ## Goku model and procedural animation
 
-The supplied Goku package contains a rigged FBX plus browser-optimized texture maps. The FBX has a skeleton but no baked animation clips, so the controller supplies procedural idle, locomotion, attack, hit-react, and airborne poses. If you later add authored animation clips, the runtime can cross-fade matching idle/walk/run/jump/attack/hit clips.
+The supplied Goku package contains a rigged FBX plus browser-optimized texture maps. The FBX has a skeleton but no baked animation clips, so the controller supplies procedural idle, locomotion, attack, hit-react, and airborne poses. The optional Blender workflow can generate named starter clips; they are procedural, not motion capture.
 
 ## Iron Man Mark V model
 
