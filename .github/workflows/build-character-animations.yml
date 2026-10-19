@@ -19,26 +19,34 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Verify source character assets exist
+      - name: Check whether source character assets are installed
+        id: assets
+        shell: bash
         run: |
-          if [[ ! -f "public/models/characters/goku/Goku.fbx" || ! -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" || ! -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin" ]]; then
+          if [[ -f "public/models/characters/goku/Goku.fbx" && -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" && -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin" ]]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Character source assets are not installed yet; skipping animation bake."
-            exit 0
           fi
       - name: Install Blender
+        if: steps.assets.outputs.present == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install --yes blender
           blender --version
       - name: Bake animation clips and export GLBs
+        if: steps.assets.outputs.present == 'true'
         run: |
           blender --background --python assets/blender/character_animation_bake.py -- \
             --goku "public/models/characters/goku/Goku.fbx" \
             --ironman "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" \
             --output "public/models/characters/animated"
       - name: Register animated models
+        if: steps.assets.outputs.present == 'true'
         run: node scripts/install-character-assets.mjs "$GITHUB_WORKSPACE"
       - name: Commit baked GLBs back to the same branch
+        if: steps.assets.outputs.present == 'true'
         id: commit
         continue-on-error: true
         run: |
@@ -52,7 +60,7 @@ jobs:
             git push
           fi
       - name: Keep generated animation files available as an artifact
-        if: always()
+        if: always() && steps.assets.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: browser-bros-animated-characters
