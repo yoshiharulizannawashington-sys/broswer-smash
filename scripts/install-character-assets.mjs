@@ -14,9 +14,15 @@ const targetDir = path.join(repoRoot, 'public', 'models', 'characters');
 const required = [
   'goku/Goku.fbx',
   'goku/skin_c.webp',
+  'goku/skin_n.webp',
+  'goku/face_ss_c.webp',
+  'goku/face_ss_n.webp',
+  'goku/hair_c.webp',
   'goku/cloth_c.webp',
+  'goku/cloth_n.webp',
   'iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf',
-  'iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin'
+  'iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin',
+  'iron-man-mark-v-rig/Metal007_1K-JPG_NormalGL.jpg'
 ];
 if (!sourceDir) {
   console.error('Could not find the extracted character package.');
