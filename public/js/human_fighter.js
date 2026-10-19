@@ -178,7 +178,7 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   for(const clip of gltf.animations||[])animations[clip.name.toLowerCase()]=mixer.clipAction(clip);
   const find=(...words)=>Object.entries(animations).find(([n])=>words.some(w=>n.includes(w)))?.[1];
   const idle=find('idle','stand')||(gltf.animations?.[0]&&mixer.clipAction(gltf.animations[0]));
-  const walk=find('walk','locomotion'),run=find('run','sprint'),jump=find('jump','fall','air'),punch=find('punch','attack','swing','kick'),hit=find('hit','damage','hurt');
+  const walk=find('walk','locomotion'),run=find('run','sprint'),jump=find('jump','fall','air'),punch=find('punch','lightattack','attack','swing','kick'),heavy=find('heavy','finisher','uppercut'),hit=find('hit','damage','hurt'),block=find('block','guard'),dodgeAction=find('dodge','evade','roll'),charge=find('charge','powerup','power_up'),beam=find('beam','kame','repulsor','blast','special'),land=find('land','landing');
   if(idle){idle.reset().play();idle.enabled=true;}
   // Rig-aware procedural motion covers rigs that contain a skeleton but no baked animation clips.
   const joints={};
@@ -205,8 +205,8 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   root.userData.animationActions=animations;
   root.userData.hasAnimationClips=Boolean((gltf.animations||[]).length);
   root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;
-  root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.hitAction=hit;
-  root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;root.userData.proceduralAttackTime=0;
+  root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.heavyAction=heavy;root.userData.hitAction=hit;root.userData.blockAction=block;root.userData.dodgeAction=dodgeAction;root.userData.chargeAction=charge;root.userData.beamAction=beam;root.userData.landAction=land;
+  root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;root.userData.proceduralAttackTime=0;root.userData.specialPoseTime=0;root.userData.lastSpecialCooldown=0;root.userData.landingPoseTime=0;root.userData.wasGrounded=true;
   // A character-specific asset already owns its silhouette and materials; don't stack generic armor over it.
   const parent=previous.parent;
   if(!parent)return false;
@@ -225,10 +225,17 @@ export function animateHumanFighter(fighter,dt){
   root.rotation.y=Math.atan2(fighter.facingZ,Math.abs(fighter.facing))+(fighter.facing>=0?Math.PI:0)+(root.userData.modelFacingOffset||0);
   root.userData.humanMixer.update(dt);
   const speed=Math.hypot(fighter.velocity.x,fighter.velocity.z), airborne=!fighter.isGrounded;
+  if(root.userData.wasGrounded===false&&fighter.isGrounded)root.userData.landingPoseTime=.24;
+  root.userData.wasGrounded=!!fighter.isGrounded;
+  root.userData.landingPoseTime=Math.max(0,root.userData.landingPoseTime-dt);
+  const lastCooldown=root.userData.lastSpecialCooldown||0;
+  if(fighter.specialCooldown>lastCooldown+.12)root.userData.specialPoseTime=.56;
+  root.userData.lastSpecialCooldown=fighter.specialCooldown;
+  root.userData.specialPoseTime=Math.max(0,root.userData.specialPoseTime-dt);
   const attacking=(fighter.attackQueue?.length||0)>0;
   const gear=root.userData.armorGear;
   const attackStarted=attacking&&!root.userData.wasAttacking;
-  if(attackStarted){root.userData.attackLock=.34;root.userData.proceduralAttackTime=.34;}
+  if(attackStarted){root.userData.attackLock=.34;root.userData.proceduralAttackTime=.34;if(root.userData.lastMoveAction)root.userData.lastMoveAction.fadeOut(.08);root.userData.lastMoveAction=null;}
   root.userData.proceduralAttackTime=Math.max(0,root.userData.proceduralAttackTime-dt);
   // Overlay a short, weighty punch/slash while preserving each rig's bind pose.
   const joints=root.userData.proceduralJoints||{};
@@ -242,25 +249,27 @@ export function animateHumanFighter(fighter,dt){
   const stride=Math.sin(fighter.t*(speed>7?10.5:7.2))*gait;
   const idleBreath=proceduralOnly&&!airborne&&gait<.08?Math.sin(fighter.t*2.15)*.025:0;
   const comboLean=fighter.comboStep===3?.1:.0;
+  const specialPose=root.userData.specialPoseTime>0?Math.sin(THREE.MathUtils.clamp(1-root.userData.specialPoseTime/.56,0,1)*Math.PI):0;
+  const landingPose=root.userData.landingPoseTime>0?Math.sin(THREE.MathUtils.clamp(root.userData.landingPoseTime/.24,0,1)*Math.PI):0;
   if(proceduralOnly)for(const [key,j] of Object.entries(joints)){
     j.bone.rotation.copy(j.base);
-    if(key==='shoulderR')j.bone.rotation.x+=strike*-.35+stride*.12+(guard?-.22:0);
-    if(key==='shoulderL')j.bone.rotation.x+=strike*-.12-stride*.12+(guard?-.22:0);
-    if(key==='armR')j.bone.rotation.x+=strike*(-.95-comboLean)-hitReact*.22+stride*.28+idleBreath+(guard?-.78:0);
-    if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12+(guard?-.82:0);
+    if(key==='shoulderR')j.bone.rotation.x+=strike*-.35+stride*.12+specialPose*-.3+(guard?-.22:0);
+    if(key==='shoulderL')j.bone.rotation.x+=strike*-.12-stride*.12+specialPose*-.28+(guard?-.22:0);
+    if(key==='armR')j.bone.rotation.x+=strike*(-.95-comboLean)-hitReact*.22+stride*.28+idleBreath+specialPose*-.86+(guard?-.78:0);
+    if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12+specialPose*-.35+(guard?-.82:0);
     if(key==='handR')j.bone.rotation.x+=strike*-.18+(guard?-.18:0);
-    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12-stride*.28-idleBreath+(guard?-.78:0);
-    if(key==='forearmL')j.bone.rotation.x+=strike*-.12+(guard?-.82:0);
+    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12-stride*.28-idleBreath+specialPose*-.82+(guard?-.78:0);
+    if(key==='forearmL')j.bone.rotation.x+=strike*-.12+specialPose*-.32+(guard?-.82:0);
     if(key==='handL')j.bone.rotation.x+=guard?-.18:0;
     if(key==='torso'){
-      j.bone.rotation.x+=strike*.14-hitReact*.22+(gait?Math.abs(stride)*.035:0)+idleBreath*1.8;
+      j.bone.rotation.x+=strike*.14-hitReact*.22+(gait?Math.abs(stride)*.035:0)+idleBreath*1.8+specialPose*-.08+landingPose*.16;
       j.bone.rotation.y+=strike*(fighter.comboStep===2?-.24:.16)+stride*.045;
       j.bone.rotation.z+=dodge*(fighter.facing>=0?-.3:.3);
     }
     if(key==='pelvis')j.bone.rotation.x+=airborne?-.12:stride*.035;
     if(key==='head')j.bone.rotation.x+=hitReact*.16-idleBreath*.7;
-    if(key==='legL')j.bone.rotation.x+=airborne?-.16:stride*.62+dodge*.15;
-    if(key==='legR')j.bone.rotation.x+=airborne?-.16:-stride*.62-dodge*.15;
+    if(key==='legL')j.bone.rotation.x+=airborne?-.16:stride*.62+dodge*.15+landingPose*.42;
+    if(key==='legR')j.bone.rotation.x+=airborne?-.16:-stride*.62-dodge*.15+landingPose*.42;
     if(key==='shinL')j.bone.rotation.x+=airborne?.24:Math.max(0,-stride)*.42;
     if(key==='shinR')j.bone.rotation.x+=airborne?.24:Math.max(0,stride)*.42;
   }
@@ -280,9 +289,15 @@ export function animateHumanFighter(fighter,dt){
     if(gear.userData.weapon)gear.userData.weapon.rotation.z=(gear.userData.weaponKind==='blade'?-0.2:gear.userData.weaponKind==='staff'?-0.12:0)+swing*.8;
   }
   let target;
+  const guarding=fighter.guardHeld&&fighter.guardBreak<=0;
+  const activeAttack=fighter.attackQueue?.[fighter.attackQueue.length-1];
   if(fighter.hitstun>0)target=root.userData.hitAction||root.userData.idleAction;
-  else if(attacking)target=root.userData.punchAction||root.userData.lastMoveAction;
+  else if(root.userData.specialPoseTime>0)target=root.userData.beamAction||root.userData.chargeAction||root.userData.punchAction||root.userData.lastMoveAction;
+  else if(guarding)target=root.userData.blockAction||root.userData.idleAction;
+  else if(fighter.dodgeTimer>0)target=root.userData.dodgeAction||root.userData.jumpAction||root.userData.lastMoveAction;
+  else if(attacking)target=((activeAttack?.kind==='heavy'||activeAttack?.kind==='air-finisher'||activeAttack?.comboStep===3)?root.userData.heavyAction:null)||root.userData.punchAction||root.userData.lastMoveAction;
   else if(airborne)target=root.userData.jumpAction||root.userData.lastMoveAction;
+  else if(root.userData.landingPoseTime>0)target=root.userData.landAction||root.userData.idleAction;
   else target=speed>7?(root.userData.runAction||root.userData.walkAction):speed>.35?(root.userData.walkAction||root.userData.runAction):root.userData.idleAction;
   if(target&&target!==root.userData.lastMoveAction){
     const old=root.userData.lastMoveAction;

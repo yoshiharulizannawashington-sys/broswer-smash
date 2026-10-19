@@ -8,9 +8,12 @@ on:
       - "public/index.html"
       - "index.html"
       - ".github/workflows/validate-game.yml"
+      - ".github/workflows/build-character-animations.yml"
       - "scripts/browser-smoke.mjs"
       - "public/assets/*.glb"
       - "assets/blender/character_models.py"
+      - "assets/blender/character_animation_bake.py"
+      - "scripts/install-character-assets.mjs"
       - "assets/blender/character_weapons.py"
       - "assets/blender/final_valley_scene.py"
   workflow_dispatch:
@@ -33,6 +36,26 @@ jobs:
             echo "Checking $file"
             node --input-type=module --check < "$file"
           done < <(find public/js -type f -name '*.js' -print0)
+      - name: Validate Blender and installer scripts
+        run: |
+          node --check scripts/install-character-assets.mjs
+          python3 -m py_compile assets/blender/character_animation_bake.py
+          tmp="$(mktemp -d)"
+          package="$tmp/package/public/models/characters"
+          repo="$tmp/repo"
+          mkdir -p "$package/goku" "$package/iron-man-mark-v-rig" "$repo/scripts"
+          for file in \
+            goku/Goku.fbx goku/skin_c.webp goku/skin_n.webp goku/face_ss_c.webp \
+            goku/face_ss_n.webp goku/hair_c.webp goku/cloth_c.webp goku/cloth_n.webp \
+            "iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" \
+            "iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin" \
+            iron-man-mark-v-rig/Metal007_1K-JPG_NormalGL.jpg; do
+            mkdir -p "$package/$(dirname "$file")"
+            : > "$package/$file"
+          done
+          cp scripts/install-character-assets.mjs "$repo/scripts/"
+          (cd "$repo" && node scripts/install-character-assets.mjs "$tmp/package")
+          node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$repo/public/models/characters/manifest.json','utf8')); if(!m.characters.goku.enabled||!m.characters.iron_man_tony_stark.enabled) process.exit(1); console.log('Character installer fixture passed.');"
       - name: Verify launch roster, DLC reserve, and cache versions
         shell: bash
         run: |
@@ -81,7 +104,14 @@ jobs:
           const models = readFileSync('public/js/models.js', 'utf8');
           const fighter = readFileSync('public/js/fighter3D.js', 'utf8');
           const human = readFileSync('public/js/human_fighter.js', 'utf8');
+          const vfx = readFileSync('public/js/combat_vfx.js', 'utf8');
+          const blenderBake = readFileSync('assets/blender/character_animation_bake.py', 'utf8');
+          const installer = readFileSync('scripts/install-character-assets.mjs', 'utf8');
           const manifest = JSON.parse(readFileSync('public/models/characters/manifest.json', 'utf8'));
+          for (const clip of ["Idle", "Walk", "Run", "Jump", "Land", "Punch", "HeavyAttack", "HitReact", "Block", "Dodge", "Charge", "BeamAttack", "Flight"]) assert.ok(blenderBake.includes('"' + clip + '"'), 'Blender animation clip missing: ' + clip);
+          assert.ok(installer.includes("enabled: true") && installer.includes("goku-animated.glb"), 'Character asset installer is missing safe manifest activation');
+          assert.ok(vfx.includes('function impact') && vfx.includes('function dash') && vfx.includes('function landing'), 'Combat VFX primitives are missing');
+          assert.ok(main.includes('combatVFX.update(elapsed)') && main.includes('combatVFX.launch(start,color,moveType)'), 'Combat VFX are not integrated into the game loop');
           assert.equal(manifest.characters.goku.url, '/models/characters/goku/Goku.fbx', 'Goku asset is not registered');
           assert.equal(manifest.characters.iron_man_tony_stark.url, '/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf', 'Iron Man asset is not registered');
           assert.ok(human.includes("n.includes('left')") && human.includes("n.includes('right')"), 'Mixamo-style rig-side detection is missing');
