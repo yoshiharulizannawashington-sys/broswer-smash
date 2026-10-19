@@ -249,9 +249,7 @@ def bake_actions(armature):
                 pb.rotation_euler.y += d[1]
                 pb.rotation_euler.z += d[2]
                 pb.keyframe_insert(data_path="rotation_euler", frame=frame, group=pb.name)
-        for curve in action.fcurves:
-            for key in curve.keyframe_points:
-                key.interpolation = "BEZIER"
+        # Blender's default keyframe interpolation is Bezier; avoid relying on legacy Action.fcurves APIs.
         animation_data.action = None
         track = animation_data.nla_tracks.new()
         track.name = clip
