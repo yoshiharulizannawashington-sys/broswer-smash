@@ -3,30 +3,37 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const MODEL_BASE='/models/characters/';
-// Character-specific rigs are optional. Keep the existing Blender prefab as the offline fallback
-// instead of replacing every fighter with a generic sample soldier.
-const MODEL_ALIASES={
-  iron_man_tony_stark:[
-    '/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf',
-    '/models/characters/iron_man_tony_stark.glb',
-    '/models/characters/iron_man_mark_v_rig.glb'
-  ],
-  goku:['/models/characters/goku.glb','/models/characters/goku.gltf']
-};
+const MODEL_MANIFEST_URL=`${MODEL_BASE}manifest.json`;
+let characterManifestPromise;
+function getCharacterManifest(){
+  if(!characterManifestPromise){
+    characterManifestPromise=fetch(MODEL_MANIFEST_URL,{cache:'no-store'})
+      .then(response=>response.ok?response.json():{characters:{}})
+      .catch(()=>({characters:{}}));
+  }
+  return characterManifestPromise;
+}
 function characterSlug(fighter,archetype='warrior'){
   return String(fighter?.identity||fighter?.name||archetype)
     .normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 }
 async function loadCharacterModel(fighter,archetype,GLTFLoader){
   const slug=characterSlug(fighter,archetype);
-  const urls=[...(MODEL_ALIASES[slug]||[]),`${MODEL_BASE}${slug}.glb`,`${MODEL_BASE}${slug}.gltf`];
-  const uniqueUrls=[...new Set(urls)];
-  for(const url of uniqueUrls){
+  const manifest=await getCharacterManifest();
+  const entry=manifest?.characters?.[slug];
+  const urls=typeof entry==='string'?[entry]
+    :Array.isArray(entry)?entry
+    :Array.isArray(entry?.urls)?entry.urls
+    :entry?.url?[entry.url]:[];
+  // Do not probe missing model URLs: unregistered assets are intentionally skipped so the
+  // existing game can run cleanly with its Blender/procedural character library.
+  for(const candidate of urls){
+    const url=String(candidate).startsWith('/')?String(candidate):`${MODEL_BASE}${candidate}`;
     try{
       const gltf=await new Promise((resolve,reject)=>new GLTFLoader().load(url,resolve,undefined,reject));
       return {gltf,url};
     }catch(_error){
-      // A missing optional character model is expected; try the next candidate.
+      // An explicitly registered but broken asset should still fall back safely.
     }
   }
   return null;
