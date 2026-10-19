@@ -128,7 +128,7 @@ function applyGokuTextures(root,baseUrl){
       const set=name.includes('hair')?sets.hair:name.includes('cloth')?sets.cloth:name.includes('skin')?sets.skin:(name.includes('face')||name.includes('eyebrow')||name.includes('iris')||name.includes('eyeshadow'))?sets.face:null;
       if(!set)return original?.clone?.()||new THREE.MeshStandardMaterial({color:0xffffff,roughness:.7});
       if(set.orm&&mesh.geometry?.attributes?.uv&&!mesh.geometry.attributes.uv2)mesh.geometry.setAttribute('uv2',mesh.geometry.attributes.uv.clone());
-      const material=new THREE.MeshStandardMaterial({name:original?.name||'Goku material',color:0xffffff,map:set.map,normalMap:set.normalMap,aoMap:set.orm||null,roughnessMap:set.orm||null,metalnessMap:set.orm||null,roughness:.72,metalness:.04,transparent:Boolean(original?.transparent),opacity:original?.opacity??1,side:original?.side??THREE.FrontSide});
+      const material=new THREE.MeshStandardMaterial({name:original?.name||'Goku material',color:0xffffff,map:set.map,normalMap:set.normalMap,aoMap:set.orm||null,roughnessMap:set.orm||null,metalnessMap:set.orm||null,roughness:.72,metalness:.04,transparent:Boolean(original?.transparent),opacity:original?.opacity??1,alphaTest:name.includes('hair')?.25:0,side:original?.side??THREE.FrontSide});
       if(set.orm)material.aoMapIntensity=1;
       return material;
     });
@@ -187,8 +187,8 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
     const left=/(?:^|[._\-\s])(?:left|l)$/.test(raw)||raw.startsWith('left')||n.endsWith('left');
     const right=/(?:^|[._\-\s])(?:right|r)$/.test(raw)||raw.startsWith('right')||n.endsWith('right');
     const side=left?'L':right?'R':'';
-    if(/arm|shoulder|clavicle|elbow|wrist|hand|palm|finger|thumb/.test(n)&&side){
-      const part=(/hand|wrist|palm|finger|thumb/.test(n)?'hand':/forearm|lowerarm|elbow/.test(n)?'forearm':'arm')+side;
+    if(/arm|shoulder|clavicle|elbow|wrist|hand|palm|finger|thumb/.test(n)&&side&&!/roll/.test(n)){
+      const part=(/hand|wrist|palm|finger|thumb/.test(n)?'hand':/forearm|lowerarm|elbow/.test(n)?'forearm':/shoulder|clavicle/.test(n)?'shoulder':'arm')+side;
       joints[part] ||= {bone:o,base:o.rotation.clone()};
     }
     if(/thigh|upperleg|upleg/.test(n)&&side)joints['leg'+side] ||= {bone:o,base:o.rotation.clone()};
@@ -237,6 +237,8 @@ export function animateHumanFighter(fighter,dt){
   const stride=Math.sin(fighter.t*(speed>7?10.5:7.2))*gait;
   if(proceduralOnly)for(const [key,j] of Object.entries(joints)){
     j.bone.rotation.copy(j.base);
+    if(key==='shoulderR')j.bone.rotation.x+=strike*-.35+stride*.12;
+    if(key==='shoulderL')j.bone.rotation.x+=strike*-.12-stride*.12;
     if(key==='armR')j.bone.rotation.x+=strike*-.95-hitReact*.22+stride*.28;
     if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12;
     if(key==='handR')j.bone.rotation.x+=strike*-.18;
