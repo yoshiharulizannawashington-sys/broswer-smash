@@ -136,8 +136,15 @@ export default class Fighter3D {
   }
 
   handleInput(i, dt) {
-    const x = (i.right ? 1 : 0) - (i.left ? 1 : 0);
-    const z = (i.down ? 1 : 0) - (i.up ? 1 : 0);
+    let x = (i.right ? 1 : 0) - (i.left ? 1 : 0);
+    let z = (i.down ? 1 : 0) - (i.up ? 1 : 0);
+    // Free-roam uses GTA-like camera-relative steering; arena fights retain precise stage axes.
+    if (this.roamMode) {
+      const yaw = Number(window.smashCamera?.orbitYaw) || 0;
+      const localX = x, localZ = z;
+      x = localX * Math.cos(yaw) + localZ * Math.sin(yaw);
+      z = -localX * Math.sin(yaw) + localZ * Math.cos(yaw);
+    }
     const len = Math.hypot(x, z);
     const nx = len ? x / len : 0;
     const nz = len ? z / len : 0;

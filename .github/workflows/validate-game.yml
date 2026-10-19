@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "public/js/**/*.js"
+      - "public/models/characters/manifest.json"
       - "public/index.html"
       - "index.html"
       - ".github/workflows/validate-game.yml"
@@ -79,6 +80,12 @@ jobs:
           assert.ok(input.includes('smash_input.js?v=' + version), 'InputManager cache is stale');
           const models = readFileSync('public/js/models.js', 'utf8');
           const fighter = readFileSync('public/js/fighter3D.js', 'utf8');
+          const human = readFileSync('public/js/human_fighter.js', 'utf8');
+          const manifest = JSON.parse(readFileSync('public/models/characters/manifest.json', 'utf8'));
+          assert.equal(manifest.characters.goku.url, '/models/characters/goku/Goku.fbx', 'Goku asset is not registered');
+          assert.equal(manifest.characters.iron_man_tony_stark.url, '/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf', 'Iron Man asset is not registered');
+          assert.ok(human.includes("n.includes('left')") && human.includes("n.includes('right')"), 'Mixamo-style rig-side detection is missing');
+          assert.ok(fighter.includes('camera-relative steering') && main.includes('window.smashCamera=smashCamera'), 'Camera-relative free-roam controls are missing');
           assert.ok(models.includes('upgradeCharacterWithBlenderModel'), 'Blender character loader is missing');
           assert.ok(models.includes('character_models.glb'), 'Character GLB path is missing');
           assert.ok(models.includes('character_weapons.glb'), 'Weapon GLB path is missing');
