@@ -271,6 +271,9 @@ def export_character(source, output_path):
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     bpy.ops.object.select_all(action="SELECT")
     bpy.context.view_layer.objects.active = armature
+    # Keep an editable Blender project with the rig and NLA clips alongside the web export.
+    blend_path = os.path.splitext(os.path.abspath(output_path))[0] + ".blend"
+    bpy.ops.wm.save_as_mainfile(filepath=blend_path)
     bpy.ops.export_scene.gltf(
         filepath=os.path.abspath(output_path),
         export_format="GLB",
