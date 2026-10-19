@@ -40,6 +40,62 @@ def cli_args():
     parser.add_argument("--output", default="public/models/characters/animated")
     return parser.parse_args(args)
 
+def apply_goku_textures(armature, texture_dir):
+    """Wire the package's WebP maps into Principled materials before GLB export."""
+    def load_image(filename, color_space):
+        filepath = os.path.join(texture_dir, filename)
+        if not os.path.exists(filepath):
+            return None
+        image = bpy.data.images.load(filepath, check_existing=True)
+        image.colorspace_settings.name = color_space
+        return image
+    maps = {
+        "skin": ("skin_c.webp", "skin_n.webp", "skin_ORM.webp"),
+        "face": ("face_ss_c.webp", "face_ss_n.webp", "face_ss_ORM.webp"),
+        "hair": ("hair_c.webp", "hair_ss_n.webp", None),
+        "cloth": ("cloth_c.webp", "cloth_n.webp", "cloth_ORM.webp"),
+    }
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH":
+            continue
+        for slot in obj.material_slots:
+            material = slot.material
+            if material is None:
+                continue
+            label = (obj.name + " " + material.name).lower()
+            key = "face" if "face" in label else "hair" if "hair" in label else "cloth" if any(word in label for word in ("cloth", "shirt", "pant", "boot", "glove")) else "skin"
+            color_file, normal_file, orm_file = maps[key]
+            material.use_nodes = True
+            nodes = material.node_tree.nodes
+            links = material.node_tree.links
+            principled = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
+            output = next((n for n in nodes if n.type == "OUTPUT_MATERIAL"), None)
+            if principled is None or output is None:
+                continue
+            color = load_image(color_file, "sRGB")
+            normal = load_image(normal_file, "Non-Color")
+            orm = load_image(orm_file, "Non-Color") if orm_file else None
+            if color:
+                tex = nodes.new("ShaderNodeTexImage")
+                tex.image = color
+                tex.label = key.title() + " base color"
+                links.new(tex.outputs["Color"], principled.inputs["Base Color"])
+            if normal:
+                tex = nodes.new("ShaderNodeTexImage")
+                tex.image = normal
+                tex.label = key.title() + " normal"
+                normal_node = nodes.new("ShaderNodeNormalMap")
+                links.new(tex.outputs["Color"], normal_node.inputs["Color"])
+                links.new(normal_node.outputs["Normal"], principled.inputs["Normal"])
+            if orm:
+                tex = nodes.new("ShaderNodeTexImage")
+                tex.image = orm
+                tex.label = key.title() + " packed occlusion/roughness/metallic"
+                separate = nodes.new("ShaderNodeSeparateRGB")
+                links.new(tex.outputs["Color"], separate.inputs["Image"])
+                links.new(separate.outputs["G"], principled.inputs["Roughness"])
+                links.new(separate.outputs["B"], principled.inputs["Metallic"])
+
 def import_character(filepath):
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -61,6 +117,8 @@ def import_character(filepath):
     armature = max(armatures, key=lambda obj: len(obj.data.bones))
     armature.animation_data_clear()
     armature.animation_data_create()
+    if ext == ".fbx":
+        apply_goku_textures(armature, os.path.dirname(os.path.abspath(filepath)))
     bpy.context.view_layer.objects.active = armature
     armature.select_set(True)
     bpy.context.scene.render.fps = FPS
