@@ -8,6 +8,7 @@ on:
       - "public/index.html"
       - "index.html"
       - ".github/workflows/validate-game.yml"
+      - ".github/workflows/build-character-animations.yml"
       - "scripts/browser-smoke.mjs"
       - "public/assets/*.glb"
       - "assets/blender/character_models.py"
