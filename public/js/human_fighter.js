@@ -153,8 +153,7 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;
   root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.hitAction=hit;
   root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;root.userData.proceduralAttackTime=0;
-  // The Mark V mesh is already fully armored; avoid adding a second armor shell over it.
-  if(!url.includes('iron-man-mark-v-rig'))addArmor(root,archetype);
+  // A character-specific asset already owns its silhouette and materials; don't stack generic armor over it.
   const parent=previous.parent;
   if(!parent)return false;
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
@@ -182,7 +181,7 @@ export function animateHumanFighter(fighter,dt){
   const phase=root.userData.proceduralAttackTime>0?1-root.userData.proceduralAttackTime/.34:0;
   const strike=root.userData.proceduralAttackTime>0?Math.sin(Math.min(1,phase)*Math.PI):0;
   const hitReact=fighter.hitstun>0?Math.min(1,fighter.hitstun/.38):0;
-  const proceduralOnly=!root.userData.hasAnimationClips;
+  const proceduralOnly=!root.userData.walkAction&&!root.userData.runAction&&!root.userData.jumpAction&&!root.userData.punchAction&&!root.userData.hitAction;
   const gait=proceduralOnly&&!airborne&&speed>.35?Math.min(1,speed/7):0;
   const stride=Math.sin(fighter.t*(speed>7?10.5:7.2))*gait;
   if(proceduralOnly)for(const [key,j] of Object.entries(joints)){
