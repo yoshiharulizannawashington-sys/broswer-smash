@@ -1,6 +1,7 @@
 // Rigged human fighters with original archetype-specific armor, weapons, and readable combat motion.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 const MODEL_BASE='/models/characters/';
 const MODEL_MANIFEST_URL=`${MODEL_BASE}manifest.json`;
@@ -17,7 +18,7 @@ function characterSlug(fighter,archetype='warrior'){
   return String(fighter?.identity||fighter?.name||archetype)
     .normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 }
-async function loadCharacterModel(fighter,archetype,GLTFLoader){
+async function loadCharacterModel(fighter,archetype,GLTFLoader,FBXLoader){
   const slug=characterSlug(fighter,archetype);
   const manifest=await getCharacterManifest();
   const entry=manifest?.characters?.[slug];
@@ -30,8 +31,11 @@ async function loadCharacterModel(fighter,archetype,GLTFLoader){
   for(const candidate of urls){
     const url=String(candidate).startsWith('/')?String(candidate):`${MODEL_BASE}${candidate}`;
     try{
-      const gltf=await new Promise((resolve,reject)=>new GLTFLoader().load(url,resolve,undefined,reject));
-      return {gltf,url};
+      const isFbx=/\\.fbx(?:[?#]|$)/i.test(url);
+      const loader=isFbx?new FBXLoader():new GLTFLoader();
+      const loaded=await new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
+      const gltf=isFbx?{scene:loaded,animations:loaded.animations||[]}:loaded;
+      return {gltf,url,format:isFbx?'fbx':'gltf'};
     }catch(_error){
       // An explicitly registered but broken asset should still fall back safely.
     }
@@ -40,7 +44,7 @@ async function loadCharacterModel(fighter,archetype,GLTFLoader){
 }
 async function getLoader(){
   // Use the same import-map-resolved Three.js instance as the renderer and fighter models.
-  return { GLTFLoader };
+  return { GLTFLoader, FBXLoader };
 }
 const palettes={
   warrior:{main:0x9a3029,trim:0xd7a45a,glow:0xff713c,metal:.78},
@@ -101,16 +105,52 @@ function addArmor(root, archetype){
   root.userData.armorGear=gear;
   return gear;
 }
+function applyGokuTextures(root,baseUrl){
+  const loader=new THREE.TextureLoader();
+  const load=(file,color=false)=>{
+    const texture=loader.load(baseUrl+file);
+    texture.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.anisotropy=8;
+    return texture;
+  };
+  const sets={
+    cloth:{map:load('cloth_c.webp',true),normalMap:load('cloth_n.webp'),orm:load('cloth_ORM.webp')},
+    skin:{map:load('skin_c.webp',true),normalMap:load('skin_n.webp'),orm:load('skin_ORM.webp')},
+    face:{map:load('face_ss_c.webp',true),normalMap:load('face_ss_n.webp'),orm:load('face_ss_ORM.webp')},
+    hair:{map:load('hair_c.webp',true),normalMap:load('hair_ss_n.webp'),orm:null}
+  };
+  root.traverse(mesh=>{
+    if(!mesh.isMesh)return;
+    const source=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+    const mapped=source.map(original=>{
+      const name=String(original?.name||'').toLowerCase();
+      const set=name.includes('hair')?sets.hair:name.includes('cloth')?sets.cloth:name.includes('skin')?sets.skin:(name.includes('face')||name.includes('eyebrow')||name.includes('iris')||name.includes('eyeshadow'))?sets.face:null;
+      if(!set)return original?.clone?.()||new THREE.MeshStandardMaterial({color:0xffffff,roughness:.7});
+      if(set.orm&&mesh.geometry?.attributes?.uv&&!mesh.geometry.attributes.uv2)mesh.geometry.setAttribute('uv2',mesh.geometry.attributes.uv.clone());
+      const material=new THREE.MeshStandardMaterial({name:original?.name||'Goku material',color:0xffffff,map:set.map,normalMap:set.normalMap,aoMap:set.orm||null,roughnessMap:set.orm||null,metalnessMap:set.orm||null,roughness:.72,metalness:.04,transparent:Boolean(original?.transparent),opacity:original?.opacity??1,side:original?.side??THREE.FrontSide});
+      if(set.orm)material.aoMapIntensity=1;
+      return material;
+    });
+    mesh.material=Array.isArray(mesh.material)?mapped:mapped[0];
+  });
+}
 export async function upgradeFighterModel(fighter,archetype='warrior'){
   const previous=fighter?.model;
   if(!previous||!previous.userData)return false;
   const identityAtStart=String(fighter.identity||fighter.name||'');
-  const {GLTFLoader}=await getLoader();
-  const loaded=await loadCharacterModel(fighter,archetype,GLTFLoader);
+  const {GLTFLoader,FBXLoader}=await getLoader();
+  const loaded=await loadCharacterModel(fighter,archetype,GLTFLoader,FBXLoader);
   if(!loaded||fighter.model!==previous||String(fighter.identity||fighter.name||'')!==identityAtStart)return false;
-  const {gltf,url}=loaded;
+  const {gltf,url,format}=loaded;
   const root=gltf.scene;
-  root.scale.setScalar(1.45);
+  // Normalize imported GLTF/FBX character height so models authored in centimeters or meters
+  // line up with the existing fighter physics and camera framing.
+  root.updateMatrixWorld(true);
+  const modelBounds=new THREE.Box3().setFromObject(root);
+  const modelHeight=Math.max(.001,modelBounds.max.y-modelBounds.min.y);
+  root.scale.setScalar(2.05/modelHeight);
+  if(format==='fbx')applyGokuTextures(root,url.slice(0,url.lastIndexOf('/')+1));
   // Imported rigs in this project face +Z; retain that correction as an offset while the
   // fighter controller turns the outer model toward its opponent.
   root.rotation.y=0;
