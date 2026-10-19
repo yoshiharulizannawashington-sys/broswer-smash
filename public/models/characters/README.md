@@ -2,23 +2,17 @@
 
 The runtime reads `manifest.json` and loads only explicitly registered character-specific GLB/GLTF/FBX files. If a registered asset fails to load, the game falls back to its existing procedural character.
 
-## Goku model package
+## Install the supplied character package
 
-The Goku package is a rigged FBX plus the supplied texture set. Place the prepared asset folder at `public/models/characters/goku/` and keep these files together:
+Extract the prepared Goku + Iron Man character-assets ZIP at the repository root so its `public/` directory merges into the existing `public/` directory. That package contains the actual model binaries, their textures, and a manifest that registers both fighters. The source repository keeps an empty manifest until those binary assets are installed; this prevents missing model requests and keeps the game smoke test clean.
 
-- `Goku.fbx`
-- `cloth_c.webp`, `cloth_n.webp`, `cloth_ORM.webp`
-- `skin_c.webp`, `skin_n.webp`, `skin_ORM.webp`
-- `face_ss_c.webp`, `face_ss_n.webp`, `face_ss_ORM.webp`
-- `hair_c.webp`, `hair_ss_n.webp`
+## Goku model and procedural animation
 
-The FBX loader uses the rigged model and the game applies the matching color, normal, and packed occlusion/roughness/metalness maps by material name. The provided FBX contains a skeleton but no baked animation clips, so the character controller supplies procedural idle, locomotion, attack, hit-react, and airborne poses. If you later add authored animation clips, the runtime can cross-fade matching idle/walk/run/jump/attack/hit clips.
+The supplied Goku package contains a rigged FBX plus browser-optimized texture maps. The FBX has a skeleton but no baked animation clips, so the controller supplies procedural idle, locomotion, attack, hit-react, and airborne poses. If you later add authored animation clips, the runtime can cross-fade matching idle/walk/run/jump/attack/hit clips.
 
-The model is registered under the `goku` fighter identity. The game normalizes imported model height to fit the existing fighter scale.
+## Iron Man Mark V model
 
-## Iron Man Mark V package
-
-Register or install the supplied Iron Man Mark V GLTF package at `public/models/characters/iron-man-mark-v-rig/`. The rig has no embedded animation clips, so the procedural controller supplies movement and combat motion.
+The supplied Iron Man Mark V package includes a skinned armature, meshes, a binary buffer, and textures, but zero embedded animation clips. Once the asset package is installed and registered, the procedural controller supplies movement and combat motion.
 
 ## Add another character
 
