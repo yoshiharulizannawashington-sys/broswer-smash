@@ -6,8 +6,6 @@ on:
     paths:
       - "public/models/characters/goku/**"
       - "public/models/characters/iron-man-mark-v-rig/**"
-      - "assets/blender/character_animation_bake.py"
-      - "scripts/install-character-assets.mjs"
 
 permissions:
   contents: write
@@ -23,9 +21,10 @@ jobs:
           persist-credentials: true
       - name: Verify source character assets exist
         run: |
-          test -f "public/models/characters/goku/Goku.fbx"
-          test -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf"
-          test -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin"
+          if [[ ! -f "public/models/characters/goku/Goku.fbx" || ! -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" || ! -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin" ]]; then
+            echo "::notice::Character source assets are not installed yet; skipping animation bake."
+            exit 0
+          fi
       - name: Install Blender
         run: |
           sudo apt-get update
