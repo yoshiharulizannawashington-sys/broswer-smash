@@ -22,6 +22,8 @@ async function loadCharacterModel(fighter,archetype,GLTFLoader,FBXLoader){
   const slug=characterSlug(fighter,archetype);
   const manifest=await getCharacterManifest();
   const entry=manifest?.characters?.[slug];
+  // Repository manifests can stage paths before the separate binary asset bundle is installed.
+  if(entry&&typeof entry==='object'&&entry.enabled===false)return null;
   const urls=typeof entry==='string'?[entry]
     :Array.isArray(entry)?entry
     :Array.isArray(entry?.urls)?entry.urls
