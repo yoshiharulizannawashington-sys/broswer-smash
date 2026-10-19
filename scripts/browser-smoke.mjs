@@ -27,7 +27,7 @@ const server = createServer(async (req, res) => {
     let relative = normalize(pathname).replace(/^[/\\]+/, '');
     if (!relative) relative = 'index.html';
     // Match Vite's public/ behavior: /js and /assets are served from public/js and public/assets.
-    if (relative === 'js' || relative.startsWith('js' + sep) || relative === 'assets' || relative.startsWith('assets' + sep)) {
+    if (['js', 'assets', 'models'].some(dir => relative === dir || relative.startsWith(dir + sep))) {
       relative = 'public' + sep + relative;
     }
     const filePath = resolve(root, relative);
