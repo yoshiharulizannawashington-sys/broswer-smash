@@ -24,3 +24,15 @@ Alternative Superman candidate: **Superman (Textured) (Rigged)** — 3D MODELS, 
 Download using the model page's official Download button, extract the archive, and copy the selected GLB to this folder using the exact filenames above. If the download is FBX/BLEND only, export to GLB in Blender with textures and armature preserved. Test the model in a GLB viewer before launching the game.
 
 Do not commit paid assets or assets whose license does not permit redistribution. Add the exact creator/license attribution to `public/ATTRIBUTIONS.md` before sharing a build.
+
+
+## Character-specific rig integration
+
+The runtime now checks for a character-specific GLB/GLTF before using the existing Blender character prefab. Supported locations:
+
+- **Iron Man Mark V:** `public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf` plus the referenced `.bin` and texture files, preserving the archive's internal filenames; or `public/models/characters/iron_man_tony_stark.glb`.
+- **Goku:** `public/models/characters/goku.glb` (or `goku.gltf` with its referenced files).
+
+The supplied Iron Man package contains a skinned rig but **zero embedded animation clips**. The runtime adds procedural idle/locomotion/attack/hit reactions to recognized arm, forearm, hand, spine, pelvis, thigh, and shin bones. If a future GLB contains animation clips, the runtime cross-fades matching idle, walk, run, jump/fall, attack, and hit clips.
+
+If a character-specific asset is absent or fails to load, the game keeps its existing Blender/procedural character instead of replacing it with a generic sample soldier. Add model attribution and license details to `public/ATTRIBUTIONS.md` before distributing downloaded assets.
