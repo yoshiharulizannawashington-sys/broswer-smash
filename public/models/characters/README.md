@@ -1,40 +1,23 @@
 # Character model assets for Browser Bros
 
-The runtime reads `manifest.json` and loads only explicitly registered character-specific GLB/GLTF files. This avoids requests for model files that are not actually in the repository. If a registered asset is missing or fails to parse, the game falls back to its existing Blender/procedural character.
+The runtime reads `manifest.json` and loads only explicitly registered character-specific GLB/GLTF/FBX files. If a registered asset fails to load, the game falls back to its existing procedural character.
 
-## Register a character model
+## Install the supplied character package
 
-Add an entry to `public/models/characters/manifest.json` using the fighter's normalized identity key:
+Extract the prepared Goku + Iron Man character-assets ZIP at the repository root so its `public/` directory merges into the existing `public/` directory. That package contains the actual model binaries, their textures, and a manifest that registers both fighters. The source repository keeps an empty manifest until those binary assets are installed; this prevents missing model requests and keeps the game smoke test clean.
 
-```json
-{
-  "version": 1,
-  "characters": {
-    "iron_man_tony_stark": {
-      "url": "/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf"
-    },
-    "goku": {
-      "url": "/models/characters/goku.glb"
-    }
-  }
-}
-```
+## Goku model and procedural animation
 
-The paths above are examples; each listed file must exist. A `.gltf` file with external resources must keep its referenced `.bin` and texture files at the relative paths encoded in the GLTF. A single self-contained `.glb` is easiest to deploy.
+The supplied Goku package contains a rigged FBX plus browser-optimized texture maps. The FBX has a skeleton but no baked animation clips, so the controller supplies procedural idle, locomotion, attack, hit-react, and airborne poses. If you later add authored animation clips, the runtime can cross-fade matching idle/walk/run/jump/attack/hit clips.
 
-## Iron Man Mark V package
+## Iron Man Mark V model
 
-The supplied Iron Man Mark V package includes a skinned armature, meshes, a binary buffer, and textures, but **zero embedded animation clips**. Once the extracted package is copied to the path above and registered in the manifest, the game uses procedural idle/locomotion/attack/hit reactions for recognized arm, forearm, hand, spine, pelvis, thigh, and shin bones. The loader cross-fades compatible embedded idle, walk, run, jump/fall, attack, and hit clips when those clips exist.
+The supplied Iron Man Mark V package includes a skinned armature, meshes, a binary buffer, and textures, but zero embedded animation clips. Once the asset package is installed and registered, the procedural controller supplies movement and combat motion.
 
-## Goku and other models
+## Add another character
 
-- Goku: `public/models/characters/goku.glb` or a registered `.gltf` with its referenced resources.
-- Superman: add a model file and a matching `superman` manifest entry if you have a licensed asset.
-
-A rig alone does not contain animation clips. For full animation coverage, use a rigged model with clips or let the procedural skeleton controller supply movement.
+Add an entry in this manifest with the fighter's normalized identity key and a path to the model. GLB is usually the simplest distribution format; FBX is supported for rigged characters. Keep any referenced external resources beside the model.
 
 ## License and attribution
 
-Before distributing downloaded models, verify the current creator license and add the exact source/license attribution to `public/ATTRIBUTIONS.md`. Do not commit paid assets or assets whose licenses prohibit redistribution.
-
-Potential source to verify: [Goku Model Rigged — Sketchfab](https://sketchfab.com/3d-models/goku-model-rig-75b88c3bf6a446df87680b8e7d4ba8e0). The model was not included in the files available for this update, so the existing Blender/procedural Goku remains active until its actual model files are added.
+Before distributing downloaded models, verify the original creator's license and include exact attribution in `public/ATTRIBUTIONS.md`. Do not commit paid assets or assets whose licenses prohibit redistribution.

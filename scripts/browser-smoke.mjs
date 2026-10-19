@@ -128,8 +128,9 @@ try {
           && state.finalValley?.status === 'loaded'
           && state.finalValley.meshCount > 0
           && fighters.length === 2
-          && fighters.every(f => f.model?.name?.startsWith('Blender fighter '))
-          && fighters.every(f => !!f.model?.userData?.equippedWeaponRight)
+          && fighters.every(f => f.characterModelLoaded
+            ? !!f.model?.userData?.humanMixer
+            : f.model?.name?.startsWith('Blender fighter ') && !!f.model?.userData?.equippedWeaponRight)
           && state.lastCharacter?.upright === true;
       }, null, { timeout: 60_000, polling: 250 });
 

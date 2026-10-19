@@ -1,15 +1,15 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-character-rig-v25-20261019';
-import SmashCamera from './SmashCamera.js?v=browser-smash-character-rig-v25-20261019';
-import InputManager from './InputManager.js?v=browser-smash-character-rig-v25-20261019';
-import Fighter3D from './fighter3D.js?v=browser-smash-character-rig-v25-20261019';
-import { createCombatItems } from './combat_items.js?v=browser-smash-character-rig-v25-20261019';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-character-rig-v25-20261019';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-character-rig-v25-20261019';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-character-rig-v25-20261019';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-character-rig-v25-20261019';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-character-rig-v26-20261019';
+import SmashCamera from './SmashCamera.js?v=browser-smash-character-rig-v26-20261019';
+import InputManager from './InputManager.js?v=browser-smash-character-rig-v26-20261019';
+import Fighter3D from './fighter3D.js?v=browser-smash-character-rig-v26-20261019';
+import { createCombatItems } from './combat_items.js?v=browser-smash-character-rig-v26-20261019';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-character-rig-v26-20261019';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-character-rig-v26-20261019';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-character-rig-v26-20261019';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-character-rig-v26-20261019';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
