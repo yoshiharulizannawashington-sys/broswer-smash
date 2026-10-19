@@ -40,6 +40,22 @@ jobs:
         run: |
           node --check scripts/install-character-assets.mjs
           python3 -m py_compile assets/blender/character_animation_bake.py
+          tmp="$(mktemp -d)"
+          package="$tmp/package/public/models/characters"
+          repo="$tmp/repo"
+          mkdir -p "$package/goku" "$package/iron-man-mark-v-rig" "$repo/scripts"
+          for file in \
+            goku/Goku.fbx goku/skin_c.webp goku/skin_n.webp goku/face_ss_c.webp \
+            goku/face_ss_n.webp goku/hair_c.webp goku/cloth_c.webp goku/cloth_n.webp \
+            "iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" \
+            "iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin" \
+            iron-man-mark-v-rig/Metal007_1K-JPG_NormalGL.jpg; do
+            mkdir -p "$package/$(dirname "$file")"
+            : > "$package/$file"
+          done
+          cp scripts/install-character-assets.mjs "$repo/scripts/"
+          (cd "$repo" && node scripts/install-character-assets.mjs "$tmp/package")
+          node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('$repo/public/models/characters/manifest.json','utf8')); if(!m.characters.goku.enabled||!m.characters.iron_man_tony_stark.enabled) process.exit(1); console.log('Character installer fixture passed.');"
       - name: Verify launch roster, DLC reserve, and cache versions
         shell: bash
         run: |
