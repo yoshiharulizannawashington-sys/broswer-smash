@@ -1,26 +1,40 @@
-# Character model assets for Browser Smash
+# Character model assets for Browser Bros
 
-This directory is the destination for character-specific rigged GLB files.
+The runtime reads `manifest.json` and loads only explicitly registered character-specific GLB/GLTF files. This avoids requests for model files that are not actually in the repository. If a registered asset is missing or fails to parse, the game falls back to its existing Blender/procedural character.
 
-## Expected filenames
+## Register a character model
 
-- `goku.glb`
-- `superman.glb`
+Add an entry to `public/models/characters/manifest.json` using the fighter's normalized identity key:
 
-The current character loader checks `/models/characters/<character_slug>.glb` first, then falls back to the sample Three.js Soldier model. The downloaded GLB should include its mesh, textures/materials, and skeleton. Confirm that animation clips are embedded before expecting the GLB to provide animations; the current fighter controller may still need retargeting/custom animation logic.
+```json
+{
+  "version": 1,
+  "characters": {
+    "iron_man_tony_stark": {
+      "url": "/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf"
+    },
+    "goku": {
+      "url": "/models/characters/goku.glb"
+    }
+  }
+}
+```
 
-## Selected candidate downloads to inspect
+The paths above are examples; each listed file must exist. A `.gltf` file with external resources must keep its referenced `.bin` and texture files at the relative paths encoded in the GLTF. A single self-contained `.glb` is easiest to deploy.
 
-1. **Goku Model Rigged** — Oup77, Sketchfab: https://sketchfab.com/3d-models/goku-model-rig-75b88c3bf6a446df87680b8e7d4ba8e0  
-   Listing describes textures, a simple rig, and facial shape keys. Listed under CC Attribution. If used, preserve the model's required attribution and verify the current download/license details on the page.
+## Iron Man Mark V package
 
-2. **Superman | MultiVersus** — King_45, Sketchfab: https://sketchfab.com/3d-models/superman-multiversus-339ed9e6d8ff438fa82de22ecc314cf1  
-   Listing describes 2K PBR. Listed under CC Attribution. Verify that the current download is available and that the uploader's license covers your intended use. The character itself remains third-party intellectual property.
+The supplied Iron Man Mark V package includes a skinned armature, meshes, a binary buffer, and textures, but **zero embedded animation clips**. Once the extracted package is copied to the path above and registered in the manifest, the game uses procedural idle/locomotion/attack/hit reactions for recognized arm, forearm, hand, spine, pelvis, thigh, and shin bones. The loader cross-fades compatible embedded idle, walk, run, jump/fall, attack, and hit clips when those clips exist.
 
-Alternative Superman candidate: **Superman (Textured) (Rigged)** — 3D MODELS, Sketchfab: https://sketchfab.com/3d-models/superman-textured-rigged-61ecb87e712a437ba18930378d7aeb0e
+## Goku and other models
 
-## Install
+- Goku: `public/models/characters/goku.glb` or a registered `.gltf` with its referenced resources.
+- Superman: add a model file and a matching `superman` manifest entry if you have a licensed asset.
 
-Download using the model page's official Download button, extract the archive, and copy the selected GLB to this folder using the exact filenames above. If the download is FBX/BLEND only, export to GLB in Blender with textures and armature preserved. Test the model in a GLB viewer before launching the game.
+A rig alone does not contain animation clips. For full animation coverage, use a rigged model with clips or let the procedural skeleton controller supply movement.
 
-Do not commit paid assets or assets whose license does not permit redistribution. Add the exact creator/license attribution to `public/ATTRIBUTIONS.md` before sharing a build.
+## License and attribution
+
+Before distributing downloaded models, verify the current creator license and add the exact source/license attribution to `public/ATTRIBUTIONS.md`. Do not commit paid assets or assets whose licenses prohibit redistribution.
+
+Potential source to verify: [Goku Model Rigged — Sketchfab](https://sketchfab.com/3d-models/goku-model-rig-75b88c3bf6a446df87680b8e7d4ba8e0). The model was not included in the files available for this update, so the existing Blender/procedural Goku remains active until its actual model files are added.

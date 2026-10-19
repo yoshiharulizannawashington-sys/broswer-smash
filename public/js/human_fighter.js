@@ -2,28 +2,44 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const MODEL_URL='https://threejs.org/examples/models/gltf/Soldier.glb';
-// Tripo exports can be dropped into public/models/characters/<character_slug>.glb.
-// Prefer a character-specific rigged GLB; use the shared sample rig only as a fallback.
-function characterSlug(fighter, archetype='warrior'){
+const MODEL_BASE='/models/characters/';
+const MODEL_MANIFEST_URL=`${MODEL_BASE}manifest.json`;
+let characterManifestPromise;
+function getCharacterManifest(){
+  if(!characterManifestPromise){
+    characterManifestPromise=fetch(MODEL_MANIFEST_URL,{cache:'no-store'})
+      .then(response=>response.ok?response.json():{characters:{}})
+      .catch(()=>({characters:{}}));
+  }
+  return characterManifestPromise;
+}
+function characterSlug(fighter,archetype='warrior'){
   return String(fighter?.identity||fighter?.name||archetype)
     .normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
 }
-async function loadCharacterModel(fighter, archetype, GLTFLoader){
+async function loadCharacterModel(fighter,archetype,GLTFLoader){
   const slug=characterSlug(fighter,archetype);
-  const urls=[`/models/characters/${slug}.glb`,MODEL_URL];
-  let lastError;
-  for(const url of urls){
+  const manifest=await getCharacterManifest();
+  const entry=manifest?.characters?.[slug];
+  const urls=typeof entry==='string'?[entry]
+    :Array.isArray(entry)?entry
+    :Array.isArray(entry?.urls)?entry.urls
+    :entry?.url?[entry.url]:[];
+  // Do not probe missing model URLs: unregistered assets are intentionally skipped so the
+  // existing game can run cleanly with its Blender/procedural character library.
+  for(const candidate of urls){
+    const url=String(candidate).startsWith('/')?String(candidate):`${MODEL_BASE}${candidate}`;
     try{
-      return await new Promise((resolve,reject)=>new GLTFLoader().load(url,resolve,undefined,reject));
-    }catch(error){lastError=error;if(url===MODEL_URL)break;}
+      const gltf=await new Promise((resolve,reject)=>new GLTFLoader().load(url,resolve,undefined,reject));
+      return {gltf,url};
+    }catch(_error){
+      // An explicitly registered but broken asset should still fall back safely.
+    }
   }
-  throw lastError||new Error('No character model could be loaded.');
+  return null;
 }
 async function getLoader(){
   // Use the same import-map-resolved Three.js instance as the renderer and fighter models.
-  // Loading GLTFLoader from esm.sh creates a second Three.js module instance and can break
-  // shader/material identity checks in the active renderer.
   return { GLTFLoader };
 }
 const palettes={
@@ -86,43 +102,80 @@ function addArmor(root, archetype){
   return gear;
 }
 export async function upgradeFighterModel(fighter,archetype='warrior'){
+  const previous=fighter?.model;
+  if(!previous||!previous.userData)return false;
+  const identityAtStart=String(fighter.identity||fighter.name||'');
   const {GLTFLoader}=await getLoader();
-  const gltf=await loadCharacterModel(fighter,archetype,GLTFLoader);
-  const root=gltf.scene;root.scale.setScalar(1.45);root.rotation.y=Math.PI;
-  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;if(o.material){o.material=o.material.clone();if(o.material.color)o.material.color.lerp(new THREE.Color((palettes[archetype]||palettes.warrior).main),.19);if('roughness' in o.material)o.material.roughness=Math.min(.72,Math.max(.3,o.material.roughness??.5));}}});
+  const loaded=await loadCharacterModel(fighter,archetype,GLTFLoader);
+  if(!loaded||fighter.model!==previous||String(fighter.identity||fighter.name||'')!==identityAtStart)return false;
+  const {gltf,url}=loaded;
+  const root=gltf.scene;
+  root.scale.setScalar(1.45);
+  // Imported rigs in this project face +Z; retain that correction as an offset while the
+  // fighter controller turns the outer model toward its opponent.
+  root.rotation.y=0;
+  root.userData.modelFacingOffset=Math.PI;
+  root.userData.characterAssetUrl=url;
+  root.userData.characterAssetIdentity=identityAtStart;
+  root.traverse(o=>{
+    if(!o.isMesh)return;
+    o.castShadow=true;o.receiveShadow=true;
+    if(o.material){
+      o.material=o.material.clone();
+      if(o.material.color)o.material.color.lerp(new THREE.Color((palettes[archetype]||palettes.warrior).main),.08);
+      if('roughness' in o.material)o.material.roughness=Math.min(.82,Math.max(.24,o.material.roughness??.5));
+      if('envMapIntensity' in o.material)o.material.envMapIntensity=1.15;
+    }
+  });
   root.position.copy(fighter.position);
-  const mixer=new THREE.AnimationMixer(root), animations={};
-  for(const clip of gltf.animations)animations[clip.name.toLowerCase()]=mixer.clipAction(clip);
+  const mixer=new THREE.AnimationMixer(root),animations={};
+  for(const clip of gltf.animations||[])animations[clip.name.toLowerCase()]=mixer.clipAction(clip);
   const find=(...words)=>Object.entries(animations).find(([n])=>words.some(w=>n.includes(w)))?.[1];
-  const idle=find('idle')||gltf.animations[0]&&mixer.clipAction(gltf.animations[0]);
-  const walk=find('walk'),run=find('run'),jump=find('jump','fall'),punch=find('punch','attack','swing'),hit=find('hit','damage','hurt');
-  if(idle){idle.play();idle.enabled=true;}
-  // Capture rig joints so locomotion-only GLBs still get readable combat motion.
+  const idle=find('idle','stand')||(gltf.animations?.[0]&&mixer.clipAction(gltf.animations[0]));
+  const walk=find('walk','locomotion'),run=find('run','sprint'),jump=find('jump','fall','air'),punch=find('punch','attack','swing','kick'),hit=find('hit','damage','hurt');
+  if(idle){idle.reset().play();idle.enabled=true;}
+  // Rig-aware procedural motion covers rigs that contain a skeleton but no baked animation clips.
   const joints={};
   root.traverse(o=>{
     if(!o.isBone)return;
-    const n=o.name.toLowerCase().replace(/[^a-z]/g,'');
-    const side=n.includes('left')||n.startsWith('l')?'L':n.includes('right')||n.startsWith('r')?'R':'';
-    if(/arm|shoulder|upperarm|forearm|hand/.test(n)&&side){
-      const key=(/hand/.test(n)?'hand':/forearm|lowerarm/.test(n)?'forearm':/upperarm|arm/.test(n)?'arm':'shoulder')+side;
-      joints[key] ||= {bone:o,base:o.rotation.clone()};
+    const raw=String(o.name||'').toLowerCase();
+    const n=raw.replace(/[^a-z0-9]/g,'');
+    const left=/(?:^|[._\-\s])(?:left|l)$/.test(raw)||raw.startsWith('left')||n.endsWith('left');
+    const right=/(?:^|[._\-\s])(?:right|r)$/.test(raw)||raw.startsWith('right')||n.endsWith('right');
+    const side=left?'L':right?'R':'';
+    if(/arm|shoulder|forearm|upperarm|hand|palm|finger|thumb/.test(n)&&side){
+      const part=(/hand|palm|finger|thumb/.test(n)?'hand':/forearm|lowerarm/.test(n)?'forearm':/shoulder|clavicle/.test(n)?'shoulder':'arm')+side;
+      joints[part] ||= {bone:o,base:o.rotation.clone()};
     }
-    if(/spine|chest|hips/.test(n))joints.torso ||= {bone:o,base:o.rotation.clone()};
+    if(/thigh|upperleg|upleg/.test(n)&&side)joints['leg'+side] ||= {bone:o,base:o.rotation.clone()};
+    if(/shin|calf|lowerleg/.test(n)&&side)joints['shin'+side] ||= {bone:o,base:o.rotation.clone()};
+    if(/spine|chest/.test(n))joints.torso ||= {bone:o,base:o.rotation.clone()};
+    if(/hips|pelvis/.test(n))joints.pelvis ||= {bone:o,base:o.rotation.clone()};
     if(/head|neck/.test(n))joints.head ||= {bone:o,base:o.rotation.clone()};
-    if(/upperleg|thigh|upleg/.test(n)&&side)joints['leg'+side] ||= {bone:o,base:o.rotation.clone()};
   });
   root.userData.proceduralJoints=joints;
-  root.userData.humanMixer=mixer;root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.hitAction=hit;root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;root.userData.proceduralAttackTime=0;
-  addArmor(root,archetype);
-  const previous=fighter.model,parent=previous.parent;
-  if(parent){parent.add(root);parent.remove(previous);}else if(window.__smashScene)window.__smashScene.add(root);
+  root.userData.humanMixer=mixer;
+  root.userData.animationActions=animations;
+  root.userData.hasAnimationClips=Boolean((gltf.animations||[]).length);
+  root.userData.walkAction=walk;root.userData.runAction=run;root.userData.idleAction=idle;
+  root.userData.jumpAction=jump;root.userData.punchAction=punch;root.userData.hitAction=hit;
+  root.userData.lastMoveAction=idle;root.userData.attackLock=0;root.userData.wasAttacking=false;root.userData.proceduralAttackTime=0;
+  // A character-specific asset already owns its silhouette and materials; don't stack generic armor over it.
+  const parent=previous.parent;
+  if(!parent)return false;
+  root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+  parent.add(root);parent.remove(previous);
   fighter.model=root;fighter.position=root.position;
-  return root;
+  fighter.characterModelLoaded=true;
+  window.__browserSmashAssets=window.__browserSmashAssets||{};
+  window.__browserSmashAssets.characterModels=window.__browserSmashAssets.characterModels||{};
+  window.__browserSmashAssets.characterModels[characterSlug(fighter,archetype)]={status:'loaded',url,animations:(gltf.animations||[]).map(c=>c.name),bones:Object.keys(joints)};
+  return true;
 }
 export function animateHumanFighter(fighter,dt){
   const root=fighter.model;if(!root?.userData?.humanMixer)return;
   fighter.position=root.position;
-  root.rotation.y=Math.atan2(fighter.facingZ,Math.abs(fighter.facing))+(fighter.facing>=0?Math.PI:0);
+  root.rotation.y=Math.atan2(fighter.facingZ,Math.abs(fighter.facing))+(fighter.facing>=0?Math.PI:0)+(root.userData.modelFacingOffset||0);
   root.userData.humanMixer.update(dt);
   const speed=Math.hypot(fighter.velocity.x,fighter.velocity.z), airborne=!fighter.isGrounded;
   const attacking=(fighter.attackQueue?.length||0)>0;
@@ -135,16 +188,23 @@ export function animateHumanFighter(fighter,dt){
   const phase=root.userData.proceduralAttackTime>0?1-root.userData.proceduralAttackTime/.34:0;
   const strike=root.userData.proceduralAttackTime>0?Math.sin(Math.min(1,phase)*Math.PI):0;
   const hitReact=fighter.hitstun>0?Math.min(1,fighter.hitstun/.38):0;
-  for(const [key,j] of Object.entries(joints)){
+  const proceduralOnly=!root.userData.walkAction&&!root.userData.runAction&&!root.userData.jumpAction&&!root.userData.punchAction&&!root.userData.hitAction;
+  const gait=proceduralOnly&&!airborne&&speed>.35?Math.min(1,speed/7):0;
+  const stride=Math.sin(fighter.t*(speed>7?10.5:7.2))*gait;
+  if(proceduralOnly)for(const [key,j] of Object.entries(joints)){
     j.bone.rotation.copy(j.base);
-    if(key==='armR')j.bone.rotation.x+=strike*-.95-hitReact*.22;
+    if(key==='armR')j.bone.rotation.x+=strike*-.95-hitReact*.22+stride*.28;
     if(key==='forearmR')j.bone.rotation.x+=strike*-.45-hitReact*.12;
     if(key==='handR')j.bone.rotation.x+=strike*-.18;
-    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12;
+    if(key==='armL')j.bone.rotation.x+=strike*-.24+hitReact*.12-stride*.28;
     if(key==='forearmL')j.bone.rotation.x+=strike*-.12;
-    if(key==='torso')j.bone.rotation.x+=strike*.14-hitReact*.22;
+    if(key==='torso')j.bone.rotation.x+=strike*.14-hitReact*.22+(gait?Math.abs(stride)*.035:0);
+    if(key==='pelvis')j.bone.rotation.x+=airborne?-.12:stride*.035;
     if(key==='head')j.bone.rotation.x+=hitReact*.16;
-    if(key==='legL'||key==='legR')j.bone.rotation.x+=airborne?-.16:0;
+    if(key==='legL')j.bone.rotation.x+=airborne?-.16:stride*.62;
+    if(key==='legR')j.bone.rotation.x+=airborne?-.16:-stride*.62;
+    if(key==='shinL')j.bone.rotation.x+=airborne?.24:Math.max(0,-stride)*.42;
+    if(key==='shinR')j.bone.rotation.x+=airborne?.24:Math.max(0,stride)*.42;
   }
   root.userData.wasAttacking=attacking;
   root.userData.attackLock=Math.max(0,root.userData.attackLock-dt);
