@@ -1,0 +1,62 @@
+name: Bake Goku and Iron Man animation clips
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "public/models/characters/goku/**"
+      - "public/models/characters/iron-man-mark-v-rig/**"
+      - "assets/blender/character_animation_bake.py"
+      - "scripts/install-character-assets.mjs"
+
+permissions:
+  contents: write
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out game
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Verify source character assets exist
+        run: |
+          test -f "public/models/characters/goku/Goku.fbx"
+          test -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf"
+          test -f "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.bin"
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes blender
+          blender --version
+      - name: Bake animation clips and export GLBs
+        run: |
+          blender --background --python assets/blender/character_animation_bake.py -- \
+            --goku "public/models/characters/goku/Goku.fbx" \
+            --ironman "public/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf" \
+            --output "public/models/characters/animated"
+      - name: Register animated models
+        run: node scripts/install-character-assets.mjs "$GITHUB_WORKSPACE"
+      - name: Commit baked GLBs back to the same branch
+        id: commit
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/models/characters/animated/*.glb public/models/characters/manifest.json
+          if git diff --cached --quiet; then
+            echo "No generated asset changes to commit."
+          else
+            git commit -m "Bake Goku and Iron Man animation clips [skip ci]"
+            git push
+          fi
+      - name: Keep generated animation files available as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-bros-animated-characters
+          path: public/models/characters/animated/
+          if-no-files-found: warn
+          retention-days: 14
