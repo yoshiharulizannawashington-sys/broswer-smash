@@ -12,6 +12,7 @@ starter animations, not motion-capture. Inspect and refine them in Blender befor
 import argparse
 import math
 import os
+import re
 import sys
 import bpy
 
@@ -125,10 +126,10 @@ def import_character(filepath):
     return armature
 
 def side(name):
-    value = name.lower().replace("mixamorig:", "")
-    if "left" in value or value.endswith((".l", "_l", "-l")):
+    value = re.sub(r"[^a-z0-9]+", " ", name.lower().replace("mixamorig:", ""))
+    if re.search(r"\\bleft\\b", value) or re.search(r"\\bl\\b", value) or name.lower().endswith((".l", "_l", "-l")):
         return "L"
-    if "right" in value or value.endswith((".r", "_r", "-r")):
+    if re.search(r"\\bright\\b", value) or re.search(r"\\br\\b", value) or name.lower().endswith((".r", "_r", "-r")):
         return "R"
     return ""
 
