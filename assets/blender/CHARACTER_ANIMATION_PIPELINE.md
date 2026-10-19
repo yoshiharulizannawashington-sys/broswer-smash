@@ -39,10 +39,12 @@ This writes:
 
 - `public/models/characters/animated/goku-animated.glb`
 - `public/models/characters/animated/iron-man-animated.glb`
+- `public/models/characters/animated/goku-animated.blend` (editable rig and NLA clips)
+- `public/models/characters/animated/iron-man-animated.blend` (editable rig and NLA clips)
 
 Then rerun the installer. It detects those files and registers them instead of the source FBX/GLTF.
 
-The starter action set is: `Idle`, `Walk`, `Run`, `Jump`, `Land`, `Punch`, `HeavyAttack`, `HitReact`, `Block`, `Dodge`, `Charge`, `BeamAttack`, and `Flight`. The controller crossfades those actions based on movement, guarding, dodging, landing, attack combo stage, and special-move cooldown start.
+The generated `.blend` projects are included in the GitHub Actions artifact for inspection/refinement; the runtime GLBs are the files the game loads. The starter action set is: `Idle`, `Walk`, `Run`, `Jump`, `Land`, `Punch`, `HeavyAttack`, `HitReact`, `Block`, `Dodge`, `Charge`, `BeamAttack`, and `Flight`. The controller crossfades those actions based on movement, guarding, dodging, landing, attack combo stage, and special-move cooldown start.
 
 ## 3. What to refine in Blender
 
