@@ -10,6 +10,8 @@ on:
       - ".github/workflows/validate-game.yml"
       - ".github/workflows/build-character-animations.yml"
       - "scripts/browser-smoke.mjs"
+      - "scripts/test-combat.mjs"
+      - "scripts/test-gameplay.mjs"
       - "public/assets/*.glb"
       - "assets/blender/character_models.py"
       - "assets/blender/character_animation_bake.py"
@@ -105,7 +107,7 @@ jobs:
           assert.equal(all.length - launch.length, 25, 'DLC reserve should retain 25 characters');
 
           for (const required of [
-            'RoomEnvironment', 'composer.render()', 'Tenkaichi Budokai-inspired Papaya Island',
+            'skyEnvironment(renderer', 'composer.render()', 'Tenkaichi Budokai-inspired Papaya Island',
             'Added monumental skyline', 'enchantedSkyCanvas', 'Airborne Helicarrier underside',
             'window.beginWebSwing=(fighter)=>', 'window.updateWebSwing=(fighter,dt,inputs={})',
             'flightCapable=new Set'
@@ -163,6 +165,11 @@ jobs:
         run: |
           npm install --no-save playwright three@0.152.2
           npx playwright install --with-deps chromium
+      - name: Unit-test combat rules and arena collision
+        run: node scripts/test-combat.mjs
       - name: Smoke-test actual game render and Blender GLB loading
         timeout-minutes: 6
         run: node scripts/browser-smoke.mjs
+      - name: Play-test movement, combat, rounds, arenas and local two-player
+        timeout-minutes: 8
+        run: node scripts/test-gameplay.mjs

@@ -1,5 +1,6 @@
 // Active fighter simulation with responsive movement, articulated animation, guarding and combat.
 import * as THREE from 'three';
+import { damageFor, knockbackFor, launchFor, hitstunFor } from './combat/combat_rules.js';
 
 export default class Fighter3D {
   constructor({ name = 'Fighter', model, weight = 85, player = false }) {
@@ -51,6 +52,17 @@ export default class Fighter3D {
     this.webSwingGlowLine = null;
     this.webSwingLength = 0;
     this.airChaseTime = 0;
+    // Stage geometry: `bounds` is the arena's playable rectangle and `groundLevel` the
+    // surface height under the fighter, so platforms and raised stages are solid ground.
+    this.bounds = null;
+    this.groundLevel = 0;
+    // Air options. A jump is spent on take-off, the second one in mid-air; the air dash is
+    // once per airtime. Both reset on landing.
+    this.jumps = 0;
+    this.airDashUsed = false;
+    this.throwChain = 0;
+    this.recovery = 0;
+    this.lastHitBy = null;
   }
 
   simulate(dt, inputHandler) {
@@ -110,11 +122,14 @@ export default class Fighter3D {
     }
     this.position.addScaledVector(this.velocity, dt);
     if (this.webSwinging) window.updateWebSwing?.(this, dt, inputs);
-    if (this.position.y <= 0) {
+    const floor = this.groundLevel || 0;
+    if (this.position.y <= floor) {
       if (!this.wasGrounded && this.velocity.y < -3) this.landPulse = 1;
-      this.position.y = 0;
+      this.position.y = floor;
       this.velocity.y = Math.max(0, this.velocity.y);
       this.isGrounded = true;
+      this.jumps = 0;
+      this.airDashUsed = false;
     } else {
       this.isGrounded = false;
     }
@@ -126,8 +141,16 @@ export default class Fighter3D {
       }
     }
 
-    this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -125 : -17, this.roamMode ? 125 : 17);
-    this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -125 : -8, this.roamMode ? 125 : 8);
+    if (this.bounds && !this.roamMode) {
+      // Per-arena playable rectangle. Roaming keeps the wider legacy box so exploration is
+      // not fenced into the fighting area.
+      const pad = this.hurtboxRadius;
+      this.position.x = THREE.MathUtils.clamp(this.position.x, this.bounds.x0 + pad, this.bounds.x1 - pad);
+      this.position.z = THREE.MathUtils.clamp(this.position.z, this.bounds.z0 + pad, this.bounds.z1 - pad);
+    } else {
+      this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -125 : -17, this.roamMode ? 125 : 17);
+      this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -125 : -8, this.roamMode ? 125 : 8);
+    }
     this.velocity.x *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
     this.velocity.z *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
     this.updateProceduralPose(inputs, dt);
@@ -165,15 +188,30 @@ export default class Fighter3D {
       }
     }
 
-    if (i.jump && this.isGrounded && !this.flightMode) {
-      this.velocity.y = this.roamMode ? 9.4 : 10.8;
-      this.velocity.x *= 1.08;
-      this.isGrounded = false;
-      this.velocity.x *= 1.08;
-      this.velocity.z *= 1.08;
+    if (i.jump && !this.flightMode && this.hitstun <= 0) {
+      const maxJumps = this.roamMode ? 3 : 2;
+      if (this.isGrounded) {
+        this.velocity.y = this.roamMode ? 9.4 : 10.8;
+        this.velocity.x *= 1.08;
+        this.velocity.z *= 1.08;
+        this.isGrounded = false;
+        this.jumps = 1;
+        this.airDashUsed = false;
+      } else if (this.jumps < maxJumps) {
+        // Double (and in free roam, triple) jump: a fresh impulse plus air control toward
+        // the direction being held, so a juggled fighter can reposition before landing.
+        this.jumps++;
+        this.velocity.y = Math.max(this.velocity.y, this.roamMode ? 8.6 : 9.2);
+        if (len) {
+          const airSpeed = Math.max(6.5, Math.hypot(this.velocity.x, this.velocity.z));
+          this.velocity.x = THREE.MathUtils.damp(this.velocity.x, nx * airSpeed, 9, dt);
+          this.velocity.z = THREE.MathUtils.damp(this.velocity.z, nz * airSpeed, 9, dt);
+        }
+        window.spawnImpact?.(this.position.clone().add(new THREE.Vector3(0, .3, 0)), 2, 0xbde9ff);
+      }
     }
 
-    if (i.dodge && this.dashCooldown <= 0 && this.dodgeTimer <= 0) {
+    if (i.dodge && this.dashCooldown <= 0 && this.dodgeTimer <= 0 && (!this.isGrounded || !this.airDashUsed)) {
       const mag = Math.hypot(this.facing, this.facingZ) || 1;
       this.velocity.x = (len ? nx : this.facing / mag) * (this.roamMode ? 17 : 13);
       this.velocity.z = (len ? nz : this.facingZ / mag) * (this.roamMode ? 17 : 13);
@@ -183,6 +221,7 @@ export default class Fighter3D {
       this.dodgeTimer = this.roamMode ? .62 : .48;
       this.dashTimer = this.roamMode ? .24 : .16;
       this.dashCooldown = this.roamMode ? .55 : .4;
+      if (!this.isGrounded) this.airDashUsed = true;
     }
 
     if (i.attack && this.guardBreak <= 0) this.attackBuffer = Math.max(this.attackBuffer, .62);
@@ -198,6 +237,10 @@ export default class Fighter3D {
       }[this.archetype] || {reach:1.6,damage:1,windup:1,combo:.82,cooldown:.74};
       const heavy = !!i.run;
       const aerial = !this.isGrounded;
+      // Directional attacks: UP + attack is an anti-air launcher, DOWN + attack in the air
+      // is a dive kick that drives the attacker at the floor instead of chasing upward.
+      const antiAir = !aerial && (i.vertical === 1 || !!i.up);
+      const dive = aerial && (i.vertical === -1 || !!i.down);
       const weaponKind=this.model?.userData?.weaponKind||'unarmed';
       const rangedWeapon=['blaster','rifle','shotgun','plasma_rifle','pistol'].includes(weaponKind);
       const weaponReachBonus={sword:.42,katana:.5,cyber_blade:.48,giant_sword:.8,scimitar:.46,trident:.62,staff:.38,axe:.5,hammer:.42,war_fan:.34,whip:1.15,tentacle:.62,knife:.22,claws:.24,nunchaku:.42};
@@ -206,13 +249,15 @@ export default class Fighter3D {
       this.comboStep = (this.comboStep % 3) + 1;
       const finisher = this.comboStep === 3;
       const countering = this.counterWindow > 0;
-      const launcher = (finisher && !aerial && !heavy) || (countering && !aerial);
+      const launcher = (finisher && !aerial && !heavy) || (countering && !aerial) || antiAir;
       this.comboWindow = style.combo;
       const combatProfile=this.combatProfile||{damage:1,knockback:1,launch:1};
       const baseDamage = (heavy ? 17 : finisher ? 20 : 8 + this.comboStep) * combatProfile.damage;
       const reach = aerial ? (finisher ? 6.0 : 4.6) + reachBonus*.62 : (finisher ? style.reach * 1.42 : style.reach) + reachBonus;
       this.attackQueue.push({
-        kind: countering ? 'counter-strike' : aerial ? (finisher ? 'air-finisher' : 'air-strike') : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
+        kind: countering ? 'counter-strike' : dive ? 'dive-kick' : aerial ? (finisher ? 'air-finisher' : 'air-strike') : antiAir ? 'anti-air' : heavy || finisher ? 'heavy' : (this.archetype === 'ninja' ? 'slash' : this.archetype === 'mage' ? 'arcane' : 'melee'),
+        antiAir,
+        dive,
         total: (aerial ? (finisher ? .56 : .43) : (heavy || finisher || countering ? .56 : .34)) * style.windup,
         t: 0,
         start: countering ? .035 : (aerial ? .08 : (heavy || finisher ? .14 : .065)) * style.windup,
@@ -223,7 +268,7 @@ export default class Fighter3D {
         aerial,
         launcher,
         countering,
-        launchY: (aerial ? (finisher ? 11.2 : 7.2) : (countering ? 9.2 : (launcher ? 8.6 : 3.4))) * (combatProfile.launch||1),
+        launchY: (aerial ? (finisher ? 11.2 : 7.2) : (antiAir ? 10.4 : countering ? 9.2 : (launcher ? 8.6 : 3.4))) * (combatProfile.launch||1),
         comboStep: this.comboStep,
         weaponKind,
         hit: false
@@ -234,7 +279,12 @@ export default class Fighter3D {
       }
       const dirX = this.facing || (this.player ? 1 : -1);
       const dirZ = this.facingZ || 0;
-      if (aerial) {
+      if (dive) {
+        // A dive kick commits downward and forward: predicted impact, not a chase.
+        this.velocity.x = dirX * 6.4;
+        this.velocity.z = dirZ * 6.4;
+        this.velocity.y = Math.min(this.velocity.y, -9.5);
+      } else if (aerial) {
         // Air attacks actively chase a launched rival, creating a followable juggle instead
         // of whiffing when the opponent has drifted away from the attacker.
         const target = (window.fighters || []).find(f => f !== this && f.model?.visible !== false);
@@ -577,10 +627,10 @@ export default class Fighter3D {
     const pos = this.position.clone().add(dir.clone().multiplyScalar(reach)).add(new THREE.Vector3(0, height, 0));
     this.hitboxes.push({
       pos, owner: this, reach, height, facingDir: dir.clone(),
-      radius: a.aerial ? (a.comboStep===3 ? 2.45 : 2.05) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
+      radius: a.aerial ? (a.comboStep===3 ? 2.45 : a.dive ? 1.5 : 2.05) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
       damage: a.damage, kbs: a.kbs, launchY: a.launchY || 3.4, aerial: !!a.aerial,
       kind:a.kind||'melee',weaponKind:a.weaponKind||this.model?.userData?.weaponKind||'unarmed',identityKey:this.identityKey||'',
-      launcher: !!a.launcher, countering: !!a.countering, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
+      launcher: !!a.launcher, antiAir: !!a.antiAir, dive: !!a.dive, countering: !!a.countering, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
     });
   }
 
@@ -627,20 +677,45 @@ export default class Fighter3D {
             break;
           }
           const guarding = other.guardHeld && other.guardBreak <= 0;
-          const damageScale = guarding ? 0.28 : 1;
-          other.percent += h.damage * damageScale;
+          if (h.kind === 'grab') {
+            // A real throw: the victim is pulled in front of the attacker and launched over
+            // their shoulder, instead of taking a generic punch.
+            if (guarding) {
+              other.percent += damageFor(h.damage, { guarding: true });
+              other.hitstun = 0.16;
+              other.guardBreak = Math.max(other.guardBreak, 0.12);
+            } else {
+              other.percent += damageFor(h.damage, {});
+              other.hitstun = 0.92;
+              other.position.x = this.position.x + this.facing * 1.25;
+              other.position.z = this.position.z + this.facingZ * 1.25;
+              other.velocity.set(this.facing * 4.6, 9.4, this.facingZ * 4.6);
+              other.isGrounded = false;
+              this.throwChain++;   // the throw itself is a combo starter
+              this.comboStep = 0;
+              this.comboWindow = 0;
+              window.showCombatCallout?.('THROW!', '#ffe0a6');
+            }
+            other.lastHitBy = this;
+            window.spawnImpact?.(h.pos, 12, 0xffc476, 'grab');
+            other.isGrounded = false;
+            remove = true;
+            break;
+          }
+          other.percent += damageFor(h.damage, { guarding, comboStep: h.comboStep });
+          other.lastHitBy = this;
           this.comboHitCount = (this.comboWindow > 0 && this.comboHitCount > 0) ? this.comboHitCount + 1 : 1;
           this.comboHitFlash = .7;
           this.comboWindow = Math.max(this.comboWindow, .82);
           if (h.countering) window.showCombatCallout?.('COUNTER HIT!', '#ffe18a');
           else if (h.comboStep >= 3 && !guarding) window.showCombatCallout?.('COMBO FINISHER!', '#ffbd72');
           else if (this.comboHitCount >= 2 && !guarding) window.showCombatCallout?.(`${this.comboHitCount} HIT COMBO`, '#b9f7ff');
-          other.hitstun = guarding ? 0.1 : .3 + Math.min(1.05, other.percent / 165) + (h.aerial || h.launcher ? .12 : 0);
+          other.hitstun = hitstunFor({ percent: other.percent, guarding, aerial: h.aerial, launcher: h.launcher });
           other.guardBreak = guarding ? Math.max(other.guardBreak, 0.08) : other.guardBreak;
-          const knockbackScale = guarding ? 0.25 : 1;
-          other.velocity.x = this.facing * h.kbs * (0.035 + other.percent / 1200) * knockbackScale;
-          other.velocity.z = this.facingZ * h.kbs * (0.035 + other.percent / 1200) * knockbackScale;
-          other.velocity.y = Math.max(other.velocity.y, guarding ? 1.2 : h.launchY);
+          const force = knockbackFor({ kbs: h.kbs, percent: other.percent, guarding, weight: other.weight });
+          other.velocity.x = this.facing * force;
+          other.velocity.z = this.facingZ * force;
+          other.velocity.y = Math.max(other.velocity.y, launchFor({ launchY: h.launchY, guarding, weight: other.weight, aerial: h.aerial, launcher: h.launcher }));
           if (h.aerial && !guarding) { other.velocity.x += this.facing * 1.1; other.velocity.y += .85; }
           other.isGrounded = false;
           const impactColors={
@@ -650,6 +725,9 @@ export default class Fighter3D {
           };
           const sparkColor=impactColors[h.weaponKind]||(h.aerial?0xb8a0ff:h.comboStep>=3?0xffb56b:0x70ddff);
           window.spawnImpact?.(h.pos, guarding ? 3 : h.damage, sparkColor, h.weaponKind);
+          // Hit-stop: strong clean hits momentarily freeze the simulation, which is what
+          // makes a finisher feel heavier than a jab. Guarded hits never freeze.
+          if (!guarding && h.damage >= 13) window.requestHitStop?.(h.damage >= 19 ? 0.085 : 0.05);
           remove = true;
           break;
         }

@@ -100,6 +100,95 @@ functions alone. See `docs/ANIMATION_ASSETS.md` for the full workflow.
 - `public/data/animation-manifest.json` lists the 39 clip ids and the candidate Mixamo/Sketchfab
   packs with their sources and licence notes. No pack is installed by default.
 
+## Gameplay systems
+
+The fight is simulated at a fixed 60 Hz in `public/js/main.js` (`simulationStep`) and drawn on
+the render loop. Combat maths lives in one place, `public/js/combat/combat_rules.js`, so damage,
+launch strength, hit stun and round scoring are unit-testable instead of being scattered through
+the loop.
+
+### Controls
+
+| Action | Player 1 | Player 2 (local) |
+| --- | --- | --- |
+| Move | WASD / left stick | Arrow keys / second gamepad |
+| Light attack (3-hit chain) | J | `,` |
+| Signature move | K | `.` |
+| Throw | U | `/` |
+| Jump / double jump | Space | Enter |
+| Sprint (hold) / dash (tap) | Left Shift | Right Shift |
+| Guard (hold) / parry (tap) | E | `;` |
+| Anti-air attack | Up + J | Up + `,` |
+| Air dive kick | Down + J in the air | Down + `,` |
+| Flight toggle / descend | F / C | `[` / `]` |
+| Web swing (Spider-Man) | G | `\` |
+
+`2P LOCAL` on the match setup screen hands the second fighter to the second binding set instead
+of the CPU. Gamepad 0 drives P1 and gamepad 1 drives P2.
+
+### Combat
+
+- Three-hit strings chain while `comboWindow` is open, with damage scaling down across the chain
+  and a launcher on the third hit.
+- Hits spawn a short-lived sphere hitbox at the attack's reach; the defender is a capsule at their
+  centre with `hurtboxRadius`. Guarded hits take 28% damage and 25% knockback, and never trigger hit-stop.
+- Tapping guard opens a 0.22 s parry window that reflects projectiles and stuns the attacker.
+- Throws pull the victim in front of the attacker and launch them, rather than dealing a punch.
+- Knockback and hit stun scale with accumulated damage and are reduced by fighter weight, so heavy
+  characters (Hulk, Doom Slayer) survive longer than light ones (Professor X, Edna Mode).
+- Strong hits freeze the simulation for 50-85 ms (`window.requestHitStop`) while VFX and camera
+  shake continue.
+
+### Matches
+
+Rounds are best of three (`roundsToWin: 2`) with an 80-second clock and a 150% knockout threshold in
+`combat_rules.js`. A round ends on a knockout, a time-out decided on lower damage, or a ring-out; a
+drawn round is replayed and awards nothing. Round results show a banner, spawn both fighters at the
+arena's spawn points with 1.1 s of invulnerability, and reset damage. Two round wins end the match,
+return to the setup screen and offer a rematch.
+
+### Arenas and collision
+
+`public/js/world/arena_layouts.js` gives every arena its own playable rectangle, spawn points,
+solid volumes and walkable platform heights instead of the old shared 34 × 16 m box:
+
+| Arena | Playable area | Notable solid geometry / platforms |
+| --- | --- | --- |
+| Valley of Echoes | 120 × 95 m | landmark rocks, gate posts |
+| Obsidian Volcano | 140 × 108 m | caldera cone |
+| Frostfall Citadel | 140 × 106 m | citadel |
+| Neon Megacity | 132 × 108 m | tower block row |
+| Death Star | 112 × 35 m | conference table, throne dais (walkable), consoles |
+| Final Valley | 116 × 88 m | authored obstacle list |
+| DBZ Tournament | 34 × 30 m | raised ring floor at 0.18 m |
+| Helicarrier / Stark Penthouse | 87 × 46 m | penthouse walls, sofa, bar, elevator shaft |
+| Asgard | 108 × 86 m | house rows, fountain |
+| Hogwarts Great Hall | 42 × 87 m | four jump-on-able house tables, nave columns |
+
+Volumes are resolved with a capsule-vs-box/circle push that strips the inward velocity, so a fighter
+slides along walls. Anything whose top is within `STEP_HEIGHT` (0.42 m) of the feet is stood on:
+low steps are climbed, tables need a jump, and high walls block. Bounds clamping is the boundary
+line; walking out is not possible during a match.
+
+### Match setup screen
+
+`public/js/ui/character_select.js` builds a two-step setup flow (fighters, then arena) from the
+roster the game actually has. It writes to the existing `#p1Character`, `#cpuCharacter` and
+`#menuMapSelect` elements and dispatches real `change` events, so character swapping and arena
+streaming keep using the existing code paths. Choosing an arena loads it behind the menu as a live
+preview. Selection cards show each fighter's archetype and signature move, and each arena card shows
+its kind and playable size.
+
+### Test hooks
+
+The game exposes a few read-only hooks for automated play-testing:
+
+- `window.__browserSmashMatch()` — round, wins, clock, status, mode and arena.
+- `window.__browserSmashStep(seconds)` — advance the fixed-step simulation deterministically.
+- `window.__browserSmashTrainingDummy = true` — stop the CPU from blocking or dodging, so hit checks
+  are reproducible.
+- `window.__browserSmashSelect` — the setup screen controller (`chooseArena`, `select`, `setMode`).
+
 ## Validation
 
 - `npm run validate:animations` — compiles all 39 clips against a hierarchical rig and asserts:
@@ -113,6 +202,11 @@ functions alone. See `docs/ANIMATION_ASSETS.md` for the full workflow.
   loader's own `MODEL_PATHS`, and reports enabled manifest entries that point at missing
   files. Optional assets that are not installed yet are warnings, not failures.
 - `npm run build` — production build into `dist/`.
+- `npm run test:combat` — node tests for damage, knockback, hit stun, combo chaining, round/match
+  flow, arena bounds, spawn placement and box/circle collision (94 checks, no browser needed).
+- `npm run test:gameplay` — Playwright play-test that chooses two fighters and an arena, starts a
+  match, moves, jumps, double jumps, punches, chains, guards, throws, wins two rounds, switches
+  arenas mid-session and verifies local two-player input; 47 checks plus zero page/console errors.
 - `npm run test:smoke` — Playwright runtime test (needs `npm install --no-save playwright three@0.152.2`
   and `npx playwright install chromium`). Verifies both entrypoints render, the character and
   weapon libraries load, and an authored arena streams in when its map is selected.
