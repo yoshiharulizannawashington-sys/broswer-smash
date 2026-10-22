@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "formatPreference": "glb",
+  "items": {
+    "vitality_core": {
+      "label": "Vitality Core",
+      "modelPath": null,
+      "state": "procedural-fallback",
+      "effect": { "type": "heal", "amount": 20 },
+      "respawnSeconds": 12,
+      "sourceUrl": null,
+      "creator": null,
+      "license": "procedural-original",
+      "attribution": null
+    },
+    "overdrive_core": {
+      "label": "Overdrive Core",
+      "modelPath": null,
+      "state": "procedural-fallback",
+      "effect": { "type": "damage-boost", "multiplier": 1.25, "durationSeconds": 8 },
+      "respawnSeconds": 15,
+      "sourceUrl": null,
+      "creator": null,
+      "license": "procedural-original",
+      "attribution": null
+    },
+    "aegis_orb": {
+      "label": "Aegis Orb",
+      "modelPath": null,
+      "state": "procedural-fallback",
+      "effect": { "type": "shield", "durationSeconds": 6 },
+      "respawnSeconds": 15,
+      "sourceUrl": null,
+      "creator": null,
+      "license": "procedural-original",
+      "attribution": null
+    },
+    "supply_capsule": {
+      "label": "Supply Capsule",
+      "modelPath": null,
+      "state": "needs-model",
+      "effect": { "type": "random-supported-pickup" },
+      "respawnSeconds": 18,
+      "sourceUrl": null,
+      "creator": null,
+      "license": null,
+      "attribution": null
+    }
+  },
+  "notes": "A model path is not installed until the file loads successfully. Keep item behavior independent from its visual model."
+}
