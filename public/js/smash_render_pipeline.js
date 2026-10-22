@@ -5,8 +5,10 @@ export function createSmashRenderPipeline(canvas,scene){
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.65));
  renderer.setSize(window.innerWidth,window.innerHeight);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
- renderer.toneMapping=THREE.NoToneMapping;
- renderer.toneMappingExposure=1;
+ // Filmic highlight rolloff: emissive trim, energy attacks and the sun now roll off
+ // into white instead of clipping to flat saturated colour.
+ renderer.toneMapping=THREE.ACESFilmicToneMapping;
+ renderer.toneMappingExposure=1.28;
  renderer.setClearColor(0x111b30,1);
  renderer.shadowMap.enabled=true;
  renderer.shadowMap.type=THREE.PCFSoftShadowMap;

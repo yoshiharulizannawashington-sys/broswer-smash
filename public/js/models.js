@@ -1,6 +1,7 @@
 // Original procedural fighters for Browser Smash. Articulated pivot hierarchy enables real limb animation.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { enhanceSurfaceMaterials, surfaceDetailReport } from './surface_detail.js?v=browser-smash-surface-detail-v31-20261022';
 
 const runtimeAssetState = typeof window !== 'undefined'
   ? (window.__browserSmashAssets ||= {})
@@ -384,6 +385,12 @@ export async function upgradeCharacterWithBlenderModel(fighter){
   }
   const parent=oldModel.parent;
   if(!parent)return false;
+  // The prefab libraries ship no image textures at all, so the fighter would render as
+  // smooth plastic. Apply generated weave/brushed/leather/skin detail maps before the
+  // model is measured and mounted.
+  const detail=enhanceSurfaceMaterials(avatar);
+  avatar.userData.surfaceDetail=surfaceDetailReport(avatar);
+  runtimeAssetState.lastCharacterDetail={key,...detail,classes:avatar.userData.surfaceDetail};
   avatar.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
   avatar.updateMatrixWorld(true);
   const modelBounds=new THREE.Box3().setFromObject(avatar);
@@ -506,6 +513,7 @@ export async function equipCharacterWeapons(fighter){
     weapon.name='Equipped '+(template.userData.display_name||key);
     weapon.position.set(0,-.39,.065);
     weapon.scale.setScalar(weaponSize(kind));
+    enhanceSurfaceMaterials(weapon,{weapon:true});
     weapon.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
     rightMount.add(weapon);
     model.userData.equippedWeaponRight=weapon;
@@ -517,6 +525,7 @@ export async function equipCharacterWeapons(fighter){
     weapon.name='Equipped offhand '+key;
     weapon.position.set(0,-.39,.045);
     weapon.scale.setScalar(weaponSize(kind));
+    enhanceSurfaceMaterials(weapon,{weapon:true});
     weapon.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
     leftMount.add(weapon);
     model.userData.equippedWeaponLeft=weapon;

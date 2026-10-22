@@ -28,6 +28,11 @@ The pulled-back cinematic camera and high-quality 3D environments are long-term 
 - Animation pipeline notes: `assets/blender/CHARACTER_ANIMATION_PIPELINE.md`
 - Character package installer: `scripts/install-character-assets.mjs`
 - Runtime browser smoke test: `scripts/browser-smoke.mjs`
+- Asset validator: `scripts/validate-assets.mjs` (`npm run validate:assets`)
+- Runtime roster audit: `scripts/audit-roster.mjs` (`npm run audit:roster`) — mounts every selectable fighter's prefab rig, weapon and surface detail.
+- Generated surface detail: `public/js/surface_detail.js`. Per-arena sky IBL: `public/js/sky_environment.js`.
+- Build config: `vite.config.js` — the site root is `public/`, output goes to `dist/`
+- Authored arena loader: `public/js/arenas/cinematic_arenas.js` (wired into `applyMap` in `public/js/main.js`)
 - CI: `.github/workflows/validate-game.yml`, `.github/workflows/build-character-animations.yml`, and `.github/workflows/build-final-valley.yml`.
 
 These are known repository paths, not a substitute for checking the current branch. Read relevant code and git status before editing.
@@ -96,7 +101,7 @@ The current bake script authors procedural starter animations based on rig/bone-
 1. Check `git status`, branch, latest commit, and latest Actions results. Do not discard or overwrite user changes.
 2. Read the specific code and existing tests before editing.
 3. Make one coherent, reviewable change at a time.
-4. Run `npm run build`, relevant syntax checks, and existing validation scripts; use Playwright/browser smoke tests when available.
+4. Run `npm run build`, relevant syntax checks, and existing validation scripts (`npm run validate:assets`, `npm run audit:roster`, `npm run test:smoke`); use Playwright/browser smoke tests when available.
 5. Check actual runtime asset requests, browser errors, character animation, and gameplay where tools permit. Distinguish source inspection from verified runtime behavior.
 6. Inspect the diff and rerun tests after fixes.
 7. Commit coherent changes only when appropriate and permitted. Never claim tests, Blender, model integration, or commits succeeded unless they did.

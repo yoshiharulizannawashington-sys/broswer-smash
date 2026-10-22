@@ -527,6 +527,25 @@ export default class Fighter3D {
       u.head.rotation.x = airborne ? 0.12 : Math.sin(this.t * 1.8) * 0.025;
       u.head.rotation.z = hit * 0.16;
     }
+    // The prefab rigs are authored in a T-pose: their arm joints are horizontal at zero
+    // rotation, and every pose branch above writes absolute offsets from that bind pose.
+    // Anyone not covered by a per-identity idle branch (Hulk, Thor, most of the DLC
+    // roster) therefore stood with both arms straight out during a fight. Dropping the
+    // shoulders here, additively and after the combat pose is written, gives every
+    // fighter a resting silhouette while leaving punches, guards and weapon arcs intact.
+    if (u.leftArm && u.rightArm) {
+      const resting = this.attackQueue.length === 0 && !guard && !this.webSwinging && this.attackPose <= 0;
+      const drop = resting ? 1.16 : .34;
+      u.leftArm.rotation.z += drop;
+      u.rightArm.rotation.z -= drop;
+      if (resting) {
+        // Relaxed elbows and a slow weight shift so an idle fighter is never a mannequin.
+        const sway = Math.sin(this.t * 1.35) * .04;
+        u.leftFore.rotation.x -= .3 - sway;
+        u.rightFore.rotation.x -= .3 + sway;
+        if (u.pelvis) u.pelvis.rotation.z = sway * .5;
+      }
+    }
     this.model.rotation.y = Math.atan2(this.facingZ, this.facing);
     this.model.position.y += 0; // root stays grounded; vertical motion remains in the physics body
     this.model.rotation.z = THREE.MathUtils.damp(this.model.rotation.z, dodge * -0.2 + hit * 0.12, 12, dt);

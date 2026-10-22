@@ -6,9 +6,16 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "start": "vite --host 0.0.0.0",
-    "build": "vite build"
+    "build": "vite build",
+    "validate:assets": "node scripts/validate-assets.mjs",
+    "validate:animations": "node scripts/validate-animations.mjs",
+    "test:smoke": "node scripts/browser-smoke.mjs",
+    "audit:roster": "node scripts/audit-roster.mjs"
   },
   "devDependencies": {
     "vite": "^6.4.1"
+  },
+  "dependencies": {
+    "three": "^0.152.2"
   }
 }

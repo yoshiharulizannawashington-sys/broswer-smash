@@ -1,0 +1,148 @@
+{
+  "version": 2,
+  "library": "browser-smash-core-v1",
+  "generatedBy": "public/js/anim/clip_library.js",
+  "rootMotion": "strip",
+  "notes": [
+    "Every clip id below is guaranteed to exist at runtime: either from an installed pack or from the hand-authored procedural fallback library.",
+    "A clip is only reported as external once a real GLB pack on disk supplies it; packs that are not installed stay 'not-supplied'/'missing'.",
+    "Root motion is stripped from downloaded clips so gameplay physics stays authoritative over position."
+  ],
+  "clips": [
+    { "id": "idle", "category": "movement", "loop": true, "fallback": "procedural", "mixamo": ["Idle", "Idle 01", "Breathing Idle"] },
+    { "id": "walk", "category": "movement", "loop": true, "fallback": "procedural", "mixamo": ["Walking", "Walk"] },
+    { "id": "run", "category": "movement", "loop": true, "fallback": "procedural", "mixamo": ["Running", "Run"] },
+    { "id": "sprint", "category": "movement", "loop": true, "fallback": "procedural", "mixamo": ["Sprint", "Fast Run"] },
+    { "id": "turn", "category": "movement", "loop": false, "fallback": "procedural", "mixamo": ["Turn Left", "Turning"] },
+    { "id": "stop", "category": "movement", "loop": false, "fallback": "procedural", "mixamo": ["Stop", "Idle"] },
+    { "id": "strafe_left", "category": "movement", "loop": true, "fallback": "procedural", "mixamo": ["Left Strafe Walking", "Strafe Left"] },
+    { "id": "strafe_right", "category": "movement", "loop": true, "fallback": "procedural", "mixamo": ["Right Strafe Walking", "Strafe Right"] },
+    { "id": "jump", "category": "air", "loop": false, "fallback": "procedural", "mixamo": ["Jump", "Jumping"] },
+    { "id": "double_jump", "category": "air", "loop": false, "fallback": "procedural", "mixamo": ["Jumping Jack", "Backflip"] },
+    { "id": "fall", "category": "air", "loop": true, "fallback": "procedural", "mixamo": ["Falling", "Fall"] },
+    { "id": "land", "category": "air", "loop": false, "fallback": "procedural", "mixamo": ["Landing", "Hard Landing"] },
+    { "id": "fly_start", "category": "flight", "loop": false, "fallback": "procedural", "mixamo": ["Flying", "Hover"] },
+    { "id": "fly_loop", "category": "flight", "loop": true, "fallback": "procedural", "mixamo": ["Flying Idle", "Hover"] },
+    { "id": "fly_boost", "category": "flight", "loop": true, "fallback": "procedural", "mixamo": ["Superman Fly", "Flying Forward"] },
+    { "id": "fly_turn", "category": "flight", "loop": true, "fallback": "procedural", "mixamo": ["Flying Turn", "Banking"] },
+    { "id": "fly_land", "category": "flight", "loop": false, "fallback": "procedural", "mixamo": ["Landing", "Hard Landing"] },
+    { "id": "fighting_idle", "category": "combat", "loop": true, "fallback": "procedural", "mixamo": ["Fighting Idle", "Idle"] },
+    { "id": "jab", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Jab", "Punch"] },
+    { "id": "cross_punch", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Cross Punch", "Punch"] },
+    { "id": "heavy_punch", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Hook", "Heavy Punch"] },
+    { "id": "uppercut", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Uppercut", "Hook Punch"] },
+    { "id": "front_kick", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Front Kick", "Kick"] },
+    { "id": "spinning_kick", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Spinning Kick", "Roundhouse"] },
+    { "id": "combo_1", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Punch Combo", "Boxing"] },
+    { "id": "combo_2", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Kick Combo", "Hook Punch"] },
+    { "id": "special_attack", "category": "combat", "loop": false, "fallback": "procedural", "mixamo": ["Two Hand Cast", "Charged Spell"] },
+    { "id": "block", "category": "defence", "loop": true, "fallback": "procedural", "mixamo": ["Block", "Guard"] },
+    { "id": "dodge_left", "category": "defence", "loop": false, "fallback": "procedural", "mixamo": ["Dodge Left", "Dodge"] },
+    { "id": "dodge_right", "category": "defence", "loop": false, "fallback": "procedural", "mixamo": ["Dodge Right", "Dodge"] },
+    { "id": "grab", "category": "defence", "loop": false, "fallback": "procedural", "mixamo": ["Grabbing", "Grab"] },
+    { "id": "throw", "category": "defence", "loop": false, "fallback": "procedural", "mixamo": ["Throw", "Grab Throw"] },
+    { "id": "hit_light", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Hit Reaction", "Light Hit"] },
+    { "id": "hit_heavy", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Stagger", "Heavy Hit"] },
+    { "id": "launch", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Knockback", "Falling Back"] },
+    { "id": "aerial_recovery", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Recovery", "Bounce"] },
+    { "id": "knockdown", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Knock Down", "Death From Front"] },
+    { "id": "get_up", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Getting Up", "Stand Up"] },
+    { "id": "knockout", "category": "reaction", "loop": false, "fallback": "procedural", "mixamo": ["Knockout", "Dying"] }
+  ],
+  "packs": [
+    {
+      "id": "mixamo-humanoid-core",
+      "label": "Mixamo humanoid core (locomotion + combat)",
+      "status": "not-supplied",
+      "enabled": false,
+      "file": "/models/animations/mixamo-humanoid-core.glb",
+      "source": "https://www.mixamo.com",
+      "license": "Adobe Mixamo: free for commercial and personal projects, retargeting allowed. Verify the current terms before shipping.",
+      "instructions": "Mixamo > select an animation > Download > Format glTF Binary (.glb), Skin With Skin, 30 fps, Keyframe Reduction none. Upload several clips at a time, then merge them into one GLB with scripts/install-animation-pack.mjs.",
+      "clips": {}
+    },
+    {
+      "id": "sketchfab-combat-combo",
+      "label": "Sketchfab · Combat — Punching Kicking Animation",
+      "status": "not-supplied",
+      "enabled": false,
+      "file": "/models/animations/sketchfab-combat-combo.glb",
+      "source": "https://sketchfab.com/3d-models/combat-punching-kicking-animation-2d8e068c6f644668a0ccefe15a2c3d06",
+      "license": "Listed by its author on Sketchfab; download availability and licence must be confirmed on the model page before use.",
+      "clips": {
+        "jab": ["Punch", "Jab"],
+        "cross_punch": ["Punch 2", "Cross"],
+        "heavy_punch": ["Kick", "Punch 3"],
+        "combo_1": ["Combat", "Combo"]
+      }
+    },
+    {
+      "id": "sketchfab-long-fight-combo",
+      "label": "Sketchfab · Long Fight Combo",
+      "status": "not-supplied",
+      "enabled": false,
+      "file": "/models/animations/sketchfab-long-fight-combo.glb",
+      "source": "https://sketchfab.com/3d-models/long-fight-combo-animation-17d611df75be47acb1d687b8fa329867",
+      "license": "Listed by its author on Sketchfab; confirm download availability and licence on the model page.",
+      "clips": {
+        "combo_1": ["Combo", "Fight Combo"],
+        "combo_2": ["Combo 2", "Long Combo"]
+      }
+    },
+    {
+      "id": "sketchfab-karate-boy",
+      "label": "Sketchfab · Karate Boy (28 clips)",
+      "status": "not-supplied",
+      "enabled": false,
+      "file": "/models/animations/sketchfab-karate-boy.glb",
+      "source": "https://sketchfab.com/3d-models/karate-boy-3d-model-cd12d2e3a6484f49b6e0a2fccca65e3d",
+      "license": "Listed by CG_Anim_Hub on Sketchfab; confirm download availability and licence on the model page.",
+      "clips": {
+        "idle": ["Idle"],
+        "walk": ["Walk"],
+        "run": ["Run"],
+        "jump": ["Jump"],
+        "front_kick": ["Kick", "Attack 2"],
+        "jab": ["Attack 1", "Punch"],
+        "hit_light": ["Hit", "Damage"],
+        "knockdown": ["Death", "Fall"]
+      }
+    },
+    {
+      "id": "sketchfab-low-poly-man",
+      "label": "Sketchfab · Low Poly Man — Full Animation Pack",
+      "status": "not-supplied",
+      "enabled": false,
+      "file": "/models/animations/sketchfab-low-poly-man.glb",
+      "source": "https://sketchfab.com/3d-models/low-poly-man-full-animation-pack-005a2c1a94e34f868f47d703dcf38a03",
+      "license": "Listed by its author on Sketchfab; confirm download availability and licence on the model page.",
+      "clips": {
+        "idle": ["Idle"],
+        "walk": ["Walk"],
+        "run": ["Run", "Sprint"],
+        "sprint": ["Sprint", "Run"],
+        "jump": ["Jump"],
+        "strafe_left": ["Left Strafe", "Strafe"],
+        "strafe_right": ["Right Strafe", "Strafe"],
+        "dodge_right": ["Roll", "Dodge"],
+        "grab": ["Knee Jab", "Punch"]
+      }
+    },
+    {
+      "id": "sketchfab-retro-male",
+      "label": "Sketchfab · Retro Style Male Character",
+      "status": "not-supplied",
+      "enabled": false,
+      "file": "/models/animations/sketchfab-retro-male.glb",
+      "source": "https://sketchfab.com/3d-models/retro-style-male-character-bdcc322e9f2b49a39651d1e838f87542",
+      "license": "Listed by its author on Sketchfab; confirm download availability and licence on the model page.",
+      "clips": {
+        "idle": ["Idle"],
+        "walk": ["Walk"],
+        "run": ["Run"],
+        "jump": ["Jump", "Jump 1"],
+        "double_jump": ["Jump 2", "Jump 3"]
+      }
+    }
+  ]
+}

@@ -145,6 +145,20 @@ jobs:
           for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB ZIP STRIKE'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
           console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
           NODE
+      - name: Validate the animation library and state machine
+        run: |
+          set -euo pipefail
+          npm install --no-save three@0.152.2
+          node scripts/validate-animations.mjs
+      - name: Validate the animation pack inspector
+        run: |
+          set -euo pipefail
+          node --check scripts/inspect-animation-pack.mjs
+          # The shipped character GLB has no clips; the inspector must say so and exit non-zero
+          # rather than reporting a pack it cannot find animations in.
+          if node scripts/inspect-animation-pack.mjs public/assets/character_weapons.glb; then
+            echo "inspector reported animations for a clip-less GLB"; exit 1
+          fi
       - name: Install Playwright and Chromium for runtime testing
         run: |
           npm install --no-save playwright three@0.152.2

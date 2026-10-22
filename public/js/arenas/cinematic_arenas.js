@@ -1,13 +1,20 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+// The map key is the id the game selects by; `marker` is the node the Blender exporter
+// writes as the arena's root, which is not always the same word (the Stark Tower map is
+// built from the helicarrier scene). Validating the marker against the map key instead of
+// the file made every starktower load fail its own structure check.
 const MODEL_PATHS = Object.freeze({
-  asgard: 'asgard.glb',
-  starktower: 'helicarrier.glb',
-  deathstar: 'deathstar.glb',
-  hogwarts: 'hogwarts.glb',
-  tournament: 'tournament.glb'
+  asgard: { file: 'asgard.glb', marker: 'arena_asgard' },
+  starktower: { file: 'helicarrier.glb', marker: 'arena_helicarrier' },
+  deathstar: { file: 'deathstar.glb', marker: 'arena_deathstar' },
+  hogwarts: { file: 'hogwarts.glb', marker: 'arena_hogwarts' },
+  tournament: { file: 'tournament.glb', marker: 'arena_tournament' }
 });
+// The authored scenes are dense (300-900 meshes). Anything much smaller means the export
+// is truncated or the wrong file, so treat it as unavailable and keep the procedural arena.
+const MIN_ARENA_MESHES = 80;
 const ASSET_VERSION = 'cinematic-arena-library-v1-20261018';
 const loader = new GLTFLoader();
 const loadedArenas = new Map();
@@ -35,7 +42,8 @@ export async function setCinematicArena(key, scene) {
   activeArenaKey = key;
   hideAllArenaAssets();
 
-  if (!scene || !MODEL_PATHS[key]) {
+  const config = MODEL_PATHS[key];
+  if (!scene || !config) {
     stateRoot().activeArena = key;
     return null;
   }
@@ -59,7 +67,7 @@ export async function setCinematicArena(key, scene) {
 
   if (cached?.promise) return cached.promise;
 
-  const url = new URL('../../assets/arenas/' + MODEL_PATHS[key], import.meta.url);
+  const url = new URL('../../assets/arenas/' + config.file, import.meta.url);
   url.searchParams.set('v', ASSET_VERSION);
   stateRoot().arenas[key] = { status: 'loading', url: url.href };
 
@@ -81,7 +89,7 @@ export async function setCinematicArena(key, scene) {
           }
         }
       });
-      if (meshCount < 80 || !group.getObjectByName('arena_' + key)) {
+      if (meshCount < MIN_ARENA_MESHES || !group.getObjectByName(config.marker)) {
         const error = new Error('Arena GLB failed structure check for ' + key + ' (' + meshCount + ' meshes)');
         stateRoot().arenas[key] = { status: 'error', message: error.message, url: url.href };
         loadedArenas.delete(key);
