@@ -3,6 +3,27 @@
   "library": "browser-smash-core-v1",
   "generatedBy": "public/js/anim/clip_library.js",
   "rootMotion": "strip",
+  "sources": {
+    "mixamo": {
+      "homepage": "https://www.mixamo.com/",
+      "purpose": "Humanoid motion clips and auto-rigging",
+      "status": "manual-download-required",
+      "notes": "Clips are only listed as installed after the file is on disk and validated. Check the service's current terms before redistribution."
+    },
+    "sketchfab": {
+      "homepage": "https://sketchfab.com/",
+      "purpose": "Licensed animated models and animation-bearing assets",
+      "status": "manual-download-required",
+      "notes": "A viewer preview is not a downloadable animation file. Record the exact model URL, creator, licence and attribution before installing."
+    }
+  },
+  "validationRules": [
+    "A clip id is only reported external once a real file on disk supplies it.",
+    "Record the source skeleton and the target skeleton.",
+    "Confirm the clip name, duration, scale and root-motion behaviour.",
+    "Retarget only when skeleton compatibility is verified.",
+    "Do not label hand-authored keyframes as motion capture."
+  ],
   "notes": [
     "Every clip id below is guaranteed to exist at runtime: either from an installed pack or from the hand-authored procedural fallback library.",
     "A clip is only reported as external once a real GLB pack on disk supplies it; packs that are not installed stay 'not-supplied'/'missing'.",

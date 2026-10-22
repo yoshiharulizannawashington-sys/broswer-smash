@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "formatPreference": "glb",
+  "weapons": {
+    "storm_blade": {
+      "label": "Storm Blade",
+      "modelPath": null,
+      "state": "procedural-fallback",
+      "gripBone": "RightHand",
+      "license": "procedural-original",
+      "combat": { "damage": 12, "knockback": 1.05, "attackType": "melee" }
+    },
+    "training_staff": {
+      "label": "Training Staff",
+      "modelPath": null,
+      "state": "needs-model",
+      "gripBone": "RightHand",
+      "sourceUrl": null,
+      "creator": null,
+      "license": null,
+      "attribution": null,
+      "combat": { "damage": 9, "knockback": 0.9, "attackType": "melee" }
+    },
+    "energy_blaster": {
+      "label": "Energy Blaster",
+      "modelPath": null,
+      "state": "needs-model",
+      "gripBone": "RightHand",
+      "sourceUrl": null,
+      "creator": null,
+      "license": null,
+      "attribution": null,
+      "combat": { "damage": 10, "knockback": 1.1, "attackType": "projectile" }
+    }
+  },
+  "notes": "Null paths remain disabled until real model files are supplied, licensed, and validated. Keep weapon visuals separate from combat data."
+}
