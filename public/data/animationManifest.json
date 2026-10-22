@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "formatPreference": ["glb", "gltf", "fbx"],
+  "sources": {
+    "mixamo": {
+      "homepage": "https://www.mixamo.com/",
+      "purpose": "Humanoid motion clips and auto-rigging",
+      "status": "manual-download-required",
+      "notes": "Only list clips after downloading and validating them. Check the service's current terms before redistribution."
+    },
+    "sketchfab": {
+      "homepage": "https://sketchfab.com/",
+      "purpose": "Licensed animated models and animation-bearing assets",
+      "status": "manual-download-required",
+      "notes": "A viewer preview is not a downloadable animation file. Record the exact model URL, creator, license, and attribution."
+    }
+  },
+  "clips": {
+    "idle": { "path": null, "state": "missing" },
+    "walk": { "path": null, "state": "missing" },
+    "run": { "path": null, "state": "missing" },
+    "turn_left": { "path": null, "state": "missing" },
+    "turn_right": { "path": null, "state": "missing" },
+    "jump_start": { "path": null, "state": "missing" },
+    "fall": { "path": null, "state": "missing" },
+    "land": { "path": null, "state": "missing" },
+    "fly_idle": { "path": null, "state": "missing" },
+    "fly_forward": { "path": null, "state": "missing" },
+    "jab": { "path": null, "state": "missing" },
+    "heavy_punch": { "path": null, "state": "missing" },
+    "kick": { "path": null, "state": "missing" },
+    "combo": { "path": null, "state": "missing" },
+    "block": { "path": null, "state": "missing" },
+    "dodge": { "path": null, "state": "missing" },
+    "grab": { "path": null, "state": "missing" },
+    "throw": { "path": null, "state": "missing" },
+    "hit_reaction": { "path": null, "state": "missing" },
+    "knockdown": { "path": null, "state": "missing" },
+    "get_up": { "path": null, "state": "missing" },
+    "knockout": { "path": null, "state": "missing" },
+    "air_attack": { "path": null, "state": "missing" },
+    "air_recovery": { "path": null, "state": "missing" }
+  },
+  "validationRules": [
+    "Check that the file exists and loads in the browser.",
+    "Record the source skeleton and target skeleton.",
+    "Confirm the clip name, duration, scale, and root-motion behavior.",
+    "Retarget only when skeleton compatibility is verified.",
+    "Do not label procedural starter motion as motion capture."
+  ]
+}
