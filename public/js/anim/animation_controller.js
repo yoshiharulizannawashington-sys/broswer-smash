@@ -306,7 +306,10 @@ export class AnimationController {
 /** Bind an animation controller to a fighter, or return null when the model cannot be driven. */
 export function attachAnimation(model, fighter, options = {}) {
   if (!model?.isObject3D) return null;
-  if (model.userData?.humanMixer) return null; // imported rig with its own baked clips
+  // An imported rig that ships baked clips is driven by the named-action mixer in
+  // human_fighter.js. An imported rig with a skeleton but no clips has no such library, so the
+  // authored clips bind to its bones here rather than leaving it with the 4-joint overlay.
+  if (model.userData?.humanMixer && model.userData?.hasAnimationClips) return null;
   const controller = new AnimationController(model, fighter, options);
   if (!controller.ready) {
     controller.dispose();

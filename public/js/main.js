@@ -146,12 +146,17 @@ function attachFighterAnimation(f){
   const controller=attachAnimation(f.model,f,{isCombat:()=>started&&!exploration});
   if(controller&&animationPackClips?.size)controller.setExternalClips(animationPackClips,'pack');
   f.animationController=controller;
+  // Remember which model this binding belongs to so a rig that legitimately stays on the
+  // legacy mixer is not re-probed every frame.
+  f.animationBindModel=f.model;
   return controller;
 }
 function syncFighterAnimation(f,dt){
   if(!f?.model)return;
   // A late-loading uploaded GLB replaces the model under the controller; rebind to the new rig.
-  if(f.animationController&&f.animationController.model!==f.model)attachFighterAnimation(f);
+  // This also binds the authored clip library to an uploaded skeleton that arrived with no
+  // baked clips of its own, which previously kept such a fighter on the legacy overlay.
+  if(f.animationBindModel!==f.model)attachFighterAnimation(f);
   const controller=f.animationController;
   if(!controller)return;
   // Web-swinging has no library clip; the authored pendulum pose owns the body there.

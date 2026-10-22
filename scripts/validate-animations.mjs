@@ -9,7 +9,10 @@ import path from 'node:path';
 
 import { CLIP_SPECS, buildAllClips, retimeClip } from '../public/js/anim/clip_library.js';
 import { resolveRig, CANONICAL_BONES, classifyBone } from '../public/js/anim/rig_map.js';
-import { AnimationController } from '../public/js/anim/animation_controller.js';
+import { AnimationController, attachAnimation } from '../public/js/anim/animation_controller.js';
+
+// The controllers publish diagnostics onto window for browser tooling; give node the same surface.
+if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(here, '..');
@@ -428,6 +431,61 @@ try {
   notes.push(`retarget: ${retargeted.userData.matchedBones.join(', ')} (${retargeted.userData.droppedTracks} dropped)`);
 } catch (error) {
   notes.push(`retarget checks skipped: ${error.message}`);
+}
+
+// ------------------------------------------- 7. imported character rigs
+// An uploaded Goku/Iron Man skeleton arrives with a mixer and no baked clips. That rig used to
+// be handed back to the legacy 4-joint overlay; it must instead receive the authored library.
+function makeMixamoRig() {
+  const model = new THREE.Group();
+  model.name = 'imported character';
+  const bone = (parent, name, y) => {
+    const b = new THREE.Bone();
+    b.name = name;
+    b.position.y = y;
+    parent.add(b);
+    return b;
+  };
+  const hips = bone(model, 'mixamorig:Hips', 1.0);
+  const spine = bone(hips, 'mixamorig:Spine', 0.16);
+  const spine2 = bone(spine, 'mixamorig:Spine2', 0.16);
+  const neck = bone(spine2, 'mixamorig:Neck', 0.16);
+  bone(neck, 'mixamorig:Head', 0.1);
+  for (const [side, sign] of [['Left', 1], ['Right', -1]]) {
+    const shoulder = bone(spine2, `mixamorig:${side}Shoulder`, 0.1);
+    shoulder.position.x = sign * 0.12;
+    const arm = bone(shoulder, `mixamorig:${side}Arm`, 0);
+    arm.position.x = sign * 0.09;
+    const fore = bone(arm, `mixamorig:${side}ForeArm`, -0.26);
+    bone(fore, `mixamorig:${side}Hand`, -0.24);
+    const upLeg = bone(hips, `mixamorig:${side}UpLeg`, -0.06);
+    upLeg.position.x = sign * 0.11;
+    const leg = bone(upLeg, `mixamorig:${side}Leg`, -0.4);
+    bone(leg, `mixamorig:${side}Foot`, -0.38);
+  }
+  return model;
+}
+{
+  const imported = makeMixamoRig();
+  // Exactly what human_fighter.js sets on a loaded character asset with no clips of its own.
+  imported.userData.humanMixer = new THREE.AnimationMixer(imported);
+  imported.userData.hasAnimationClips = false;
+  const controller = attachAnimation(imported, { identityKey: 'goku' });
+  check('imported rig without clips is driven by the clip library', Boolean(controller));
+  if (controller) {
+    // Advance a few frames so the state machine selects and starts a clip.
+    for (let i = 0; i < 6; i++) controller.update(1 / 60);
+    const state = controller.describe();
+    check('imported rig binds most canonical bones', state.boundBones >= CANONICAL_BONES.length - 2,
+      `${state.boundBones}/${CANONICAL_BONES.length}`);
+    check('imported rig plays a real clip', typeof state.active === 'string' && state.clips > 0,
+      String(state.active));
+    notes.push(`imported skeleton: ${state.boundBones}/${CANONICAL_BONES.length} bones bound (${state.rig}), playing ${state.active}`);
+  }
+  const withClips = makeMixamoRig();
+  withClips.userData.humanMixer = new THREE.AnimationMixer(withClips);
+  withClips.userData.hasAnimationClips = true;
+  check('rig with its own baked clips keeps the named-action mixer', attachAnimation(withClips, { identityKey: 'iron_man' }) === null);
 }
 
 // --------------------------------------------------------------- 7. manifest

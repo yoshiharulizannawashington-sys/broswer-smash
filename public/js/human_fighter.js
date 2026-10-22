@@ -223,6 +223,12 @@ export function animateHumanFighter(fighter,dt){
   const root=fighter.model;if(!root?.userData?.humanMixer)return;
   fighter.position=root.position;
   root.rotation.y=Math.atan2(fighter.facingZ,Math.abs(fighter.facing))+(fighter.facing>=0?Math.PI:0)+(root.userData.modelFacingOffset||0);
+  // A rig the clip controller drives is owned by that controller. The legacy mixer and the
+  // per-joint overlay would otherwise rewrite the same bones on the same frame.
+  if(root.userData.animationController){
+    root.rotation.z=THREE.MathUtils.damp(root.rotation.z,0,12,dt);
+    return;
+  }
   root.userData.humanMixer.update(dt);
   const speed=Math.hypot(fighter.velocity.x,fighter.velocity.z), airborne=!fighter.isGrounded;
   if(root.userData.wasGrounded===false&&fighter.isGrounded)root.userData.landingPoseTime=.24;
