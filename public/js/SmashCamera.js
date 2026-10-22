@@ -22,6 +22,16 @@ export default class SmashCamera {
     this.lookTarget = new THREE.Vector3();
     this.positionTarget = new THREE.Vector3();
     this.framing = { distance: 0, angle: 0 };
+    // Large world stages read as places, not floors, when the camera sits lower and pulls
+    // back further. Small arenas keep the original close overhead framing.
+    this.stageTilt = 0;
+    this.stageScale = 1;
+  }
+
+  /** 0 = close overhead duel framing; ~.18 = pulled-back view for a large arena. */
+  setStageTilt(value, scale = 1) {
+    this.stageTilt = THREE.MathUtils.clamp(value || 0, 0, .26);
+    this.stageScale = THREE.MathUtils.clamp(scale || 1, 1, 1.8);
   }
 
   impact(amount = 0.35) { this.shake = Math.min(1.5, this.shake + amount); }
@@ -58,10 +68,17 @@ export default class SmashCamera {
     // A close duel now sits about 9 units out instead of 13, which takes a ~2m fighter
     // from roughly an eighth of the frame to a quarter - the size a fighting game needs
     // for limbs, weapon arcs and hit reactions to read at a glance.
-    const reach = THREE.MathUtils.clamp(4.8 + separation * .3 + heightGap * .4 + midY * .22, 6.2, 22) * this.zoom;
+    const baseReach = 4.8 + separation * .3 + heightGap * .4 + midY * .22;
+    // Guarantee both fighters stay in frame: derive the minimum distance the horizontal
+    // field of view needs for this separation. Without it a widely-spaced spawn on a large
+    // stage pushed one fighter off-screen while the camera filled the frame with floor.
+    const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 46);
+    const halfHorizontal = Math.tan(fovRad / 2) * (this.camera.aspect || 1.6);
+    const requiredReach = (separation * .5 + 1.8) / Math.max(.3, halfHorizontal * .92);
+    const reach = THREE.MathUtils.clamp(Math.max(baseReach, requiredReach * this.stageScale), 6.2, 42) * this.zoom;
     // Look down steeply enough to read as an overhead fighting camera, but not so steeply
-    // that a standing fighter is foreshortened into a stub.
-    const elevation = THREE.MathUtils.clamp(.8 - spread * .1, .62, .8);
+    // that a standing fighter is foreshortened into a stub - and lower still on world stages.
+    const elevation = THREE.MathUtils.clamp(.8 - spread * .1 - this.stageTilt, .5, .8);
     const horizontal = reach * Math.sqrt(Math.max(0, 1 - elevation * elevation));
     this.framing.distance = reach;
     this.framing.angle = elevation;

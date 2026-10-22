@@ -51,7 +51,10 @@ body.in-menu #hud,body.in-menu #energyHUD,body.in-menu #comboNotice,body.in-menu
 #selectScreen .bs-card.p2:after{content:attr(data-side-label)}
 #selectScreen .bs-matchline{font:800 11px/1.7 system-ui;letter-spacing:.09em;color:#a8cfe4;padding:4px 2px 0}
 #selectScreen .bs-matchline b{color:#eafaff}
-#selectScreen .bs-arenas{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+#selectScreen .bs-arenas{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:52vh;overflow:auto;padding-right:4px}
+#selectScreen .bs-worldtabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+#selectScreen .bs-worldtabs button{pointer-events:auto;cursor:pointer;border:1px solid #2b4d64;background:#08131f;color:#a8cfe4;font:800 10px/1 system-ui;letter-spacing:.12em;padding:8px 12px;text-transform:uppercase}
+#selectScreen .bs-worldtabs button.on{border-color:#ffd76c;color:#ffe9a8;background:#1b1a10;box-shadow:0 0 18px #ffbb3344}
 #selectScreen .bs-arena{position:relative;pointer-events:auto;cursor:pointer;height:96px;border:1px solid #2b4d6488;background:var(--bg,#0b1a28);overflow:hidden;padding:10px 12px;color:#f4fbff;text-align:left;transition:transform .12s,border-color .12s}
 #selectScreen .bs-arena:hover{transform:translateY(-2px);border-color:#9af4ff}
 #selectScreen .bs-arena.on{border-color:#ffd76c;box-shadow:0 0 0 1px #ffd76c88,0 0 26px #ffbb3344}
@@ -88,11 +91,12 @@ function hex(color) {
  * @param {Record<string, object>} options.specials  signature moves keyed by identity slug
  * @param {Record<string, object>} options.themes    arena themes, as used by applyMap
  * @param {Array<[string, object]>} options.arenas   [key, layout] pairs in display order
+ * @param {Array<object>} options.worlds   large worlds with their selectable battle locations
  * @param {(name: string) => void} options.onFighter
  * @param {(key: string) => void} options.onArena
  * @param {(mode: '1p'|'2p') => void} options.onMode
  */
-export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas = [], onFighter, onArena, onMode } = {}) {
+export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas = [], worlds = [], onFighter, onArena, onMode } = {}) {
   const menu = document.querySelector('#menu');
   const panel = menu?.querySelector('.panel') || menu;
   const p1Select = document.querySelector('#p1Character');
@@ -106,8 +110,22 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     mode: '1p',
     p1: p1Select.value || roster?.[0]?.[0],
     p2: p2Select.value || roster?.[1]?.[0] || roster?.[0]?.[0],
-    arena: mapSelect?.value || arenas?.[0]?.[0] || 'valley'
+    arena: mapSelect?.value || arenas?.[0]?.[0] || 'valley',
+    worldFilter: 'classic'
   };
+
+  // Which world each battle location belongs to, so the arena step can show one world at a time.
+  const worldOf = {};
+  const worldTabs = [{ id: 'classic', label: 'Classic arenas' }];
+  for (const world of worlds) {
+    worldTabs.push({ id: world.id, label: world.label });
+    for (const location of world.locations || []) worldOf[location.key] = world.id;
+  }
+  if (worldOf[state.arena]) state.worldFilter = worldOf[state.arena];
+  let syncedArena = state.arena;
+  const worldTabsMarkup = worlds.length
+    ? `<div class="bs-worldtabs">${worldTabs.map(tab => `<button data-worldtab="${tab.id}" class="${tab.id === state.worldFilter ? 'on' : ''}">${tab.label}</button>`).join('')}</div>`
+    : '';
 
   const style = document.createElement('style');
   style.id = 'selectScreenStyles';
@@ -146,7 +164,7 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     const b = layout.bounds;
     const width = Math.round(b.x1 - b.x0);
     const depth = Math.round(b.z1 - b.z0);
-    return `<button class="bs-arena" data-arena="${key}" style="--bg:linear-gradient(140deg,${hex(theme.sky)},${hex(theme.fog)} 58%,${hex(theme.floor)})">
+    return `<button class="bs-arena" data-arena="${key}" data-world="${worldOf[key] || ''}" style="--bg:linear-gradient(140deg,${hex(theme.sky)},${hex(theme.fog)} 58%,${hex(theme.floor)})">
       <span class="bs-aname">${layout.label || theme.label || key}</span>
       <span class="bs-akind">${String(layout.kind || 'arena').toUpperCase()}</span>
       <span class="bs-asize">${width} × ${depth} M</span>
@@ -173,6 +191,7 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
         <div class="bs-grid" data-role="roster"></div>
       </section>
       <section class="bs-step" data-step="2" hidden>
+        ${worldTabsMarkup}
         <div class="bs-arenas">${arenaCards}</div>
         <div class="bs-matchline" data-role="matchline"></div>
       </section>
@@ -223,7 +242,11 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
       card.classList.toggle('p2', card.dataset.fighter === state.p2 && card.dataset.fighter !== state.p1);
       card.dataset.sideLabel = state.mode === '2p' ? 'P2' : 'CPU';
     }
-    for (const arena of root.querySelectorAll('.bs-arena')) arena.classList.toggle('on', arena.dataset.arena === state.arena);
+    for (const arena of root.querySelectorAll('.bs-arena')) {
+      arena.classList.toggle('on', arena.dataset.arena === state.arena);
+      arena.hidden = state.worldFilter === 'classic' ? Boolean(arena.dataset.world) : arena.dataset.world !== state.worldFilter;
+    }
+    for (const tab of root.querySelectorAll('[data-worldtab]')) tab.classList.toggle('on', tab.dataset.worldtab === state.worldFilter);
     for (const side of root.querySelectorAll('.bs-side')) side.classList.toggle('on', side.dataset.side === state.side);
     for (const mode of root.querySelectorAll('[data-mode]')) mode.classList.toggle('on', mode.dataset.mode === state.mode);
     const p1Name = state.p1 || '—';
@@ -235,6 +258,16 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     if (title) title.innerHTML = state.step === 1 ? 'SELECT <span>YOUR FIGHTER</span>' : 'CHOOSE <span>YOUR ARENA</span>';
     const matchline = root.querySelector('[data-role="matchline"]');
     const arenaLabel = (arenas.find(([key]) => key === state.arena) || [])[1]?.label || state.arena;
+    // Follow the arena only when it changed outside the grid (e.g. the map <select> or a
+    // programmatic chooseArena). Clicking a world tab must not be undone by paint().
+    if (state.arena !== syncedArena) {
+      syncedArena = state.arena;
+      if (worldOf[state.arena] && worldOf[state.arena] !== state.worldFilter) {
+        state.worldFilter = worldOf[state.arena];
+        for (const arena of root.querySelectorAll('.bs-arena')) arena.hidden = arena.dataset.world !== state.worldFilter;
+        for (const tab of root.querySelectorAll('[data-worldtab]')) tab.classList.toggle('on', tab.dataset.worldtab === state.worldFilter);
+      }
+    }
     if (matchline) matchline.innerHTML = `<b>${p1Name}</b> vs <b>${p2Name}</b> · <b>${arenaLabel}</b> · first to 2 rounds · ${state.mode === '2p' ? 'local two-player' : 'solo vs CPU'}`;
     for (const badge of root.querySelectorAll('[data-stepbadge]')) badge.classList.toggle('on', Number(badge.dataset.stepbadge) === state.step);
     for (const step of root.querySelectorAll('.bs-step')) step.hidden = Number(step.dataset.step) !== state.step;
@@ -278,6 +311,12 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
       onArena?.(state.arena);
       paint();
     });
+  }
+
+  // World filter: one row of tabs, so a world's eight landmark stages are not lost in a
+  // thirty-card grid next to the six small classic arenas.
+  for (const tab of root.querySelectorAll('[data-worldtab]')) {
+    tab.addEventListener('click', () => { state.worldFilter = tab.dataset.worldtab; paint(); });
   }
 
   navNext.addEventListener('click', () => { state.step = 2; paint(); });

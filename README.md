@@ -210,6 +210,15 @@ The game exposes a few read-only hooks for automated play-testing:
 - `npm run test:smoke` — Playwright runtime test (needs `npm install --no-save playwright three@0.152.2`
   and `npx playwright install chromium`). Verifies both entrypoints render, the character and
   weapon libraries load, and an authored arena streams in when its map is selected.
+- `npm run test:worlds` — node checks for the four large worlds: every battle location is
+  registered, its bounds and spawn points are valid and separated, spawns stand on a real
+  surface and not inside a wall, the shared collision volumes are finite and consistent, raised
+  decks are overhead rather than walls, and ring-out stages report falls and knock-offs.
+- `npm run test:worlds:browser` — Playwright test that loads every world battle location in
+  Chromium, places both fighters on the stage's real spawn points, and asserts the world
+  geometry is mounted (one merged group, bounded draw calls), fighters stand on the world
+  surface, movement and attacks still connect, switching world replaces the geometry without
+  adding lights, and a classic arena unloads it again.
 - `npm run audit:roster` — Playwright runtime audit that drives the real character select through
   every launch fighter and asserts the prefab rig (11 joints), its weapon mount and its generated
   surface detail are all present on the live fighter. Prints a machine-readable summary and fails
@@ -273,3 +282,51 @@ Always inspect the latest Actions run. Distinguish a passing source/build test f
 ## Asset licensing
 
 Check each downloaded asset's license and relevant rights before distributing the game. Preserve creator attribution and add entries to `public/ATTRIBUTIONS.md` for assets actually used. Do not commit paid assets or redistribute assets whose license does not permit it.
+
+## Large worlds
+
+Four reference worlds are built as playable environments, not pictures. Each is one large
+map with several named battle locations (26 in total); a location is a rectangle inside the
+same geometry, so switching stages inside a world does not rebuild anything.
+
+| World | Battle locations |
+|---|---|
+| Dragon Ball Z — World Tournament Island | Grand Prize Stage, Main Entrance, West City Streets, Capsule Corporation, Martial Arts Dojo, Training Grounds, Ring Out Cliffs, King Kai's Planet |
+| Asgard — Home of the Æsir | Royal Palace Court, Marketplace Plaza, Rainbow Bridge, Bifrost Realm, Outer Floating Isle |
+| Death Star — Imperial Battle Station | Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control, Escape Pod Bay |
+| Hogwarts — Castle and Grounds | Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest, Black Lake Boathouse, Hogsmeade Village |
+
+- `public/js/worlds/world_catalog.js` holds the worlds as deterministic geometry plans plus
+  palettes, themes, battle-location bounds and spawn points. It is plain data with no Three.js
+  or DOM, which is why node can validate all of it.
+- `public/js/worlds/world_builder.js` merges every part that shares a material into one mesh:
+  a whole world is ~12-18 draw calls. Worlds are cached while the player stays in them and
+  their geometry is disposed on leaving.
+- Collision volumes come from the same parts (`blocksFromParts`). `bottom` marks the underside
+  of a raised deck or roof, so a catwalk is walkable from above and does not act as a wall for
+  someone standing under it.
+- Ring-out stages (`ringOut`, `fallBelow`) skip the arena clamp: falling off the Rainbow
+  Bridge, the viaduct, the cliffs or King Kai's planet loses the round.
+- The worlds appear in both map pickers and in the setup screen, grouped under a world tab.
+  Their themes drive background, fog, sun/rim/hemisphere colour and interior exposure, so no
+  per-map code is needed when adding another location.
+- `SmashCamera` pulls back and lowers its angle on these stages (`setStageTilt(tilt, scale)`),
+  and derives a minimum distance from the fighters' separation so a wide spawn cannot push one
+  fighter out of frame.
+
+Adding another location to an existing world is a catalog entry: bounds, two spawn points,
+and the collision volumes are shared automatically.
+
+### Running the browser tests on a bare Linux box
+
+`npm run test:smoke`, `test:gameplay` and `test:worlds:browser` need Chromium's shared
+libraries and a fontconfig file. On a machine without root, stage them locally and point the
+runner at them:
+
+```sh
+export LD_LIBRARY_PATH=$HOME/pwlibs/root/usr/lib/x86_64-linux-gnu
+export FONTCONFIG_FILE=$HOME/pwlibs/fonts.conf
+```
+
+Without `FONTCONFIG_FILE`, Skia aborts with `SkFontMgr_FontConfigInterface.cpp Not implemented`
+as soon as the HUD renders text.

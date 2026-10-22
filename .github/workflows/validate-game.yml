@@ -12,6 +12,11 @@ on:
       - "scripts/browser-smoke.mjs"
       - "scripts/test-combat.mjs"
       - "scripts/test-gameplay.mjs"
+      - "scripts/test-worlds.mjs"
+      - "scripts/test-worlds-browser.mjs"
+      - "public/js/worlds/**/*.js"
+      - "public/js/world/**/*.js"
+      - "public/js/SmashCamera.js"
       - "public/assets/*.glb"
       - "assets/blender/character_models.py"
       - "assets/blender/character_animation_bake.py"
@@ -173,3 +178,8 @@ jobs:
       - name: Play-test movement, combat, rounds, arenas and local two-player
         timeout-minutes: 8
         run: node scripts/test-gameplay.mjs
+      - name: Validate the four large worlds and their battle locations
+        run: node scripts/test-worlds.mjs
+      - name: Play-test every world battle location in the browser
+        timeout-minutes: 10
+        run: node scripts/test-worlds-browser.mjs

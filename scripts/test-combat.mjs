@@ -82,15 +82,18 @@ check('every selectable arena has a layout', keys.length >= 10, keys.join(', '))
 for (const key of keys) {
   const layout = layoutFor(key);
   const b = layout.bounds;
-  check(`${key}: bounds are wide enough for a fight`, b.x1 - b.x0 >= 30 && b.z1 - b.z0 >= 30,
-    `${Math.round(b.x1 - b.x0)} x ${Math.round(b.z1 - b.z0)}`);
+  const width = b.x1 - b.x0, depth = b.z1 - b.z0;
+  // Large worlds are 90-240 m across; bridge, dock and sky-island stages are deliberately
+  // narrow, and a dojo floor or boathouse deck is a small ring by design.
+  check(`${key}: bounds are wide enough for a fight`, Math.min(width, depth) >= 12 && width * depth >= 200,
+    `${Math.round(width)} x ${Math.round(depth)}`);
   const spawns = spawnPoints(layout);
   check(`${key}: two spawns inside the bounds`,
     spawns.length === 2 && spawns.every(s => s.x > b.x0 && s.x < b.x1 && s.z > b.z0 && s.z < b.z1));
   const gap = Math.hypot(spawns[0].x - spawns[1].x, spawns[0].z - spawns[1].z);
   check(`${key}: fighters do not spawn on top of each other`, gap >= 2.5, `gap ${gap.toFixed(2)}`);
   check(`${key}: spawns are not inside a solid volume`,
-    spawns.every(s => groundHeightAt(s.x, s.z, layout, s.y) === s.y));
+    spawns.every(s => Math.abs(groundHeightAt(s.x, s.z, layout, s.y) - s.y) < 1e-6));
 }
 
 const unknown = layoutFor('nope');

@@ -1,27 +1,30 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v33-20261022';
-import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v33-20261022';
-import InputManager from './InputManager.js?v=browser-smash-gameplay-v33-20261022';
-import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v33-20261022';
-import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v33-20261022';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v33-20261022';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v33-20261022';
-import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v33-20261022';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v33-20261022';
-import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v33-20261022';
-import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v33-20261022';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v33-20261022';
-import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v33-20261022';
-import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v33-20261022';
-import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v33-20261022';
-import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v33-20261022';
-import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v33-20261022';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v34-20261022';
+import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v34-20261022';
+import InputManager from './InputManager.js?v=browser-smash-gameplay-v34-20261022';
+import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v34-20261022';
+import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v34-20261022';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v34-20261022';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v34-20261022';
+import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v34-20261022';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v34-20261022';
+import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v34-20261022';
+import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v34-20261022';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v34-20261022';
+import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v34-20261022';
+import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v34-20261022';
+import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v34-20261022';
+import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v34-20261022';
+import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v34-20261022';
+import { worldLocation, worldGroups, WORLD_LOCATIONS } from './worlds/world_catalog.js?v=browser-smash-gameplay-v34-20261022';
+import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v34-20261022';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
 const canvas=$('#gl');const scene=new THREE.Scene();scene.background=new THREE.Color(0x111b30);scene.fog=new THREE.FogExp2(0x253448,.012);
 const {renderer,camera,composer,bloom,enableSSR}=createSmashRenderPipeline(canvas,scene);
+window.__browserSmashScene=scene;window.__browserSmashThree=THREE;
 const combatVFX=createCombatVFX(THREE,scene);
 // Sky-matched image-based lighting per arena instead of a photo-studio box, so armour
 // and weapons reflect the same sky the fight is staged under.
@@ -494,12 +497,75 @@ const characterSelects={p1:$('#p1Character'),cpu:$('#cpuCharacter')};
 for(const [key,select] of Object.entries(characterSelects)){if(select){populateRoster(select,key==='p1'?playerType:cpuType);select.value=key==='p1'?playerType:cpuType;select.addEventListener('change',()=>{if(key==='p1')playerType=select.value;else cpuType=select.value;localStorage.setItem(key==='p1'?'browserSmashP1':'browserSmashCPU',select.value);const fighter=key==='p1'?player:cpu;const archetype=fighterArchetype(select.value);const previous=fighter.model;scene.remove(previous);const fresh=makeProceduralCharacter(archetype,select.value);fresh.position.copy(fighter.position);scene.add(fresh);fighter.model=fresh;fighter.position=fresh.position;fighter.archetype=archetype;fighter.identity=select.value;fighter.identityKey=String(select.value||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');fighter.combatProfile=COMBAT_PROFILES[fighter.identityKey]||{damage:1,knockback:1,weight:1,launch:1};fighter.specialProfile=SPECIAL_MOVES[fighter.identityKey]||{label:'SIGNATURE STRIKE',type:'orb',color:0x62caff,damage:14,speed:22,cooldown:.82,stun:.42,knockback:4.5};fighter.weight=(key==='p1'?88:82)*fighter.combatProfile.weight;fighter.name=fighterDisplay(select.value);fighter.canFly=canCharacterFly(select.value);fighter.canWebSwing=select.value==='Spider-Man';fighter.flightMode=false;fighter.webSwinging=false;window.endWebSwing?.(fighter,false);fighter.characterModelLoaded=false;fighter.animationController?.dispose();fighter.animationController=null;upgradeFighterVisual(fighter);attachFighterAnimation(fighter);applyMap(mapSelect?.value||'valley');fighterTypeRefresh();});}} function fighterTypeRefresh(){const labels=document.querySelectorAll('.fighter .name');if(labels[0])labels[0].textContent='P1 · '+fighterDisplay(playerType).toUpperCase();if(labels[1])labels[1].textContent=fighterDisplay(cpuType).toUpperCase()+(twoPlayer?' · P2':' · CPU');const specialLabel=$('#specialLabel');if(specialLabel)specialLabel.textContent=player.specialProfile?.label||'SIGNATURE MOVE';}
 fighterTypeRefresh();
 const mapDecor=new THREE.Group();scene.add(mapDecor);
+// Large worlds are built once as merged per-material geometry and stay alive while the player
+// fights in any of that world's locations. Leaving the world frees its merged geometry.
+const worldStage=new THREE.Group();worldStage.name='world-stage';scene.add(worldStage);
+let activeWorldGroup=null,activeWorldId=null;
+function ensureWorldGroup(worldId){
+ if(activeWorldId===worldId&&activeWorldGroup)return activeWorldGroup;
+ if(activeWorldGroup){worldStage.remove(activeWorldGroup);disposeWorldGroup(activeWorldGroup);activeWorldGroup=null;activeWorldId=null;}
+ activeWorldGroup=buildWorldGroup(worldId);
+ activeWorldId=worldId;
+ if(activeWorldGroup)worldStage.add(activeWorldGroup);
+ return activeWorldGroup;
+}
+function applyWorldStage(key){
+ const location=worldLocation(key);
+ // The procedural valley skyline only belongs to the valley maps.
+ cinematicEnvironment.visible=!location;
+ if(!location){
+  worldStage.visible=false;floor.visible=true;smashCamera.setStageTilt?.(0,1);sun.castShadow=true;
+  if(activeWorldGroup){worldStage.remove(activeWorldGroup);disposeWorldGroup(activeWorldGroup);activeWorldGroup=null;activeWorldId=null;}
+  const classicLayout=ARENA_LAYOUTS[key];
+  window.__browserSmashWorld={world:null,location:null,label:classicLayout?.label||key,ground:classicLayout?.ground??0,bounds:classicLayout?.bounds??null};
+  return;
+ }
+ worldStage.visible=true;
+ ensureWorldGroup(location.world);
+ // Larger arenas get a lower, pulled-back shot so the architecture is visible.
+ smashCamera.setStageTilt?.(location.world==='asgard'?.16:.19,1.45);
+ floor.visible=false;platform.visible=false;mapDecor.visible=false;
+ scene.background.setHex(location.theme.sky);
+ scene.fog.color.setHex(location.theme.fog);
+ scene.fog.density=location.theme.density;
+ sun.color.setHex(location.theme.light);
+ // Open worlds are lit by a softer key than the small arenas: their materials are large
+ // flat surfaces, and a 3.0 sun blew pale stone out to pure white.
+ sun.intensity=location.interior?1.9:.9;
+ // Interior rooms have ceilings, so a shadow-casting key sun only lights the roof: indoors
+ // the key is a non-shadowing fill and the room's own emissive strips carry the mood.
+ sun.castShadow=!location.interior;
+ rim.intensity=location.interior?1.0:.3;
+ rim.color.setHex(location.interior?0x5f8dff:0x8fc4ff);
+ hemisphere.color.setHex(location.interior?0x8098b8:0x9ecfff);
+ hemisphere.groundColor.setHex(location.interior?0x151b24:0x2b3326);
+ hemisphere.intensity=location.interior?1.25:.55;
+ renderer.toneMappingExposure=location.interior?1.0:.95;
+ // Interior stages are lit from above; open worlds get a low sun for long shadows.
+ sun.position.set(location.interior?10:34,location.interior?42:46,location.interior?-16:-52);
+ rim.position.set(-18,26,30);
+ window.__browserSmashWorld={world:location.world,worldLabel:location.worldLabel,location:key,label:location.label,ground:location.layout.ground,bounds:location.layout.bounds,spawns:location.layout.spawns,blocks:location.layout.blocks.length,parts:activeWorldGroup?.userData.parts||0,drawCalls:activeWorldGroup?.userData.drawCalls||0};
+}
 const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;
 const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
+// Add the four reference worlds and every battle location to both map pickers.
+for(const world of worldGroups()){
+ for(const select of [mapSelect,menuMapSelect]){
+  if(!select)continue;
+  const heading=document.createElement('option');heading.disabled=true;heading.textContent='◆ '+world.label.toUpperCase()+' — '+world.subtitle.toUpperCase();select.appendChild(heading);
+  for(const location of world.locations){
+   const option=document.createElement('option');option.value=location.key;option.textContent=world.label+' · '+location.label;select.appendChild(option);
+  }
+ }
+}
 // The launch roster has 32 fighters including Spider-Man; the rest remain in dlcRoster.
 function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
 
 const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · BRIEFING ROOM & THRONE ROOM',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x2c4460,fog:0xc08a5e,floor:0x5d6552,platform:0x4e5445,ringA:0x9fb4a6,ringB:0xb98a63,light:0xffc389,sun:0xff8f45,density:.006},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'AVENGERS HELICARRIER · NYC SKYDECK / STARK PENTHOUSE',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x8cb1d2,fog:0x9eb3c0,floor:0xc1b99f,platform:0x77776e,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.003},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
+// The four reference worlds (Dragon Ball Z tournament island, Asgard, Death Star, Hogwarts)
+// register every one of their battle locations as a normal map, so map selection, lighting,
+// HUD labels and match flow all keep using the existing map plumbing.
+for(const location of WORLD_LOCATIONS){mapThemes[location.id]={label:location.worldLabel.toUpperCase()+' · '+location.label.toUpperCase(),sky:location.theme.sky,fog:location.theme.fog,floor:location.theme.floor,platform:location.theme.platform,ringA:location.theme.ringA,ringB:location.theme.ringB,light:location.theme.light,sun:location.theme.sun,density:location.theme.density,world:location.world};}
 // Five maps also ship as authored Blender arenas (public/assets/arenas/*.glb). They are the
 // same designs the procedural build inside applyMap() reproduces, so exactly one of the two
 // is shown at a time: the authored GLB once it has loaded, and the procedural set dressing
@@ -509,17 +575,19 @@ let authoredArenaRequest=0;
 function authoredArenaEnabled(){return window.__browserSmashAuthoredArenas!==false;}
 async function syncAuthoredArena(key){
  const request=++authoredArenaRequest;
- if(!authoredArenaEnabled()){await setCinematicArena(null,scene);if(request!==authoredArenaRequest)return;mapDecor.visible=true;return;}
+ if(!authoredArenaEnabled()){await setCinematicArena(null,scene);if(request!==authoredArenaRequest)return;mapDecor.visible=!worldLocation(key);return;}
  let group=null;
  if(authoredArenaKeys.has(key))group=await setCinematicArena(key,scene);
  else await setCinematicArena(null,scene);
  // A newer map choice arrived while this one was streaming; drop this result.
  if(request!==authoredArenaRequest)return;
- mapDecor.visible=!group;
+ mapDecor.visible=!group&&!worldLocation(key);
  window.__browserSmashAssets.authoredArena={key:group?key:null,status:group?'loaded':'procedural'};
 }
 function applyFloorFootprint(){const key=mapSelect?.value||'valley';const footprint=key==='starktower'?.17:key==='deathstar'?.18:1;floor.scale.set(footprint,1,footprint);}
-function applyMap(key){activeLayout=null;const t=mapThemes[key]||mapThemes.valley;applyFloorFootprint();scene.environment=skyEnvironment(renderer,key);for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);const interiorStage=key==='hogwarts'||key==='deathstar'||key==='starktower';sun.color.setHex(t.light);sun.intensity=interiorStage?1.65:(key==='finalvalley'?3.0:2.8);rim.intensity=interiorStage?1.35:(key==='finalvalley'?1.85:2.5);rim.color.setHex(key==='finalvalley'?0x6f92b8:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0x9fb8cf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x3a3529:0x191421);hemisphere.intensity=interiorStage?0.95:(key==='finalvalley'?1.25:1.5);renderer.toneMappingExposure=interiorStage?1.0:(key==='finalvalley'?1.16:1.22);if(key==='finalvalley'){sun.position.set(27,36,-54);rim.position.set(25,24,-82);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+function applyMap(key){activeLayout=null;const t=mapThemes[key]||mapThemes.valley;const worldHere=worldLocation(key);applyFloorFootprint();scene.environment=skyEnvironment(renderer,worldHere?.theme?.skyPreset||key);for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}cinematicEnvironment.userData.setMap?.(key);scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);const interiorStage=key==='hogwarts'||key==='deathstar'||key==='starktower'||Boolean(worldHere?.interior);sun.color.setHex(t.light);sun.intensity=interiorStage?1.65:(key==='finalvalley'?3.0:2.8);rim.intensity=interiorStage?1.35:(key==='finalvalley'?1.85:2.5);rim.color.setHex(key==='finalvalley'?0x6f92b8:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0x9fb8cf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x3a3529:0x191421);hemisphere.intensity=interiorStage?0.95:(key==='finalvalley'?1.25:1.5);renderer.toneMappingExposure=interiorStage?1.0:(key==='finalvalley'?1.16:1.22);if(key==='finalvalley'){sun.position.set(27,36,-54);rim.position.set(25,24,-82);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+ // Large worlds bring their own geometry; the small-map procedural dressing below is skipped.
+ if(!worldHere){
   if(key==='finalvalley'){
     const skyCanvas=document.createElement('canvas');skyCanvas.width=1024;skyCanvas.height=512;
     const skyCtx=skyCanvas.getContext('2d');
@@ -887,9 +955,10 @@ function applyMap(key){activeLayout=null;const t=mapThemes[key]||mapThemes.valle
    enchantedDome.renderOrder=-5;enchantedDome.frustumCulled=false;enchantedDome.castShadow=false;enchantedDome.receiveShadow=false;
    // Another row of floating candles helps fill the vertical space over the house tables.
    for(let row=0;row<7;row++)for(let col=0;col<7;col++){const x=-18+col*6,z=-75+row*14.1,y=15.3+((row+col)%3)*.72;addProp(new THREE.CylinderGeometry(.055,.065,.58,8),gold,x,y,z);addProp(new THREE.CylinderGeometry(.032,.04,.42,7),candle,x,y+.32,z);addProp(new THREE.SphereGeometry(.06,8,6),new THREE.MeshBasicMaterial({color:0xfff0bf}),x,y+.56,z);}
- } 
- applyArenaLayout();
- combatItems.seed(key);$status.textContent=t.label+' · ROUND 01';localStorage.setItem('browserSmashMap',key);syncAuthoredArena(key).catch(error=>{console.warn('Authored arena unavailable; procedural arena remains active:',key,error);mapDecor.visible=true;});}
+ }
+ }
+ applyArenaLayout();applyWorldStage(key);
+ combatItems.seed(key);$status.textContent=t.label+' · ROUND 01';localStorage.setItem('browserSmashMap',key);syncAuthoredArena(key).catch(error=>{console.warn('Authored arena unavailable; procedural arena remains active:',key,error);mapDecor.visible=!worldHere;});}
 // Arena geometry lives in world/arena_layouts.js: per-map playable bounds, solid volumes and
 // the walkable height of platforms. Final Valley adds its authored obstacle list at runtime.
 function effectiveLayout(){
@@ -910,7 +979,7 @@ function applyArenaLayout(){
 function resolveArenaCollision(fighter){
  const layout=effectiveLayout();
  resolveCollision(fighter.position,fighter.velocity,fighter.hurtboxRadius||.7,layout);
- if(!exploration)clampToBounds(fighter.position,fighter.velocity,fighter.hurtboxRadius||.7,layout);
+ if(!exploration&&!layout.ringOut)clampToBounds(fighter.position,fighter.velocity,fighter.hurtboxRadius||.7,layout);
  // Stand on stages, steps and jumpable platforms instead of dropping through them.
  const ground=groundHeightAt(fighter.position.x,fighter.position.z,layout,fighter.position.y);
  fighter.groundLevel=ground;
@@ -918,7 +987,7 @@ function resolveArenaCollision(fighter){
  else if(fighter.position.y<=ground+.02)fighter.isGrounded=true;
 }
 if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&savedMap!=='valley')?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
-const selectScreen=initCharacterSelect({roster,specials:SPECIAL_MOVES,themes:mapThemes,arenas:Object.keys(ARENA_LAYOUTS).map(key=>[key,ARENA_LAYOUTS[key]]).filter(([key])=>document.querySelector('#menuMapSelect option[value="'+key+'"]')||document.querySelector('#mapSelect option[value="'+key+'"]')),onFighter:(side,name)=>{const select=side==='p1'?characterSelects.p1:characterSelects.cpu;if(!select)return;select.value=name;select.dispatchEvent(new Event('change'));},onArena:(key)=>{if(!mapSelect)return;mapSelect.value=key;mapSelect.dispatchEvent(new Event('change'));},onMode:(mode)=>{twoPlayer=mode==='2p';fighterTypeRefresh();updateHud();}});
+const selectScreen=initCharacterSelect({roster,specials:SPECIAL_MOVES,themes:mapThemes,worlds:worldGroups(),arenas:Object.keys(ARENA_LAYOUTS).map(key=>[key,ARENA_LAYOUTS[key]]).filter(([key])=>document.querySelector('#menuMapSelect option[value="'+key+'"]')||document.querySelector('#mapSelect option[value="'+key+'"]')),onFighter:(side,name)=>{const select=side==='p1'?characterSelects.p1:characterSelects.cpu;if(!select)return;select.value=name;select.dispatchEvent(new Event('change'));},onArena:(key)=>{if(!mapSelect)return;mapSelect.value=key;mapSelect.dispatchEvent(new Event('change'));},onMode:(mode)=>{twoPlayer=mode==='2p';fighterTypeRefresh();updateHud();}});
 window.__browserSmashSelect=selectScreen;
 roundHud();
 function clearFighterCombatState(f){
@@ -927,6 +996,8 @@ function clearFighterCombatState(f){
  f.dodgeTimer=0;f.dashCooldown=0;f.dashTimer=0;f.flightMode=false;f.isGrounded=true;f.jumps=0;f.airDashUsed=false;
  f.groundLevel=0;f.webSwinging=false;f.parryTimer=0;f.counterWindow=0;
 }
+// Test hook: place both fighters on the active stage's real spawn points without restarting a match.
+window.__browserSmashSpawnFighters=()=>{const {spawns}=applyArenaLayout();placeFightersAtSpawns(spawns);return spawns;};
 function placeFightersAtSpawns(spawns){
  const list=spawns&&spawns.length?spawns:[{x:-6,z:0,y:0},{x:6,z:0,y:0}];
  const [a,b]=list;

@@ -1,0 +1,987 @@
+// World and battle-location catalog for Browser Bros.
+//
+// Each of the four reference worlds is ONE large environment containing its landmarks, with
+// several named battle locations inside it. A battle location is a playable rectangle with
+// its own spawn points (where the fight starts) inside the same world geometry, so switching
+// stages inside a world does not rebuild or reload anything.
+//
+// Everything in this file is plain data plus deterministic generator functions: no Three.js,
+// no DOM. That means node can validate every world, its collision volumes, its spawn points
+// and its battle areas without a browser (scripts/test-worlds.mjs). The renderer in
+// world_builder.js turns the same part descriptors into merged geometry.
+
+const TAU = Math.PI * 2;
+
+/** Small deterministic PRNG so worlds look identical on every load and in tests. */
+function mulberry32(seed) {
+  let a = seed;
+  return () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---- part descriptors -------------------------------------------------------
+// Each world's build function owns a `parts` array; these primitives append to it.
+const part = (parts, t, x, y, z, s, mat, extra) => { parts.push({ t, p: [x, y, z], s, mat, ...extra }); };
+const box = (parts, x, y, z, w, h, d, mat, extra) => part(parts, 'box', x, y, z, [w, h, d], mat, extra);
+const cyl = (parts, x, y, z, rt, rb, h, mat, extra) => part(parts, 'cyl', x, y, z, [rt, rb, h], mat, extra);
+const cone = (parts, x, y, z, r, h, mat, extra) => part(parts, 'cone', x, y, z, [r, h], mat, extra);
+const ball = (parts, x, y, z, r, mat, extra) => part(parts, 'sphere', x, y, z, [r], mat, extra);
+const torus = (parts, x, y, z, r, tube, mat, extra) => part(parts, 'torus', x, y, z, [r, tube], mat, extra);
+const plane = (parts, x, y, z, w, d, mat, extra) => part(parts, 'plane', x, y, z, [w, d], mat, extra);
+
+/** A solid block, with its vertical extent recorded so overhead decks do not act as walls. */
+const solid = extra => ({ solid: true, ...extra });
+
+// ---- shared structures ------------------------------------------------------
+function building(parts, x, z, { w = 9, d = 9, h = 9, base = 0, mat = 'building', roof = 'roof', win = 'glassWarm', winRows = 0 } = {}) {
+  box(parts, x, base + h / 2, z, w, h, d, mat, solid({ bottom: base }));
+  box(parts, x, base + h + .35, z, w + 1.3, .7, d + 1.3, roof);
+  if (win) {
+    const rows = winRows || Math.max(1, Math.floor(h / 3.4));
+    for (let row = 0; row < rows; row++) {
+      for (let col = -1; col <= 1; col++) {
+        box(parts, x + col * w * .27, base + 2 + row * 2.9, z + d / 2 + .03, Math.min(1.4, w * .2), 1.45, .06, win);
+      }
+    }
+  }
+}
+
+function tower(parts, x, z, { r = 4, h = 26, base = 0, mat = 'stone', roof = 'roof', win = 'glassWarm' } = {}) {
+  cyl(parts, x, base + h / 2, z, r, r * 1.08, h, mat, solid({ bottom: base, seg: 10 }));
+  cone(parts, x, base + h + 4, z, r * 1.25, 8, roof, { seg: 10 });
+  for (let i = 0; i < 4; i++) {
+    const a = i * TAU / 4 + .4;
+    box(parts, x + Math.cos(a) * r * .97, base + h * .68, z + Math.sin(a) * r * .97, .55, 1.7, .55, win);
+  }
+}
+
+function tree(parts, x, z, scale, base, rng) {
+  const h = (4.6 + rng() * 3.4) * scale;
+  cyl(parts, x, base + h * .26, z, .3 * scale, .46 * scale, h * .52, 'trunk', { seg: 6 });
+  for (let i = 0; i < 3; i++) {
+    cone(parts, x, base + h * .5 + i * h * .2, z, (2.5 - i * .55) * scale, h * .42, 'leaf', { seg: 8 });
+  }
+}
+
+function rock(parts, x, z, scale, base, rng, mat = 'rock') {
+  ball(parts, x, base + scale * .32, z, scale, mat, {
+    sx: 1 + rng() * .4, sy: .55 + rng() * .3, sz: 1 + rng() * .4,
+    solid: scale > 1.5, bottom: base
+  });
+}
+
+function stairs(parts, x, z, { steps = 6, width = 6, rise = .32, run = .9, base = 0, mat = 'stone', dir = 'z' } = {}) {
+  for (let i = 0; i < steps; i++) {
+    const cy = base + rise * i + rise / 2;
+    if (dir === 'z') box(parts, x, cy, z + i * run, width, rise, run, mat, solid({ bottom: base }));
+    else box(parts, x + i * run, cy, z, run, rise, width, mat, solid({ bottom: base }));
+  }
+}
+
+function railing(parts, x, y, z, length, axis, mat = 'steel') {
+  const half = length / 2;
+  for (let i = -half; i <= half; i += 2.4) {
+    if (axis === 'x') box(parts, x + i, y + .45, z, .09, .9, .09, mat);
+    else box(parts, x, y + .45, z + i, .09, .9, .09, mat);
+  }
+  if (axis === 'x') box(parts, x, y + .88, z, length, .1, .1, mat);
+  else box(parts, x, y + .88, z, .1, .1, length, mat);
+}
+
+function arch(parts, x, z, { w = 10, h = 8, d = 1.4, base = 0, mat = 'stone' } = {}) {
+  for (const side of [-1, 1]) box(parts, x + side * w / 2, base + h / 2, z, 1.3, h, d, mat, solid({ bottom: base }));
+  box(parts, x, base + h + .7, z, w + 1.6, 1.4, d, mat);
+}
+
+function banner(parts, x, y, z, w, h, mat, ry = 0) {
+  box(parts, x, y, z, w, h, .16, mat, { ry });
+  box(parts, x, y + h / 2 + .12, z, w + .3, .22, .22, 'gold');
+}
+
+function stall(parts, x, z, base, ry = 0) {
+  box(parts, x, base + .6, z, 3, 1.2, 2, 'wood', solid({ bottom: base }));
+  box(parts, x, base + 2.3, z, 3.5, .22, 2.5, 'cloth', { ry });
+  for (const s of [-1, 1]) box(parts, x + s * 1.45, base + 1.25, z, .16, 2.5, .16, 'wood');
+}
+
+/** Catwalk suspended above a floor. `bottom` keeps it from colliding with fighters below. */
+function catwalk(parts, x, y, z, w, d, { mat = 'metal', rail = true, axis = 'x' } = {}) {
+  box(parts, x, y, z, w, .4, d, mat, solid({ bottom: y - .2 }));
+  if (rail) {
+    if (axis === 'x') { railing(parts, x, y + .2, z - d / 2, w, 'x'); railing(parts, x, y + .2, z + d / 2, w, 'x'); }
+    else { railing(parts, x - w / 2, y + .2, z, d, 'z'); railing(parts, x + w / 2, y + .2, z, d, 'z'); }
+  }
+}
+
+function crowdBlock(parts, x, z, w, d, base, rows = 3, mats = ['cloth', 'cloth2', 'gold']) {
+  for (let row = 0; row < rows; row++) {
+    const y = base + row * .55;
+    box(parts, x, y + .3, z + row * 1.7, w, .6, 1.6, 'stoneDark');
+    for (let i = -w / 2 + .7; i < w / 2; i += 1.3) {
+      box(parts, x + i, y + .9, z + row * 1.7, .38, .62, .3, mats[(row + Math.round(i)) % 3 < 0 ? 0 : (row + Math.abs(Math.round(i))) % 3]);
+      ball(parts, x + i, y + 1.35, z + row * 1.7, .18, 'skin', { seg: 5 });
+    }
+  }
+}
+
+// ---- world: Dragon Ball Z ---------------------------------------------------
+function buildDbz() {
+  const parts = [];
+  const rng = mulberry32(20261022);
+  const GROUND = 3.2;
+
+  // Tropical island: layered rock terraces, grass cap, ocean below.
+  plane(parts, 0, -7.5, -20, 760, 620, 'water');
+  cyl(parts, 0, -6.5, -10, 122, 134, 17, 'rock', solid({ seg: 28, bottom: -20 }));
+  cyl(parts, 0, 2.8, -10, 116, 120, .8, 'grass', solid({ seg: 28, bottom: 2.4 }));
+
+  // Grand Prize Stage: stone platform, gold trim, four pillars, gate and grandstand.
+  const stageY = 3.6;
+  box(parts, 0, stageY, 0, 37, .9, 33, 'stone', solid({ bottom: GROUND }));
+  box(parts, 0, stageY + .5, 0, 34, .12, 30, 'stone');
+  // Tiled fighting surface: alternating stone tones keep the large platform from reading
+  // as a blank white slab from the pulled-back camera.
+  for (let ix = 0; ix < 10; ix++) {
+    for (let iz = 0; iz < 9; iz++) {
+      const x = -15.3 + ix * 3.4, z = -13.6 + iz * 3.4;
+      box(parts, x, stageY + .57, z, 3.24, .06, 3.24, (ix + iz) % 2 ? 'stone' : 'stoneDark', { rx: 0 });
+    }
+  }
+  torus(parts, 0, stageY + .62, 0, 8.4, .34, 'gold', { rx: Math.PI / 2 });
+  torus(parts, 0, stageY + .62, 0, 4.2, .26, 'gold', { rx: Math.PI / 2 });
+  for (let i = 0; i < 8; i++) {
+    const a = i * TAU / 8;
+    box(parts, Math.cos(a) * 12.2, stageY + .58, Math.sin(a) * 12.2, .5, .05, 2.6, 'gold', { ry: -a });
+  }
+  for (const [x, z] of [[-15, -13], [15, -13], [-15, 13], [15, 13]]) {
+    box(parts, x, stageY + 2.4, z, 1.1, 4.4, 1.1, 'gold', solid({ bottom: stageY }));
+    cone(parts, x, stageY + 5.2, z, 1, 1.7, 'gold', { seg: 6 });
+  }
+  box(parts, 0, stageY + .62, -15.6, 37, .5, .6, 'gold');
+  box(parts, 0, stageY + .62, 15.6, 37, .5, .6, 'gold');
+  box(parts, -17.1, stageY + .62, 0, .6, .5, 33, 'gold');
+  box(parts, 17.1, stageY + .62, 0, .6, .5, 33, 'gold');
+  arch(parts, 0, -22, { w: 16, h: 8.4, d: 1.6, base: GROUND, mat: 'stone' });
+  banner(parts, 0, GROUND + 7.2, -21.2, 9, 4.6, 'banner');
+  crowdBlock(parts, -26, 2, 12, 0, GROUND, 3);
+  crowdBlock(parts, 26, 2, 12, 0, GROUND, 3);
+  crowdBlock(parts, 0, 21, 30, 0, GROUND, 2);
+
+  // Roads out of the stage square to every district.
+  for (const [x, z, w, d] of [[-58, 2, 90, 5], [64, 6, 78, 5], [0, 44, 5, 62], [-8, -56, 5, 60]]) {
+    box(parts, x, GROUND + .04, z, w, .09, d, 'road');
+  }
+
+  // West City: glass towers and shop fronts.
+  for (let i = 0; i < 7; i++) {
+    const x = -74 - (i % 3) * 16, z = -26 + i * 13;
+    building(parts, x, z, { w: 11 + (i % 2) * 4, d: 10, h: 12 + (i % 4) * 7, base: GROUND, mat: 'building', roof: 'roofBlue', win: 'glassBlue', winRows: 4 });
+  }
+  for (let i = 0; i < 4; i++) {
+    stall(parts, -66, 34 - i * 7, GROUND, i * .4);
+  }
+  // East City: low market blocks and food stalls.
+  for (let i = 0; i < 5; i++) {
+    building(parts, 72 + (i % 2) * 18, -8 + i * 14, { w: 9, d: 9, h: 7 + (i % 3) * 3, base: GROUND, mat: 'buildingWarm', roof: 'roof', win: 'glassWarm', winRows: 2 });
+  }
+  for (let i = 0; i < 5; i++) stall(parts, 60 + i * 4.5, 40, GROUND, .2 * i);
+
+  // Capsule Corporation campus: domes, a central tower and landing pads.
+  const capX = -62, capZ = -74;
+  cyl(parts, capX, GROUND + .1, capZ, 26, 26, .5, 'stoneLight', solid({ bottom: GROUND, seg: 24 }));
+  for (let i = 0; i < 3; i++) {
+    const a = i * TAU / 3;
+    ball(parts, capX + Math.cos(a) * 12, GROUND + 2.4, capZ + Math.sin(a) * 12, 7.5, 'buildingBlue', { sy: .7, solid: true, bottom: GROUND, seg: 12 });
+    cyl(parts, capX + Math.cos(a) * 12, GROUND + 4.4, capZ + Math.sin(a) * 12, 1.2, 1.2, 2.6, 'glassBlue');
+  }
+  cyl(parts, capX, GROUND + 12, capZ, 3, 4, 24, 'buildingBlue', solid({ bottom: GROUND, seg: 12 }));
+  ball(parts, capX, GROUND + 25, capZ, 4.6, 'glassBlue', { seg: 12 });
+  banner(parts, capX, GROUND + 8, capZ + 26, 8, 3.4, 'bannerBlue');
+
+  // Martial Arts Dojo: timber hall with a wide training floor.
+  box(parts, 0, GROUND + .3, 62, 24, .6, 18, 'wood', solid({ bottom: GROUND }));
+  box(parts, 0, GROUND + 4.6, 68, 26, 8, 2, 'wood', solid({ bottom: GROUND }));
+  for (const x of [-9, -3, 3, 9]) box(parts, x, GROUND + 2.4, 62, .7, 4.4, .7, 'wood');
+  cone(parts, 0, GROUND + 10, 65, 16, 5.5, 'roof', { seg: 4, ry: Math.PI / 4 });
+
+  // Training grounds: pads, posts, boulders and a sparring ring.
+  cyl(parts, 58, GROUND + .1, -58, 15, 15, .4, 'sand', { seg: 20 });
+  for (let i = 0; i < 6; i++) {
+    const a = i * TAU / 6;
+    box(parts, 58 + Math.cos(a) * 9, GROUND + 1.4, -58 + Math.sin(a) * 9, .45, 2.8, .45, 'wood');
+    ball(parts, 58 + Math.cos(a) * 9, GROUND + 3, -58 + Math.sin(a) * 9, .5, 'wood', { seg: 6 });
+  }
+  for (let i = 0; i < 5; i++) rock(parts, 44 + i * 7, -72 + (i % 2) * 8, 1.2 + rng() * 1.4, GROUND, rng);
+
+  // Ring Out Cliffs: broken rim rock, the edge of the island.
+  for (let i = 0; i < 22; i++) {
+    const a = Math.PI * (.15 + i * .032);
+    const r = 104 + (i % 3) * 4;
+    rock(parts, Math.cos(a) * r, -10 + Math.sin(a) * r, 3.2 + rng() * 4.2, GROUND - 1.2, rng);
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI * (.18 + i * .12);
+    box(parts, Math.cos(a) * 96, GROUND + .5, -10 + Math.sin(a) * 96, 6, 1, 10, 'stoneDark', solid({ bottom: GROUND }));
+  }
+
+  // King Kai's Planet: a small checkerboard world floating above the sea.
+  const kx = 0, kz = -132, ky = 62;
+  ball(parts, kx, ky - 14, kz, 15, 'grassDark', { seg: 16 });
+  cyl(parts, kx, ky - .4, kz, 14, 15, .8, 'grass', solid({ bottom: ky - 1, seg: 20 }));
+  // Standing height of the little world's cap: ky - .4 + .4.
+  torus(parts, kx, ky + .02, kz, 9.5, .3, 'road');
+  box(parts, kx + 5, ky + 2.2, kz + 3, 5, 4.4, 5, 'buildingWarm', solid({ bottom: ky }));
+  cone(parts, kx + 5, ky + 5.4, kz + 3, 4, 2.4, 'roof', { seg: 4, ry: Math.PI / 4 });
+  tree(parts, kx - 5, kz - 2, 1.1, ky, rng);
+  for (let i = 0; i < 3; i++) rock(parts, kx - 7 + i * 6, kz + 8, .8, ky, rng);
+
+  // Island greenery and a ring of distant peaks.
+  for (let i = 0; i < 26; i++) {
+    const a = rng() * TAU, r = 30 + rng() * 70;
+    tree(parts, Math.cos(a) * r, -10 + Math.sin(a) * r, .8 + rng() * .7, GROUND, rng);
+  }
+  for (let i = 0; i < 18; i++) {
+    const a = i * TAU / 18;
+    cone(parts, Math.cos(a) * 240, -6, -10 + Math.sin(a) * 240, 26 + rng() * 16, 46 + rng() * 40, 'mountain', { seg: 6 });
+  }
+  for (let i = 0; i < 14; i++) {
+    ball(parts, (rng() - .5) * 300, 34 + rng() * 26, -10 + (rng() - .5) * 300, 8 + rng() * 8, 'cloud', { sx: 2.4, sy: .5, seg: 8 });
+  }
+  return parts;
+}
+
+// ---- world: Asgard ----------------------------------------------------------
+function buildAsgard() {
+  const parts = [];
+  const rng = mulberry32(77123);
+  const GROUND = 0.5;
+
+  // Floating realm: a great stone disc with a marble plaza and gold inlay.
+  cyl(parts, 0, -7, 0, 116, 128, 15, 'rock', solid({ seg: 30, bottom: -20 }));
+  cyl(parts, 0, .1, 0, 112, 114, .8, 'marble', solid({ seg: 30, bottom: -.4 }));
+  cyl(parts, 0, .55, 0, 58, 58, .12, 'gold', { seg: 40 });
+  for (let i = 0; i < 12; i++) {
+    const a = i * TAU / 12;
+    box(parts, Math.cos(a) * 72, GROUND + .06, Math.sin(a) * 72, 30, .08, .7, 'gold', { ry: -a });
+  }
+
+  // Royal palace: tiered gold ziggurat, domes, needled spires.
+  const pz = -86;
+  box(parts, 0, GROUND + 3, pz, 90, 6, 48, 'gold', solid({ bottom: GROUND }));
+  box(parts, 0, GROUND + 8.5, pz, 76, 5, 40, 'goldLight', solid({ bottom: GROUND + 6 }));
+  box(parts, 0, GROUND + 14, pz, 60, 5, 32, 'gold', solid({ bottom: GROUND + 11 }));
+  box(parts, 0, GROUND + 19, pz, 44, 5, 24, 'goldLight', solid({ bottom: GROUND + 16 }));
+  cyl(parts, 0, GROUND + 25, pz, 12, 16, 9, 'goldLight', { seg: 24 });
+  ball(parts, 0, GROUND + 31, pz, 12, 'gold', { sy: .6, seg: 20 });
+  cone(parts, 0, GROUND + 42, pz, 2.6, 18, 'goldLight', { seg: 8 });
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 4; i++) {
+      const x = side * (26 + i * 13), h = 26 + (i % 2) * 9;
+      box(parts, x, GROUND + h / 2 + 6, pz + (i % 2) * 4, 9, h, 9, 'gold', solid({ bottom: GROUND + 2 }));
+      cone(parts, x, GROUND + h + 13, pz + (i % 2) * 4, 5.4, 12, 'goldLight', { seg: 8 });
+      ball(parts, x, GROUND + h + 20, pz + (i % 2) * 4, 1.6, 'goldLight', { seg: 8 });
+    }
+  }
+  // Palace steps down to the plaza.
+  stairs(parts, 0, pz + 30, { steps: 8, width: 26, rise: .4, run: 1.2, base: GROUND, mat: 'goldLight', dir: 'z' });
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, -30 + i * 12, GROUND + 4, pz + 27, .8, .9, 8, 'marble', { seg: 8 });
+    ball(parts, -30 + i * 12, GROUND + 8.6, pz + 27, .7, 'crystal');
+  }
+
+  // City: gold-and-stone houses along the avenue, with banners and braziers.
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 6; i++) {
+      const x = side * (34 + (i % 3) * 14), z = 26 - i * 13;
+      building(parts, x, z, { w: 10 + (i % 2) * 3, d: 9, h: 7 + (i % 3) * 3, base: GROUND, mat: i % 2 ? 'marble' : 'stone', roof: 'roofGold', win: 'crystal', winRows: 2 });
+      banner(parts, x - side * 5.4, GROUND + 5, z + 4.7, 2.2, 3.4, 'bannerBlue', side * .1);
+    }
+  }
+  for (let i = 0; i < 10; i++) {
+    const z = 28 - i * 9, x = (i % 2 ? 1 : -1) * 9;
+    cyl(parts, x, GROUND + 2.6, z, .2, .35, 5, 'gold', { seg: 6 });
+    ball(parts, x, GROUND + 5.4, z, .45, 'crystal');
+  }
+
+  // Fountain and gardens.
+  cyl(parts, -22, GROUND + .3, 18, 5.4, 6, .8, 'marble', solid({ bottom: GROUND, seg: 20 }));
+  cyl(parts, -22, GROUND + 1.1, 18, 4.4, 4.4, .3, 'water');
+  ball(parts, -22, GROUND + 2.6, 18, 1.5, 'crystal');
+  for (let i = 0; i < 7; i++) {
+    const a = i * TAU / 7;
+    tree(parts, -48 + Math.cos(a) * 12, 44 + Math.sin(a) * 10, 1 + rng() * .6, GROUND, rng);
+  }
+  for (let i = 0; i < 6; i++) {
+    box(parts, -48 + i * 4.2, GROUND + .55, 56, 3.6, 1.1, 1.4, 'leaf', solid({ bottom: GROUND }));
+  }
+
+  // Training yard.
+  box(parts, 46, GROUND + .12, -42, 34, .24, 26, 'sand', solid({ bottom: GROUND }));
+  for (let i = 0; i < 6; i++) {
+    const a = i * TAU / 6;
+    box(parts, 46 + Math.cos(a) * 11, GROUND + 1.6, -42 + Math.sin(a) * 11, .5, 3.2, .5, 'wood');
+  }
+  for (const [x, z] of [[30, -54], [62, -54], [30, -30], [62, -30]]) {
+    box(parts, x, GROUND + 1, z, 1.2, 2, 1.2, 'stone', solid({ bottom: GROUND }));
+    ball(parts, x, GROUND + 2.6, z, .8, 'crystal');
+  }
+
+  // Marketplace: stalls with awnings and crates.
+  for (let i = 0; i < 6; i++) {
+    stall(parts, 58 + (i % 2) * 9, 6 + i * 8, GROUND, i * .3);
+    box(parts, 66 + (i % 3) * 2, GROUND + .35, 2 + i * 8, 1.1, .7, 1.1, 'wood');
+  }
+  arch(parts, 76, 44, { w: 12, h: 8, d: 2, base: GROUND, mat: 'stone' });
+
+  // Rainbow Bridge: a long glowing span with arches, running from the plaza to the Bifrost.
+  const bridgeZ0 = 30, bridgeZ1 = 138;
+  box(parts, 0, GROUND + .9, (bridgeZ0 + bridgeZ1) / 2, 16, .7, bridgeZ1 - bridgeZ0, 'crystal', solid({ bottom: GROUND + .4 }));
+  box(parts, 0, GROUND + 1.28, (bridgeZ0 + bridgeZ1) / 2, 11, .06, bridgeZ1 - bridgeZ0, 'gold');
+  for (let i = 0; i <= 9; i++) {
+    const z = bridgeZ0 + i * 12;
+    for (const side of [-1, 1]) {
+      cyl(parts, side * 7.4, GROUND + .9, z, .35, .55, 1.5, 'gold', { seg: 8 });
+      ball(parts, side * 7.4, GROUND + 1.8, z, .32, 'crystal');
+    }
+  }
+  for (let i = 0; i < 5; i++) {
+    const z = bridgeZ0 + 12 + i * 24;
+    const support = cyl(parts, 0, GROUND - 6, z, 3.4, 4.6, 14, 'marble', { seg: 10 });
+    void support;
+  }
+
+  // Bifrost: dome of light at the bridge's end.
+  box(parts, 0, GROUND + .9, 148, 46, .7, 26, 'crystal', solid({ bottom: GROUND + .4 }));
+  ball(parts, 0, GROUND + 1.2, 152, 24, 'crystalGlow', { sy: .55, seg: 16 });
+  for (let i = 0; i < 8; i++) {
+    const a = i * TAU / 8;
+    cyl(parts, Math.cos(a) * 20, GROUND + 3, 148 + Math.sin(a) * 11, .6, .8, 6, 'gold', { seg: 8 });
+  }
+  torus(parts, 0, GROUND + 1.3, 148, 17, .4, 'crystalGlow', { rx: Math.PI / 2 });
+
+  // Outer floating islands for exploration.
+  for (const [x, y, z, r] of [[136, 16, -54, 26], [-140, 24, 66, 22], [118, 30, 96, 18]]) {
+    cyl(parts, x, y - 8, z, r, r * 1.2, 16, 'rock', solid({ seg: 14, bottom: y - 16 }));
+    cyl(parts, x, y + .2, z, r * .94, r, .6, 'grass', solid({ seg: 14, bottom: y - .2 }));
+    tree(parts, x - r * .3, z, 1.2, y + .5, rng);
+    tree(parts, x + r * .25, z + r * .2, .9, y + .5, rng);
+  }
+  for (let i = 0; i < 12; i++) {
+    ball(parts, (rng() - .5) * 320, 44 + rng() * 30, -10 + (rng() - .5) * 320, 10 + rng() * 10, 'cloud', { sx: 2.6, sy: .45, seg: 8 });
+  }
+  return parts;
+}
+
+// ---- world: Death Star ------------------------------------------------------
+function buildDeathStar() {
+  const parts = [];
+  const GROUND = 0;
+
+  // Shared interior helpers -------------------------------------------------
+  const floor = (x, z, w, d, mat = 'floor') => box(parts, x, GROUND - .3, z, w, .6, d, mat, solid({ bottom: -1 }));
+  const wall = (x, z, w, h, d) => {
+    box(parts, x, GROUND + h / 2, z, w, h, d, 'metal', solid({ bottom: GROUND }));
+    // Ribbed panelling and a light strip so large walls read at a distance.
+    for (let i = -w / 2 + 2; i < w / 2; i += 4) {
+      box(parts, x + i, GROUND + h / 2, z + d / 2 + .03, .35, h * .8, .06, 'metalDark');
+    }
+    box(parts, x, GROUND + h * .78, z + d / 2 + .05, w * .9, .18, .05, 'glowBlue');
+  };
+  const ceiling = (x, y, z, w, d) => {
+    box(parts, x, y, z, w, .5, d, 'metalDark');
+    for (let i = -w / 2 + 3; i < w / 2; i += 6) box(parts, x + i, y - .35, z, 1.4, .12, d * .8, 'glowBlue');
+  };
+  const consoleBank = (x, z, w, ry = 0) => {
+    box(parts, x, GROUND + .5, z, w, 1, 1.4, 'panel', solid({ bottom: GROUND, ry }));
+    box(parts, x, GROUND + 1.15, z, w * .92, .25, 1.2, 'steel', { ry });
+    for (let i = -w / 2 + .8; i < w / 2; i += 1.6) {
+      box(parts, x + i, GROUND + 1.3, z - .1, .5, .06, .5, 'glowRed');
+      ball(parts, x + i + .3, GROUND + 1.34, z, .08, 'glowGreen', { seg: 5 });
+    }
+  };
+  const doorway = (x, z, w = 10, h = 9, ry = 0) => {
+    box(parts, x, GROUND + h / 2, z, w, h, 1, 'metalDark', { ry });
+    box(parts, x, GROUND + .35, z, w * .8, .7, 1.1, 'glowBlue', { ry });
+    for (const side of [-1, 1]) {
+      box(parts, x + side * w * .55, GROUND + h / 2, z, 1.2, h + 1, 1.4, 'steel', solid({ bottom: GROUND, ry }));
+    }
+  };
+
+  // Command Deck -----------------------------------------------------------
+  const deckZ = -92;
+  floor(0, deckZ, 64, 46, 'floorCommand');
+  wall(0, deckZ - 23, 64, 16, 1.2);
+  wall(-32, deckZ, 1.2, 16, 46);
+  wall(32, deckZ, 1.2, 16, 46);
+  wall(-18, deckZ + 23, 28, 16, 1.2);
+  wall(18, deckZ + 23, 28, 16, 1.2);
+  ceiling(0, 16, deckZ, 64, 46);
+  // Viewport with stars.
+  box(parts, 0, 8, deckZ - 22.2, 44, 11, .3, 'glass', { transparent: true });
+  const starRng = mulberry32(424242);
+  for (let i = 0; i < 90; i++) {
+    ball(parts, (starRng() - .5) * 42, 3 + starRng() * 10, deckZ - 22.6, .05 + starRng() * .05, 'star', { seg: 4 });
+  }
+  box(parts, 0, .35, deckZ - 12, 26, .7, 12, 'panel', solid({ bottom: GROUND }));
+  box(parts, 0, .75, deckZ - 12, 22, .2, 9, 'glowBlue');
+  consoleBank(-22, deckZ - 4, 12);
+  consoleBank(22, deckZ - 4, 12);
+  consoleBank(0, deckZ + 20, 18);
+  for (let x = -28; x <= 28; x += 7) box(parts, x, GROUND + .03, deckZ, .12, .04, 44, 'metalDark');
+  for (let z = deckZ - 20; z <= deckZ + 20; z += 7) box(parts, 0, GROUND + .03, z, 60, .04, .12, 'metalDark');
+  // Officers' chairs and the command dais.
+  for (let i = 0; i < 4; i++) {
+    box(parts, -14 + i * 9, GROUND + 1.4, deckZ + 8, 2, 2.8, 2, 'dark', solid({ bottom: GROUND }));
+    box(parts, -14 + i * 9, GROUND + 3, deckZ + 8, 2.2, 1.2, .3, 'dark');
+  }
+  catwalk(parts, 0, 7.2, deckZ - 18, 40, 4, { axis: 'x' });
+  stairs(parts, -20, deckZ - 14, { steps: 9, width: 4, rise: .8, run: 1, base: GROUND, mat: 'metal', dir: 'z' });
+  for (const [x, z] of [[-9, 3], [9, 3]]) {
+    box(parts, x, GROUND + .2, deckZ + z, 5, .4, 3, 'glowRed');
+  }
+
+  // Hangar -----------------------------------------------------------------
+  const hz = 50;
+  floor(0, hz, 104, 78, 'floorHangar');
+  wall(0, hz - 39, 104, 22, 1.2);
+  wall(-52, hz, 1.2, 22, 78);
+  wall(52, hz, 1.2, 22, 78);
+  wall(-34, hz + 39, 36, 22, 1.2);
+  wall(34, hz + 39, 36, 22, 1.2);
+  ceiling(0, 22, hz, 104, 78);
+  // Landing markings and a launch trench.
+  for (let i = 0; i < 6; i++) box(parts, -34 + i * 14, GROUND + .04, hz - 16, 8, .08, .7, 'glowBlue');
+  box(parts, 0, GROUND + .02, hz + 22, 60, .06, 12, 'floorStripe');
+  // Panel seams break the very large hangar floor into readable plates.
+  for (let x = -48; x <= 48; x += 8) box(parts, x, GROUND + .03, hz, .13, .04, 76, 'metalDark');
+  for (let z = hz - 36; z <= hz + 36; z += 8) box(parts, 0, GROUND + .03, z, 100, .04, .13, 'metalDark');
+  torus(parts, 0, GROUND + .06, hz - 4, 15, .5, 'glowBlue', { rx: Math.PI / 2 });
+  // Catwalks and stacks of crates.
+  catwalk(parts, -36, 8, hz - 20, 22, 5);
+  catwalk(parts, 36, 8, hz + 20, 22, 5);
+  stairs(parts, -46, hz - 8, { steps: 9, width: 5, rise: .8, run: 1.1, base: GROUND, mat: 'metal', dir: 'z' });
+  for (let i = 0; i < 8; i++) {
+    const x = -20 + (i % 4) * 12, z = hz + 12 + Math.floor(i / 4) * 8;
+    box(parts, x, GROUND + 1.4, z, 3.2, 2.8, 3.2, 'crate', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 2.85, z, 3.3, .16, 3.3, 'steel');
+  }
+  // A docked shuttle silhouette.
+  box(parts, 26, GROUND + 3.4, hz - 12, 16, 4.4, 8, 'steel', solid({ bottom: GROUND }));
+  cone(parts, 26, GROUND + 3.4, hz - 2, 4.4, 9, 'steel', { rx: Math.PI / 2, seg: 6 });
+  for (const side of [-1, 1]) {
+    box(parts, 26 + side * 5, GROUND + 2.6, hz - 6, 2.4, .6, 12, 'dark');
+    cyl(parts, 26 + side * 5, GROUND + 1.4, hz - 6, .5, .6, 2, 'glowRed', { seg: 6 });
+  }
+  // TIE racks.
+  for (let i = 0; i < 4; i++) {
+    const x = -42 + i * 5.5;
+    cyl(parts, x, GROUND + 6, hz - 30, .4, .4, 10, 'steel');
+    for (const side of [-1, 1]) ball(parts, x + side * 2.4, GROUND + 6.5, hz - 30, 2.2, 'metalDark', { seg: 10 });
+  }
+
+  // Connecting corridor network -------------------------------------------
+  const cz0 = -70, cz1 = 12;
+  floor(0, (cz0 + cz1) / 2, 14, cz1 - cz0, 'floorCorridor');
+  wall(-7, (cz0 + cz1) / 2, 1.2, 9, cz1 - cz0);
+  wall(7, (cz0 + cz1) / 2, 1.2, 9, cz1 - cz0);
+  ceiling(0, 9, (cz0 + cz1) / 2, 14, cz1 - cz0);
+  for (let z = cz0 + 6; z < cz1; z += 8) {
+    for (const side of [-1, 1]) {
+      box(parts, side * 6.2, GROUND + 4.5, z, .5, 9, .7, 'metalDark');
+      box(parts, side * 6.15, GROUND + 5.6, z, .3, .16, 6, 'glowRed');
+    }
+    box(parts, 0, GROUND + 8.6, z, 14, .16, .5, 'glowBlue');
+  }
+  // Junction chamber between corridor and command deck.
+  floor(0, -62, 30, 20, 'floorCommand');
+  wall(0, -72, 30, 10, 1.2);
+  wall(-15, -62, 1.2, 10, 20);
+  wall(15, -62, 1.2, 10, 20);
+  ceiling(0, 10, -62, 30, 20);
+  doorway(0, -72, 9, 9);
+  doorway(0, -52, 9, 9);
+  consoleBank(-10, -56, 8);
+  for (const [x, z] of [[-6, -66], [6, -66]]) {
+    box(parts, x, GROUND + .15, z, 4, .3, 4, 'glowBlue');
+  }
+
+  // Reactor core -----------------------------------------------------------
+  const rz = -152;
+  cyl(parts, 0, GROUND - .3, rz, 34, 36, .6, 'floor', solid({ bottom: -1, seg: 28 }));
+  for (let i = 0; i < 16; i++) {
+    const a = i * TAU / 16;
+    const x = Math.cos(a) * 34, z = rz + Math.sin(a) * 34;
+    box(parts, x, GROUND + 11, z, 9, 22, 1.6, 'metal', solid({ bottom: GROUND, ry: -a }));
+    box(parts, x * .97, GROUND + 15, z * .97, .3, 2, .3, 'glowRed');
+  }
+  cyl(parts, 0, GROUND + 8, rz, 6, 7.4, 26, 'metalDark', solid({ bottom: GROUND, seg: 16 }));
+  ball(parts, 0, GROUND + 9, rz, 8.5, 'core', { seg: 18 });
+  torus(parts, 0, GROUND + 17, rz, 10, .5, 'glowGreen', { rx: Math.PI / 2 });
+  catwalk(parts, 0, 9, rz + 25, 40, 4, { axis: 'x' });
+  catwalk(parts, 0, 9, rz - 25, 40, 4, { axis: 'x' });
+  catwalk(parts, 25, 9, rz, 4, 40, { axis: 'z' });
+  catwalk(parts, -25, 9, rz, 4, 40, { axis: 'z' });
+  for (let i = 0; i < 8; i++) {
+    const a = i * TAU / 8;
+    box(parts, Math.cos(a) * 20, GROUND + 4.2, rz + Math.sin(a) * 20, .5, 8, .5, 'steel');
+    box(parts, Math.cos(a) * 20, GROUND + 8.6, rz + Math.sin(a) * 20, .5, .4, 4, 'steel', { ry: -a });
+  }
+  for (const side of [-1, 1]) {
+    box(parts, side * 44, GROUND + 6, rz, 8, 12, 26, 'metal', solid({ bottom: GROUND }));
+    box(parts, side * 40, GROUND + 8, rz, .4, 6, 18, 'glowGreen');
+  }
+
+  // Superlaser control -----------------------------------------------------
+  const sx = 80, sz = -152;
+  cyl(parts, sx, GROUND - .3, sz, 24, 26, .6, 'floorCommand', solid({ bottom: -1, seg: 24 }));
+  for (let i = 0; i < 12; i++) {
+    const a = i * TAU / 12;
+    box(parts, sx + Math.cos(a) * 24, GROUND + 8, sz + Math.sin(a) * 24, 8, 16, 1.4, 'metal', solid({ bottom: GROUND, ry: -a }));
+  }
+  torus(parts, sx, GROUND + 1, sz, 15, .6, 'glowBlue', { rx: Math.PI / 2 });
+  cyl(parts, sx, GROUND + 2.4, sz, 4.4, 5.4, 4.8, 'dark', solid({ bottom: GROUND }));
+  ball(parts, sx, GROUND + 5.6, sz, 4, 'glowGreen', { seg: 14 });
+  for (let i = 0; i < 6; i++) {
+    const a = i * TAU / 6;
+    consoleBank(sx + Math.cos(a) * 18, sz + Math.sin(a) * 18, 7, -a);
+  }
+  catwalk(parts, sx, 7, sz + 18, 30, 4, { axis: 'x' });
+
+  // Escape pod bay: its own floor, a hull viewport and the pods themselves.
+  floor(-60, -16, 22, 64, 'floorCorridor');
+  box(parts, -71.4, GROUND + 4, -16, .4, 7, 22, 'glass');
+  for (let i = 0; i < 70; i++) {
+    ball(parts, -71.8, 1 + starRng() * 6, -26 + starRng() * 20, .06 + starRng() * .05, 'star', { seg: 4 });
+  }
+  for (let z = -44; z <= 12; z += 8) box(parts, -60, GROUND + .03, z, 20, .04, .14, 'metalDark');
+  for (let i = 0; i < 3; i++) {
+    const z = -40 + i * 26;
+    box(parts, -60, GROUND + 3, z, 6, 6, 10, 'metal', solid({ bottom: GROUND }));
+    ball(parts, -57, GROUND + 3, z, 2.4, 'dark', { sx: .8, seg: 10 });
+    box(parts, -56.6, GROUND + 3, z, .3, 3, 6, 'glowRed');
+  }
+  return parts;
+}
+
+// ---- world: Hogwarts -------------------------------------------------------
+function buildHogwarts() {
+  const parts = [];
+  const rng = mulberry32(31415);
+  const GROUND = 0.3;
+
+  // Grounds: plateau over the loch, with a lake to the north.
+  cyl(parts, 0, -8.5, 0, 156, 172, 17, 'rock', solid({ seg: 34, bottom: -22 }));
+  cyl(parts, 0, -.1, 0, 150, 154, .8, 'grass', solid({ seg: 34, bottom: -.6 }));
+  // The lake sits just above the grass so it reads as water instead of disappearing under
+  // the plateau, and it is kept north of Hogsmeade and the pitch.
+  plane(parts, 0, GROUND + .06, 150, 220, 110, 'water');
+  for (let i = 0; i < 16; i++) {
+    const a = Math.PI * (.06 + i * .055);
+    rock(parts, Math.cos(a) * 148, 40 + Math.sin(a) * 120, 3 + rng() * 4, GROUND - 1, rng, 'cliff');
+  }
+
+  // Castle: curtain walls, keep, towers, Great Hall range.
+  // Castle shell: curtain walls rather than one solid block, so the interior rooms are
+  // actually enterable and nothing collides with the Great Hall inside.
+  const cz = -108;
+  box(parts, 0, GROUND + 11, cz - 42, 132, 22, 3, 'stone', solid({ bottom: GROUND }));
+  box(parts, -66, GROUND + 11, cz, 3, 22, 84, 'stone', solid({ bottom: GROUND }));
+  box(parts, 66, GROUND + 11, cz, 3, 22, 84, 'stone', solid({ bottom: GROUND }));
+  for (const side of [-1, 1]) {
+    box(parts, side * 45, GROUND + 11, cz + 42, 42, 22, 3, 'stone', solid({ bottom: GROUND }));
+  }
+  box(parts, 0, GROUND + 16, cz + 42, 24, 6, 3, 'stoneDark');
+  for (let i = 0; i < 7; i++) {
+    const x = -54 + i * 18;
+    // Skip the middle of the south range: that is the gate between the Great Hall and the courtyard.
+    if (Math.abs(x) < 24) continue;
+    tower(parts, x, cz + 40, { r: 6.5, h: 30 + (i % 3) * 8, base: GROUND, mat: 'stone', roof: 'roofCastle', win: 'glassWarm' });
+  }
+  for (let i = 0; i < 4; i++) {
+    tower(parts, -60 + i * 40, cz - 40, { r: 7.5, h: 34 + (i % 2) * 10, base: GROUND, mat: 'stone', roof: 'roofCastle' });
+  }
+  // Central keep sits north of the hall, and the clock tower stands beside the courtyard.
+  box(parts, 0, GROUND + 22, cz - 36, 40, 44, 18, 'stone', solid({ bottom: GROUND }));
+  cone(parts, 0, GROUND + 48, cz - 36, 22, 16, 'roofCastle', { seg: 4, ry: Math.PI / 4 });
+  cyl(parts, -46, GROUND + 40, cz + 52, 7, 8, 64, 'stone', solid({ bottom: GROUND, seg: 10 }));
+  cone(parts, -46, GROUND + 76, cz + 52, 9.5, 12, 'roofCastle', { seg: 10 });
+  ball(parts, -46, GROUND + 61, cz + 52, 4.6, 'clock');
+  for (let i = 0; i < 18; i++) {
+    const x = -58 + (i % 9) * 14.5, y = GROUND + 8 + Math.floor(i / 9) * 12;
+    if (Math.abs(x) < 26) continue;
+    box(parts, x, y, cz + 40.6, 1.1, 3.2, .12, 'glassWarm');
+  }
+  // Viaduct from the courtyard out over the ravine.
+  box(parts, 0, GROUND + .55, 4, 12, .8, 64, 'stone', solid({ bottom: GROUND - 6 }));
+  for (let i = 0; i < 6; i++) {
+    const z = -20 + i * 10;
+    for (const side of [-1, 1]) railing(parts, side * 5.4, GROUND + .95, z, 10, 'z', 'stoneDark');
+    box(parts, 0, GROUND + .1, z, 14, 1.2, 2.4, 'stoneDark');
+  }
+  for (let i = 0; i < 5; i++) {
+    const z = -14 + i * 12;
+    box(parts, 0, GROUND - 4, z, 3, 10, 2.4, 'stoneDark');
+  }
+
+  // Courtyard between castle and viaduct.
+  box(parts, 0, GROUND + .06, -52, 54, .12, 26, 'cobble');
+  cyl(parts, -14, GROUND + .6, -52, 4.4, 5, .9, 'stoneLight', solid({ bottom: GROUND, seg: 18 }));
+  cyl(parts, -14, GROUND + 1.15, -52, 3.6, 3.6, .22, 'water');
+  ball(parts, -14, GROUND + 2.2, -52, 1.1, 'stoneLight');
+  for (let i = 0; i < 6; i++) {
+    const x = -24 + i * 9.6;
+    box(parts, x, GROUND + 1.1, -38, 2.2, 2.2, 2.2, 'stoneLight', solid({ bottom: GROUND }));
+    ball(parts, x, GROUND + 2.5, -38, .8, 'crystal');
+  }
+
+  // Great Hall interior (its own roof and walls, entered from the courtyard side).
+  const hallZ = -100, floorY = GROUND + .22;
+  box(parts, 0, floorY - .2, hallZ, 42, .5, 72, 'floorHall', solid({ bottom: GROUND }));
+  for (const side of [-1, 1]) {
+    box(parts, side * 21, GROUND + 9, hallZ, 1.6, 18, 72, 'stoneDark', solid({ bottom: GROUND }));
+    for (let i = 0; i < 7; i++) {
+      const z = hallZ - 30 + i * 10;
+      box(parts, side * 19.8, GROUND + 9, z, .4, 16, 4, 'glassCool');
+      box(parts, side * 20.6, GROUND + 9, z, .9, 18, 1.1, 'stone');
+    }
+  }
+  box(parts, 0, GROUND + 9, hallZ - 36, 42, 18, 1.8, 'stoneDark', solid({ bottom: GROUND }));
+  box(parts, 0, GROUND + 18.4, hallZ, 44, .6, 74, 'roofHall');
+  box(parts, 0, GROUND + 17.6, hallZ, 36, .5, 68, 'ceiling');
+  // Four long house tables and benches (solid enough to jump onto).
+  for (const x of [-12, -4, 4, 12]) {
+    box(parts, x, floorY + 1.05, hallZ, 3.1, .5, 58, 'wood', solid({ bottom: floorY }));
+    box(parts, x, floorY + 1.36, hallZ, 3.5, .14, 58.4, 'gold');
+    for (const side of [-1, 1]) box(parts, x + side * 2.6, floorY + .45, hallZ, .9, .8, 56, 'wood', solid({ bottom: floorY }));
+    for (let z = hallZ - 26; z <= hallZ + 26; z += 7) {
+      for (const side of [-1, 1]) cyl(parts, x + side * .7, floorY + 1.46, z, .16, .16, .05, 'gold', { seg: 10 });
+    }
+  }
+  // Teacher's dais, floating candles and house banners.
+  box(parts, 0, floorY + .35, hallZ - 30, 32, .7, 7, 'stone', solid({ bottom: floorY }));
+  for (let i = 0; i < 6; i++) {
+    box(parts, -12 + i * 5, floorY + 1.4, hallZ - 32, 2.6, .7, 2, 'wood');
+    box(parts, -12 + i * 5, floorY + 2.6, hallZ - 33, 1.4, 2.4, .3, 'gold');
+  }
+  for (let i = 0; i < 40; i++) {
+    const x = (rng() - .5) * 30, z = hallZ - 30 + rng() * 58, y = GROUND + 12 + rng() * 4;
+    cyl(parts, x, y, z, .05, .06, .6, 'gold', { seg: 6 });
+    ball(parts, x, y + .38, z, .12, 'flame', { seg: 6 });
+  }
+  for (let i = 0; i < 4; i++) {
+    const x = -15 + i * 10;
+    box(parts, x, GROUND + 12, hallZ - 18 + (i % 2) * 22, 3.2, 8, .16, ['bannerRed', 'bannerBlue', 'bannerGold', 'bannerGreen'][i]);
+  }
+
+  // Hagrid's Hut.
+  cyl(parts, -96, GROUND + 1.6, 6, 6, 6.4, 4.4, 'brick', solid({ bottom: GROUND, seg: 14 }));
+  cone(parts, -96, GROUND + 6.4, 6, 7.8, 4.6, 'thatch', { seg: 14 });
+  box(parts, -96, GROUND + 1.4, 12.6, 1.6, 2.6, .3, 'wood');
+  for (let i = 0; i < 4; i++) rock(parts, -88 + i * 4, 14, .7, GROUND, rng);
+
+  // Hogsmeade: pitched cottages, a street and lanterns.
+  for (let i = 0; i < 7; i++) {
+    const x = -104 + (i % 3) * 16, z = 42 + Math.floor(i / 3) * 22;
+    box(parts, x, GROUND + 3.2, z, 10, 6.4, 9, i % 2 ? 'brick' : 'stone', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 7.1, z, 11.6, 1.6, 10.4, 'roofCastle');
+    cone(parts, x, GROUND + 8.4, z, 7.4, 3.4, 'roofCastle', { seg: 4, ry: Math.PI / 4 });
+    for (const side of [-1, 1]) box(parts, x + side * 2.4, GROUND + 3.4, z + 4.6, 1.1, 1.5, .1, 'glassWarm');
+    box(parts, x, GROUND + 1.4, z + 4.6, 1.4, 2.6, .12, 'wood');
+    cyl(parts, x + 6.4, GROUND + 2.2, z + 5, .14, .18, 4.4, 'dark', { seg: 6 });
+    ball(parts, x + 6.4, GROUND + 4.5, z + 5, .34, 'flame', { seg: 8 });
+  }
+  box(parts, -86, GROUND + .03, 60, 12, .06, 64, 'cobble');
+
+  // Quidditch pitch.
+  const qx = 98, qz = 26;
+  cyl(parts, qx, GROUND + .05, qz, 44, 46, .3, 'pitch', solid({ seg: 28, bottom: GROUND - .2 }));
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      cyl(parts, qx + side * 40, GROUND + 8 + i * 1.8, qz, .5, .5, 16 + i * 3, 'gold', { seg: 8 });
+      torus(parts, qx + side * 40, GROUND + 17 + i * 1.8, qz, 4.2, .35, 'gold', { ry: 0 });
+    }
+  }
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 5; i++) {
+      box(parts, qx + side * (48 + i * 2), GROUND + 1.6, qz - 30 + i * 15, 4, 3, 12, 'wood');
+    }
+  }
+  // Boathouse and dock on the lake.
+  box(parts, 62, GROUND + 2, 96, 16, 4, 12, 'stone', solid({ bottom: GROUND }));
+  box(parts, 62, GROUND + 5.2, 96, 18, 1.4, 14, 'roofCastle');
+  box(parts, 62, GROUND + .1, 108, 20, .4, 18, 'wood', solid({ bottom: GROUND }));
+  for (let i = 0; i < 5; i++) {
+    for (const side of [-1, 1]) box(parts, 62 + side * 4.6, GROUND + .8, 100 + i * 4, .3, 1.4, .3, 'wood');
+  }
+
+  // Forbidden Forest edge.
+  for (let i = 0; i < 46; i++) {
+    const x = -120 + rng() * 110, z = -70 + rng() * 70;
+    if (Math.hypot(x, z + 108) < 80) continue;
+    tree(parts, x, z, 1.1 + rng() * .9, GROUND, rng);
+  }
+  for (let i = 0; i < 9; i++) rock(parts, -70 + rng() * 50, -30 + rng() * 50, 1 + rng() * 1.4, GROUND, rng, 'moss');
+
+  // Lake shore rocks and a few trees on the grounds.
+  for (let i = 0; i < 12; i++) {
+    const x = -140 + i * 26;
+    rock(parts, x, 34, 1.6 + rng() * 1.6, GROUND, rng, 'moss');
+  }
+  for (let i = 0; i < 10; i++) tree(parts, -40 + rng() * 90, 10 + rng() * 20, .8 + rng(), GROUND, rng);
+  return parts;
+}
+
+// ---- palettes, themes and battle locations ---------------------------------
+export const PALETTES = {
+  dbz: {
+    rock: '#6e6552', grass: '#5d8a43', grassDark: '#3f6030', mountain: '#5a6a72',
+    stone: '#9d9074', stoneLight: '#b3a68b', stoneDark: '#756b56', gold: '#e8c860', road: '#c9bd9f', sand: '#cbb98c',
+    building: '#b9b3a0', buildingWarm: '#b2936f', buildingBlue: '#7fa6b4', roof: '#b5563f',
+    roofBlue: '#4f7f9c', wood: '#7a5433', water: '#2f7ba8', cloud: '#eef5f9',
+    leaf: '#3f7a44', trunk: '#5a4230', glassWarm: '#ffd79a', glassBlue: '#8fdcff',
+    banner: '#d8452f', bannerBlue: '#2f6fd0', skin: '#d9a982', cloth: '#3f6f8c', cloth2: '#c7b26a'
+  },
+  asgard: {
+    rock: '#4d4a52', marble: '#a49b88', gold: '#d7aa42', goldLight: '#f3d77d',
+    stone: '#8b8578', stoneDark: '#5f5c56', roofGold: '#a8792c', sand: '#c2b48e',
+    wood: '#6b4b30', water: '#54d6ff', crystal: '#7fe8ff', crystalGlow: '#5fd0ff', grass: '#4c7a4a',
+    leaf: '#4c7a4a', trunk: '#4a3527', glassWarm: '#ffe6b0', roof: '#6f6a62',
+    bannerBlue: '#2f6fd0', cloth: '#c9b26a', cloth2: '#3f6f8c', skin: '#d9a982', cloud: '#f2f7ff'
+  },
+  deathstar: {
+    metal: '#5b6572', metalDark: '#333a45', floor: '#4a525d', floorCommand: '#414956',
+    floorHangar: '#4d5563', floorCorridor: '#3d4450', floorStripe: '#c9d6e4',
+    panel: '#6d7a88', steel: '#93a4b6', dark: '#22272f', crate: '#6b6250',
+    glowBlue: '#79dfff', glowRed: '#ff4b3a', glowGreen: '#7dff9c', glass: '#101826',
+    star: '#dfe9ff', core: '#a8ffb6'
+  },
+  hogwarts: {
+    stone: '#6f6c66', stoneDark: '#4a4844', stoneLight: '#a29c90', brick: '#5a4a42',
+    roofCastle: '#3a4450', roofHall: '#2f3742', ceiling: '#1d2430', wood: '#5a4030',
+    gold: '#b49a60', glassWarm: '#ffd79a', glassCool: '#8ab6d4', grass: '#4d6a3f',
+    leaf: '#2f4d33', trunk: '#3a2c22', water: '#20323c', cobble: '#4c4a45',
+    floorHall: '#7d766a', pitch: '#6f8d4a', flame: '#ffe6a6', clock: '#e8d79a',
+    bannerRed: '#9e1f2e', bannerBlue: '#1d426d', bannerGold: '#c2a438', bannerGreen: '#2b623d',
+    rock: '#59554c', moss: '#4e5a44', thatch: '#5c4a33', crystal: '#9fd7ff',
+    cliff: '#5b5850', dark: '#2a2a2e'
+  }
+};
+
+const THEMES = {
+  dbz: { sky: 0x2f6ea8, fog: 0xbcd6d8, floor: 0x2f7ba8, platform: 0x8a8064, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff2d2, sun: 0xffe3b0, density: .0022, skyPreset: 'tournament' },
+  asgard: { sky: 0x28477e, fog: 0xffe2a6, floor: 0x4a4a52, platform: 0x8b8578, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xffe2b3, sun: 0xffd6a1, density: .0022, skyPreset: 'asgard' },
+  deathstar: { sky: 0x070b14, fog: 0x202b3a, floor: 0x424954, platform: 0x262d38, ringA: 0x78cfff, ringB: 0xff453b, light: 0xc8d9ff, sun: 0x8799bb, density: .004, skyPreset: 'deathstar', interior: true },
+  hogwarts: { sky: 0x171a2d, fog: 0x41414b, floor: 0x3c3e43, platform: 0x292b31, ringA: 0xe3c477, ringB: 0x9f252e, light: 0xffd59b, sun: 0xd5c4a1, density: .0045, skyPreset: 'hogwarts', interior: true }
+};
+
+const loc = (id, label, kind, bounds, spawns, extra = {}) => ({
+  id, label, kind,
+  bounds: { x0: bounds[0], z0: bounds[1], x1: bounds[2], z1: bounds[3] },
+  spawns: [{ x: spawns[0], z: spawns[1], y: spawns[2] }, { x: spawns[3], z: spawns[4], y: spawns[5] }],
+  ...extra
+});
+
+export const WORLDS = {
+  dbz: {
+    id: 'dbz', label: 'Dragon Ball Z', subtitle: 'World Tournament Island', paletteKey: 'dbz',
+    build: buildDbz, ground: 3.2,
+    locations: [
+      loc('dbz_grand_prize', 'Grand Prize Stage', 'arena', [-26, -26, 26, 26], [-9, -7, 4.05, 9, 7, 4.05], { ground: 4.05 }),
+      loc('dbz_main_entrance', 'Main Entrance', 'gate', [-18, -46, 18, -24], [-7, -40, 3.2, 7, -34, 3.2]),
+      loc('dbz_west_city', 'West City Streets', 'district', [-122, -44, -54, 44], [-78, -6, 3.2, -96, 6, 3.2]),
+      loc('dbz_capsule_corp', 'Capsule Corporation', 'campus', [-82, -98, -42, -50], [-62, -96, 3.55, -62, -52, 3.55], { ground: 3.55 }),
+      loc('dbz_dojo', 'Martial Arts Dojo', 'dojo', [-11, 52, 11, 66], [-6, 56, 3.8, 6, 58, 3.8], { ground: 3.8 }),
+      loc('dbz_training', 'Training Grounds', 'grounds', [28, -84, 92, -28], [44, -70, 3.2, 70, -46, 3.2]),
+      loc('dbz_cliffs', 'Ring Out Cliffs', 'cliff', [-74, -124, 74, -78], [-14, -98, 3.2, 14, -104, 3.2], { ringOut: true, fallBelow: -2 }),
+      loc('dbz_king_kai', "King Kai's Planet", 'sky-island', [-14, -146, 14, -118], [-5, -128, 62.0, 5, -132, 62.0], { ringOut: true, fallBelow: 40, ground: 62.0 })
+    ]
+  },
+  asgard: {
+    id: 'asgard', label: 'Asgard', subtitle: 'Home of the Æsir', paletteKey: 'asgard',
+    build: buildAsgard, ground: 0.5,
+    locations: [
+      loc('asgard_palace_court', 'Royal Palace Court', 'palace', [-42, -78, 42, -32], [-10, -40, 0.5, 10, -34, 0.5]),
+      loc('asgard_marketplace', 'Marketplace Plaza', 'district', [30, -6, 96, 54], [50, 6, 0.5, 72, 30, 0.5]),
+      loc('asgard_rainbow_bridge', 'Rainbow Bridge', 'bridge', [-9, 34, 9, 132], [0, 44, 1.75, 0, 60, 1.75], { ringOut: true, fallBelow: -8, ground: 1.75 }),
+      loc('asgard_bifrost', 'Bifrost Realm', 'arena', [-26, 132, 26, 164], [-8, 142, 1.75, 8, 154, 1.75], { ringOut: true, fallBelow: -8, ground: 1.75 }),
+      loc('asgard_floating_isle', 'Outer Floating Isle', 'sky-island', [-162, 36, -112, 92], [-140, 58, 24.5, -128, 72, 24.5], { ringOut: true, fallBelow: 2, ground: 24.5 })
+    ]
+  },
+  deathstar: {
+    id: 'deathstar', label: 'Death Star', subtitle: 'Imperial Battle Station', paletteKey: 'deathstar',
+    build: buildDeathStar, ground: 0,
+    locations: [
+      loc('deathstar_command_deck', 'Command Deck', 'interior', [-30, -116, 30, -70], [-12, -84, 0, 12, -80, 0], { interior: true }),
+      loc('deathstar_hangar', 'Main Hangar', 'interior', [-48, 12, 48, 88], [-16, 40, 0, 16, 52, 0], { interior: true }),
+      loc('deathstar_corridor', 'Corridor Junction', 'interior', [-13, -74, 13, 4], [0, -58, 0, 0, -44, 0], { interior: true }),
+      loc('deathstar_reactor', 'Reactor Core', 'interior', [-30, -178, 30, -126], [-12, -152, 0, 12, -146, 0], { interior: true }),
+      loc('deathstar_superlaser', 'Superlaser Control', 'interior', [56, -176, 104, -128], [72, -152, 0, 88, -148, 0], { interior: true }),
+      loc('deathstar_escape_pods', 'Escape Pod Bay', 'interior', [-70, -30, -50, 2], [-66, -24, 0, -66, -4, 0], { interior: true })
+    ]
+  },
+  hogwarts: {
+    id: 'hogwarts', label: 'Hogwarts', subtitle: 'Castle and Grounds', paletteKey: 'hogwarts',
+    build: buildHogwarts, ground: 0.3,
+    locations: [
+      loc('hogwarts_great_hall', 'Great Hall', 'interior', [-19, -132, 19, -64], [-8, -100, 0.57, 8, -92, 0.57], { interior: true, ground: 0.57 }),
+      loc('hogwarts_courtyard', 'Castle Courtyard', 'courtyard', [-30, -62, 30, -30], [-9, -52, 0.3, 9, -46, 0.3]),
+      loc('hogwarts_viaduct', 'Viaduct Bridge', 'bridge', [-6, -30, 6, 22], [0, -22, 1.25, 0, -10, 1.25], { ringOut: true, fallBelow: -6, ground: 1.25 }),
+      loc('hogwarts_quidditch', 'Quidditch Pitch', 'arena', [58, -12, 132, 56], [82, 16, 0.5, 112, 34, 0.5], { ground: 0.5 }),
+      loc('hogwarts_forest', 'Forbidden Forest', 'forest', [-124, -78, -42, -16], [-96, -56, 0.3, -70, -34, 0.3]),
+      loc('hogwarts_boathouse', 'Black Lake Boathouse', 'dock', [54, 101, 70, 115], [58, 105, 0.6, 66, 111, 0.6], { ground: 0.6 }),
+      loc('hogwarts_hogsmeade', 'Hogsmeade Village', 'village', [-122, 32, -48, 92], [-96, 50, 0.3, -56, 70, 0.3])
+    ]
+  }
+};
+
+export const WORLD_ORDER = ['dbz', 'asgard', 'deathstar', 'hogwarts'];
+
+// Layouts are assembled once: bounds and spawns from the battle location, collision volumes
+// derived from the solid parts of the world it belongs to.
+const worldPlans = {};
+export function worldParts(worldId) {
+  if (!worldPlans[worldId]) {
+    const world = WORLDS[worldId];
+    worldPlans[worldId] = world ? world.build() : [];
+  }
+  return worldPlans[worldId];
+}
+
+/** Collision volumes for solid parts. `bottom` lets overhead decks be walked under. */
+export function blocksFromParts(parts) {
+  const blocks = [];
+  for (const p of parts) {
+    if (!p.solid) continue;
+    const [x, y, z] = p.p;
+    let top, bottom;
+    if (p.t === 'box') {
+      const [, h] = p.s;
+      top = y + h / 2;
+      bottom = p.bottom != null ? p.bottom : y - h / 2;
+      blocks.push({ x0: x - p.s[0] / 2, x1: x + p.s[0] / 2, z0: z - p.s[2] / 2, z1: z + p.s[2] / 2, top, bottom });
+    } else if (p.t === 'cyl' || p.t === 'cone') {
+      const spec = p.t === 'cyl' ? p.s : [p.s[0], p.s[0], p.s[1]];
+      const [rt, rb, h] = spec;
+      top = y + h / 2;
+      bottom = p.bottom != null ? p.bottom : y - h / 2;
+      blocks.push({ x, z, r: Math.max(rt, rb), top, bottom });
+    } else if (p.t === 'sphere') {
+      const r = p.s[0] * (p.sy || 1);
+      if (!p.solid) continue;
+      top = y + r;
+      bottom = p.bottom != null ? p.bottom : y - r;
+      blocks.push({ x, z, r: p.s[0], top, bottom });
+    }
+  }
+  return blocks;
+}
+
+export const WORLD_LOCATIONS = WORLD_ORDER.flatMap(worldId => {
+  const world = WORLDS[worldId];
+  return world.locations.map(location => {
+    const palette = PALETTES[world.paletteKey];
+    const theme = { ...THEMES[worldId], ...(location.theme || {}) };
+    return {
+      ...location,
+      world: worldId,
+      worldLabel: world.label,
+      worldSubtitle: world.subtitle,
+      interior: Boolean(location.interior ?? theme.interior),
+      paletteKey: world.paletteKey,
+      palette,
+      theme,
+      ground: location.ground ?? world.ground,
+      layout: {
+        label: `${world.label} · ${location.label}`,
+        kind: location.kind,
+        bounds: location.bounds,
+        ground: location.ground ?? world.ground,
+        spawns: location.spawns,
+        ringOut: Boolean(location.ringOut),
+        fallBelow: location.fallBelow,
+        blocks: blocksFromParts(worldParts(worldId))
+      }
+    };
+  });
+});
+
+export const WORLD_LOCATION_KEYS = WORLD_LOCATIONS.map(location => location.id);
+
+export function worldLocation(id) {
+  return WORLD_LOCATIONS.find(location => location.id === id) || null;
+}
+
+export function isWorldLocation(id) {
+  return Boolean(worldLocation(id));
+}
+
+/** Worlds grouped for the setup screen, with their selectable battle locations. */
+export function worldGroups() {
+  return WORLD_ORDER.map(worldId => {
+    const world = WORLDS[worldId];
+    return {
+      id: worldId,
+      label: world.label,
+      subtitle: world.subtitle,
+      locations: WORLD_LOCATIONS.filter(location => location.world === worldId).map(location => ({
+        key: location.id,
+        label: location.label,
+        kind: location.kind,
+        width: Math.round(location.bounds.x1 - location.bounds.x0),
+        depth: Math.round(location.bounds.z1 - location.bounds.z0)
+      }))
+    };
+  });
+}
+
+export const WORLD_MATERIAL_SPECS = {
+  water: { roughness: .12, metalness: .25, transparent: true, opacity: .88 },
+  glass: { roughness: .08, metalness: .3, transparent: true, opacity: .38 },
+  glassWarm: { roughness: .2, metalness: .1, emissive: .55 },
+  glassCool: { roughness: .2, metalness: .1, emissive: .4 },
+  glassBlue: { roughness: .1, metalness: .35, emissive: .3 },
+  flame: { emissive: 1.6 },
+  crystal: { roughness: .18, metalness: .2, emissive: .9 },
+  crystalGlow: { roughness: .1, metalness: .1, transparent: true, opacity: .45, emissive: 1.2 },
+  star: { emissive: 1.4 },
+  core: { emissive: 1.8 },
+  glowBlue: { emissive: 1.6 },
+  glowRed: { emissive: 1.5 },
+  glowGreen: { emissive: 1.5 },
+  clock: { emissive: .3 },
+  cloud: { roughness: 1, transparent: true, opacity: .92 },
+  gold: { metalness: .5, roughness: .42 },
+  goldLight: { metalness: .45, roughness: .46 },
+  metal: { metalness: .82, roughness: .3 },
+  metalDark: { metalness: .7, roughness: .4 },
+  steel: { metalness: .9, roughness: .22 },
+  marble: { roughness: .42, metalness: .12 },
+  stone: { roughness: .82, metalness: .05 },
+  stoneLight: { roughness: .74, metalness: .04 },
+  stoneDark: { roughness: .88, metalness: .04 },
+  rock: { roughness: .96, metalness: .02 },
+  cliff: { roughness: .95, metalness: .02 },
+  moss: { roughness: 1 },
+  grass: { roughness: 1 },
+  leaf: { roughness: .95 },
+  trunk: { roughness: 1 },
+  wood: { roughness: .85 },
+  brick: { roughness: .9 },
+  cobble: { roughness: .92 },
+  sand: { roughness: 1 },
+  road: { roughness: .95 },
+  floor: { roughness: .55, metalness: .45 },
+  floorCommand: { roughness: .5, metalness: .5 },
+  floorHangar: { roughness: .6, metalness: .4 },
+  floorCorridor: { roughness: .55, metalness: .45 },
+  floorStripe: { roughness: .7, metalness: .1 },
+  floorHall: { roughness: .8, metalness: .05 },
+  pitch: { roughness: .95 },
+  panel: { roughness: .5, metalness: .5 },
+  crate: { roughness: .8, metalness: .1 },
+  dark: { roughness: .6, metalness: .3 }
+};

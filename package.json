@@ -10,6 +10,8 @@
     "validate:assets": "node scripts/validate-assets.mjs",
     "validate:animations": "node scripts/validate-animations.mjs",
     "test:combat": "node scripts/test-combat.mjs",
+    "test:worlds": "node scripts/test-worlds.mjs",
+    "test:worlds:browser": "node scripts/test-worlds-browser.mjs",
     "test:gameplay": "node scripts/test-gameplay.mjs",
     "test:smoke": "node scripts/browser-smoke.mjs",
     "audit:roster": "node scripts/audit-roster.mjs"

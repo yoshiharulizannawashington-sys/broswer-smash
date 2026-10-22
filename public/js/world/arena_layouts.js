@@ -15,12 +15,16 @@
 //   spawns     where each fighter starts, rather than one shared offset for all maps.
 //   camera     distance hint used by the selection screen for its map cards.
 
+import { WORLD_LOCATIONS } from '../worlds/world_catalog.js';
+
 export const STEP_HEIGHT = 0.42;
+/** How tall a fighter stands, used to decide whether a raised block is overhead or a wall. */
+export const BODY_HEIGHT = 1.9;
 
 const k = (x0, z0, x1, z1, top) => ({ x0, z0, x1, z1, top });
 const c = (x, z, r, top) => ({ x, z, r, top });
 
-export const ARENA_LAYOUTS = Object.freeze({
+const LEGACY_LAYOUTS = {
   valley: {
     label: 'Valley of Echoes',
     kind: 'open',
@@ -144,7 +148,14 @@ export const ARENA_LAYOUTS = Object.freeze({
       ])
     ]
   }
-});
+};
+
+// The four reference worlds contribute one layout per battle location. Their collision
+// volumes come from the world geometry itself (see worlds/world_catalog.js), so a stage
+// inside a world shares the same walls, terraces and catwalks as the rest of the map.
+const WORLD_LAYOUTS = Object.fromEntries(WORLD_LOCATIONS.map(location => [location.id, location.layout]));
+
+export const ARENA_LAYOUTS = Object.freeze({ ...LEGACY_LAYOUTS, ...WORLD_LAYOUTS });
 
 const DEFAULT_KEY = 'valley';
 
@@ -174,6 +185,9 @@ export function groundHeightAt(x, z, layout, feetY = 0, step = STEP_HEIGHT) {
 /** True when the point is inside a solid volume the fighter's feet cannot stand on. */
 function insideSolid(block, x, z, feetY, step) {
   if (block.top == null || feetY >= block.top - step) return 0;
+  // A deck, catwalk or roof above the fighter is not a wall: only collide with a raised
+  // volume when the fighter's body actually reaches its underside.
+  if (block.bottom != null && feetY + BODY_HEIGHT <= block.bottom) return 0;
   if (block.r != null) {
     const dx = x - block.x, dz = z - block.z;
     const d = Math.hypot(dx, dz);
@@ -233,6 +247,7 @@ export function clampToBounds(position, velocity, radius, layout) {
 export function isOutOfBounds(position, layout, margin = 4) {
   const b = layout?.bounds;
   if (!b || !position) return false;
+  if (layout.fallBelow != null && position.y < layout.fallBelow) return true;
   return position.x < b.x0 - margin || position.x > b.x1 + margin
     || position.z < b.z0 - margin || position.z > b.z1 + margin;
 }
@@ -240,7 +255,13 @@ export function isOutOfBounds(position, layout, margin = 4) {
 /** Spawn positions in metres, mirrored either side of the arena's centre line. */
 export function spawnPoints(layout) {
   const spawns = layout?.spawns || [{ x: -6, z: 0 }, { x: 6, z: 0 }];
-  return spawns.map(spawn => ({ x: spawn.x, z: spawn.z, y: groundHeightAt(spawn.x, spawn.z, layout) }));
+  // A layout may pin a spawn to an elevated deck (city roof, sky island, bridge deck);
+  // otherwise the walkable height at that point is used.
+  return spawns.map(spawn => ({
+    x: spawn.x,
+    z: spawn.z,
+    y: spawn.y != null ? spawn.y : groundHeightAt(spawn.x, spawn.z, layout)
+  }));
 }
 
 /** Human-readable footprint, used by the arena selection cards. */
