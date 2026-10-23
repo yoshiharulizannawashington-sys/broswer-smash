@@ -541,7 +541,11 @@ function applyWorldStage(key){
  // Enclosed rooms get a steeper, higher shot: a shallow pitch over a long interior filled
  // the frame with table tops instead of the room.
  const tiltByWorld={asgard:.16,hogwarts:.07,deathstar:.1};
- smashCamera.setStageTilt?.(tiltByWorld[location.world]??.19,1.45);
+ // A stage can override its shot: tight interiors need a shorter reach than the default
+ // wide pull-back, or the camera ends up outside the room looking at its roof.
+ const camHint=location.camera||{};
+ smashCamera.setStageTilt?.(camHint.tilt??tiltByWorld[location.world]??.19,camHint.scale??1.45);
+ smashCamera.setStageYaw?.(camHint.yaw??0);
  smashCamera.setStageBounds?.(location.layout.bounds,location.layout.blocks);
  floor.visible=false;platform.visible=false;mapDecor.visible=false;
  scene.background.setHex(location.theme.sky);

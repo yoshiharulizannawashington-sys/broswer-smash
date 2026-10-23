@@ -316,6 +316,116 @@ function buildDbz() {
   for (let i = 0; i < 14; i++) {
     ball(parts, (rng() - .5) * 300, 34 + rng() * 26, -10 + (rng() - .5) * 300, 8 + rng() * 8, 'cloud', { sx: 2.4, sy: .5, seg: 8 });
   }
+
+  // ---- South peninsula: rocky training landscape ---------------------------
+  // A second landmass joined by a causeway, with stacked mesas and a ledge to fight on. The
+  // elevation is real: every tier is a solid volume the movement code can stand on.
+  cyl(parts, 0, -8, 136, 40, 47, 18, 'rock', solid({ seg: 22, bottom: -20 }));
+  cyl(parts, 0, 2.1, 136, 37, 39, 2.2, 'grass', solid({ seg: 22, bottom: 1.0 }));
+  box(parts, 0, GROUND + .03, 100, 9, .06, 30, 'road');
+  for (let i = 0; i < 4; i++) {
+    for (const side of [-1, 1]) {
+      cyl(parts, side * 4.6, GROUND + 1.2, 82 + i * 8, .22, .28, 2.4, 'stoneDark', { seg: 6 });
+      ball(parts, side * 4.6, GROUND + 2.6, 82 + i * 8, .34, 'glassWarm', { seg: 6 });
+    }
+  }
+  cyl(parts, -20, GROUND + 2.6, 128, 7.4, 8.6, 5.2, 'rock', solid({ seg: 12, bottom: GROUND }));
+  cyl(parts, -20, GROUND + 5.4, 128, 7.8, 7.8, .5, 'grassDark', solid({ seg: 12, bottom: GROUND + 5.1 }));
+  cyl(parts, 18, GROUND + 3.6, 144, 6, 7, 7.2, 'rock', solid({ seg: 12, bottom: GROUND }));
+  cyl(parts, 18, GROUND + 7.4, 144, 6.4, 6.4, .5, 'grassDark', solid({ seg: 12, bottom: GROUND + 7.1 }));
+  stairs(parts, -9, 133, { steps: 7, width: 4, rise: .72, run: 1, base: GROUND, mat: 'rock', dir: 'z' });
+  stairs(parts, 13, 136, { steps: 9, width: 4, rise: .72, run: 1, base: GROUND, mat: 'rock', dir: 'z' });
+  // Rock arch landmark and a spring pool.
+  for (const side of [-1, 1]) box(parts, side * 9, GROUND + 4, 152, 2.4, 8, 2.4, 'rock', solid({ bottom: GROUND }));
+  box(parts, 0, GROUND + 8.2, 152, 20, 1.6, 2.6, 'rock');
+  ball(parts, 0, GROUND + 9.4, 152, 2.4, 'rock', { sx: 2.2, sy: .5, seg: 10 });
+  cyl(parts, 11, GROUND + .1, 126, 5, 5.4, .5, 'stoneDark', solid({ seg: 14, bottom: GROUND }));
+  cyl(parts, 11, GROUND + .45, 126, 4.4, 4.4, .18, 'water', { seg: 14 });
+  for (let i = 0; i < 10; i++) {
+    const a = i * TAU / 10;
+    rock(parts, Math.cos(a) * 29, 136 + Math.sin(a) * 26, .9 + rng() * 1.1, GROUND, rng);
+  }
+
+  // ---- Capsule Corporation research lab ------------------------------------
+  // An offshore research platform east of the island, reached by a road bridge: a clean
+  // white shell with a glass front, capsule pods, a test chamber and a gantry. The deck is
+  // its own collision surface, so the lab stands over the sea instead of re-skinning land.
+  const lx = 86, lz = 100;
+  cyl(parts, lx, -7, lz, 26, 31, 14, 'rock', solid({ seg: 24, bottom: -20 }));
+  box(parts, lx, 2.9, lz, 36, .6, 32, 'stoneLight', solid({ bottom: 2.5 }));
+  // Road bridge from the island shore to the platform.
+  box(parts, 58, 2.86, lz, 23, .5, 7, 'road');
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, 48 + i * 4, -1.5, lz, .5, .62, 9, 'stoneDark', { seg: 8 });
+    for (const side of [-1, 1]) ball(parts, 48 + i * 4, 3.3, lz + side * 3.2, .28, 'glassWarm', { seg: 6 });
+  }
+  // Shell: four walls with a glazed south front and a doorway between platform and lab.
+  for (const [x, z, w, d] of [[lx - 17, lz, 1.6, 30], [lx + 17, lz, 1.6, 30], [lx, lz - 15, 35.6, 1.6]]) {
+    box(parts, x, GROUND + 4.7, z, w, 9.4, d, 'panel', solid({ bottom: GROUND }));
+  }
+  for (const side of [-1, 1]) box(parts, lx + side * 12.5, GROUND + 4.7, lz + 15, 10.6, 9.4, 1.6, 'panel', solid({ bottom: GROUND }));
+  box(parts, lx, GROUND + 3.4, lz + 15, 9, 6.8, 1.6, 'glassBlue');
+  box(parts, lx, GROUND + 9.9, lz, 38, .7, 34, 'panel', solid({ bottom: GROUND + 9.5 }));
+  box(parts, lx, GROUND + 10.3, lz, 26, .3, 22, 'glassBlue');
+  for (const side of [-1, 1]) {
+    box(parts, lx + side * 16.4, GROUND + 5.2, lz, .3, 6, 24, 'glassBlue');
+    for (let i = 0; i < 5; i++) box(parts, lx + side * 16.2, GROUND + 5.2, lz - 10 + i * 5, .5, 7, 1, 'stoneDark');
+  }
+  // Test chamber, consoles and capsule pods.
+  cyl(parts, lx + 7, GROUND + 2.4, lz - 6, 4.2, 4.2, 4.8, 'glassCool', { seg: 18 });
+  cyl(parts, lx + 7, GROUND + 2.4, lz - 6, 4.6, 4.6, .5, 'panel', solid({ seg: 18, bottom: GROUND }));
+  ball(parts, lx + 7, GROUND + 3.4, lz - 6, 1.8, 'glassBlue', { seg: 12 });
+  for (let i = 0; i < 4; i++) {
+    const x = lx - 11 + i * 7.4;
+    box(parts, x, GROUND + 1.1, lz + 9, 4.4, 1.5, 2.2, 'panel', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 1.95, lz + 8.3, 3.6, .18, 1.5, 'glassBlue');
+    box(parts, x, GROUND + 2.2, lz + 8.3, 1, .1, .7, 'glassWarm');
+  }
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      cyl(parts, lx + side * 13.5, GROUND + 2.4, lz + 2 - i * 5, 1.4, 1.4, 4.8, 'panel', { seg: 12 });
+      ball(parts, lx + side * 13.5, GROUND + 5, lz + 2 - i * 5, 1.4, 'glassBlue', { seg: 10 });
+      box(parts, lx + side * 13.5, GROUND + .6, lz + 2 - i * 5, 3, 1.2, 3, 'stoneDark', solid({ bottom: GROUND }));
+    }
+  }
+  catwalk(parts, lx, GROUND + 3.4, lz + 12, 26, 3.2, { axis: 'x' });
+  stairs(parts, lx - 14, lz + 5, { steps: 5, width: 3.4, rise: .68, run: 1, base: GROUND, mat: 'panel', dir: 'z' });
+  for (let i = 0; i < 8; i++) box(parts, lx - 15 + i * 4.2, GROUND + .04, lz - 8, 2.2, .06, 24, 'floorStripe');
+  cyl(parts, lx, GROUND + 12.6, lz - 2, .8, 1.2, 3.4, 'glassBlue', { seg: 10 });
+  box(parts, lx, GROUND + 11.4, lz - 2, 7, 2.4, 7, 'panel');
+
+  // ---- West City backstreets ----------------------------------------------
+  // A waterfront block west of the island, joined to the city by a bridge: shopfronts, a
+  // service alley, fire escapes and an elevated walkway. New geometry on its own deck, not
+  // a re-skinned copy of the first street.
+  const bx = -120, bz = 96;
+  cyl(parts, bx, -7, bz, 28, 33, 14, 'rock', solid({ seg: 24, bottom: -20 }));
+  box(parts, bx, 2.9, bz, 44, .6, 36, 'stone', solid({ bottom: 2.5 }));
+  box(parts, bx, GROUND + .03, bz, 20, .06, 34, 'road');
+  for (let i = 0; i < 5; i++) box(parts, bx - 9 + i * 4.5, GROUND + .04, bz, .3, .07, 33, 'stoneDark');
+  // City bridge heading east to the island shore.
+  box(parts, -77, 2.86, bz, 42, .5, 7, 'stone');
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, -96 + i * 7, -1.5, bz, .7, .8, 9, 'stoneDark', { seg: 8 });
+    for (const side of [-1, 1]) ball(parts, -96 + i * 7, 3.3, bz + side * 3.2, .28, 'glassWarm', { seg: 6 });
+  }
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      const x = bx + side * 15, z = bz - 11 + i * 11;
+      building(parts, x, z, { w: 9, d: 8.6, h: 7 + ((i + (side > 0 ? 1 : 0)) % 3) * 3, base: GROUND, mat: i % 2 ? 'buildingWarm' : 'buildingBlue', roof: i % 2 ? 'roof' : 'roofBlue', win: 'glassWarm', winRows: 2 });
+      box(parts, x - side * 4.7, GROUND + 2.4, z, .3, 2.6, 5.6, i % 2 ? 'banner' : 'bannerBlue');
+      box(parts, x - side * 5.6, GROUND + 3.1, z, 2.6, .2, 7.4, 'wood');
+      box(parts, x - side * 6.4, GROUND + .8, z + 2.6, 1.2, 1.4, 1.2, 'crate', solid({ bottom: GROUND }));
+      for (let f = 0; f < 3; f++) box(parts, x - side * 4.6, GROUND + 3.2 + f * 2.4, z - 2, 1.6, .16, 3.2, 'metal');
+    }
+  }
+  catwalk(parts, bx, GROUND + 3.6, bz - 12, 30, 3, { axis: 'x' });
+  for (const side of [-1, 1]) stairs(parts, bx + side * 12, bz - 8, { steps: 4, width: 3.2, rise: .85, run: 1, base: GROUND, mat: 'metal', dir: 'x' });
+  for (let i = 0; i < 5; i++) {
+    cyl(parts, bx - 12 + i * 6, GROUND + 2.2, bz + 15.6, .18, .24, 4.4, 'stoneDark', { seg: 6 });
+    ball(parts, bx - 12 + i * 6, GROUND + 4.6, bz + 15.6, .3, 'glassWarm', { seg: 6 });
+  }
+  rock(parts, bx + 18, bz + 14, 1.1, GROUND, rng, 'moss');
   return parts;
 }
 
@@ -485,6 +595,90 @@ function buildAsgard() {
       ball(parts, side * 7.9, GROUND + 3.8, z, .38, 'flame', { seg: 8 });
     }
     box(parts, 0, GROUND + .95, z, 9, .06, .5, 'crystalGlow');
+  }
+
+  // Throne hall: the palace's interior wing, standing on its own rock spur behind the
+  // ziggurat. It is a nave, 40 m wide and 64 m long, with the throne at the north end, so
+  // the pulled-back camera looks down the room at the dais instead of into a side wall.
+  const hy0 = GROUND, hz0 = -111, hz1 = -175, hcz = (hz0 + hz1) / 2;
+  box(parts, 0, -12, hcz, 46, 20, 70, 'rock', solid({ bottom: -26 }));
+  box(parts, 0, -6, hcz, 44, 13, 68, 'marble', solid({ bottom: -20 }));
+  box(parts, 0, hy0 - .4, hcz, 40, .8, 66, 'marble', solid({ bottom: hy0 - .8 }));
+  // Side walls, north wall (behind the throne) and the south wall with its entrance.
+  for (const side of [-1, 1]) box(parts, side * 19, hy0 + 9, hcz, 1.8, 18, 64, 'marble', solid({ bottom: hy0 }));
+  box(parts, 0, hy0 + 9, hz1 + 1, 39.8, 18, 1.8, 'marble', solid({ bottom: hy0 }));
+  for (const side of [-1, 1]) box(parts, side * 13, hy0 + 9, hz0 + 1, 14, 18, 1.8, 'marble', solid({ bottom: hy0 }));
+  box(parts, 0, hy0 + 16, hz0 + 1, 13, 4, 1.8, 'marble', solid({ bottom: hy0 + 14 }));
+  box(parts, 0, hy0 + 9, hz0 + .2, 9, 14, .4, 'glassWarm');
+  // Gold-coffered ceiling, beams and cornice.
+  box(parts, 0, hy0 + 18.6, hcz, 40, .9, 64, 'gold', solid({ bottom: hy0 + 18.2 }));
+  box(parts, 0, hy0 + 17.6, hcz, 34, .5, 58, 'stoneDark');
+  for (let i = 0; i < 11; i++) box(parts, 0, hy0 + 17.2, hz0 - 4 - i * 5.6, 34, .6, .7, 'gold');
+  for (const side of [-1, 1]) box(parts, side * 15.5, hy0 + 17.2, hcz, .7, .6, 58, 'gold');
+  // Colonnade: four column pairs down the nave, gold capitals, lit sconces.
+  for (let i = 0; i < 4; i++) {
+    const z = hz0 - 12 - i * 13;
+    for (const side of [-1, 1]) {
+      const x = side * 13;
+      cyl(parts, x, hy0 + 8, z, 1.15, 1.4, 16, 'marble', solid({ bottom: hy0, seg: 12 }));
+      box(parts, x, hy0 + 16.4, z, 3.2, .9, 3.2, 'gold');
+      box(parts, x, hy0 + .5, z, 3, 1, 3, 'goldLight', solid({ bottom: hy0 }));
+      for (const a of [0, Math.PI / 2]) box(parts, x + Math.cos(a) * 1.9, hy0 + 15.4, z + Math.sin(a) * 1.9, 1.6, .5, 1.6, 'gold');
+      cyl(parts, side * 16.4, hy0 + 5, z, .22, .3, .9, 'gold', { seg: 6 });
+      ball(parts, side * 16.4, hy0 + 5.8, z, .34, 'flame', { seg: 8 });
+      banner(parts, x, hy0 + 9.4, z + 1.2, 2.6, 6.4, side < 0 ? 'bannerBlue' : 'cloth', side * .04);
+    }
+  }
+  // Throne dais at the north end: three steps, a gold seat and a great window behind it.
+  for (let i = 0; i < 3; i++) {
+    box(parts, 0, hy0 + .3 + i * .5, hz1 + 8 + i * 1.7, 20 - i * 2.4, .5, 7.4 - i * 1.5, 'goldLight', solid({ bottom: hy0 }));
+  }
+  box(parts, 0, hy0 + 3.6, hz1 + 4.4, 5.4, 4.4, 3.2, 'gold', solid({ bottom: hy0 + 1.6 }));
+  box(parts, 0, hy0 + 4.6, hz1 + 3.2, 4.4, 3.2, .8, 'goldLight');
+  box(parts, 0, hy0 + 9, hz1 + 2.2, 24, 14, .4, 'glassWarm');
+  for (let i = 0; i < 6; i++) box(parts, -10 + i * 4, hy0 + 9, hz1 + 2.5, .5, 14, .5, 'gold');
+  for (const side of [-1, 1]) {
+    box(parts, side * 12.4, hy0 + 2.4, hz1 + 5.6, 2.2, 4.2, 2.2, 'marble', solid({ bottom: hy0 }));
+    ball(parts, side * 12.4, hy0 + 5.2, hz1 + 5.6, 1.1, 'gold', { seg: 10 });
+  }
+  // Processional carpet from the entrance to the dais.
+  box(parts, 0, hy0 + .02, hcz - 3, 5.2, .04, 44, 'banner');
+  for (let i = 0; i < 6; i++) box(parts, 0, hy0 + .04, hz1 + 12 + i * 7, 6.2, .03, .4, 'gold');
+  // Side-chamber alcoves between the columns, each with a lit arch behind a marble jamb.
+  for (let i = 0; i < 3; i++) {
+    const z = hz0 - 18 - i * 13;
+    for (const side of [-1, 1]) {
+      box(parts, side * 17.6, hy0 + 6, z, 3, 10, 6.4, 'stoneDark', solid({ bottom: hy0 }));
+      box(parts, side * 16.3, hy0 + 6, z, .4, 8, 4.8, 'glassWarm');
+      torus(parts, side * 15.9, hy0 + 10.5, z, 2.6, .3, 'gold', { ry: Math.PI / 2 });
+    }
+  }
+  // Balcony gallery along both walls, reached by stairs at the south corners.
+  for (const side of [-1, 1]) {
+    catwalk(parts, side * 16.8, 9.2, hcz, 5, 44, { axis: 'z', mat: 'marble' });
+    railing(parts, side * 14.4, 9.4, hcz, 44, 'z', 'gold');
+    stairs(parts, side * 16.8, hz0 - 8, { steps: 9, width: 4, rise: .95, run: 1, base: hy0, mat: 'marble', dir: 'z' });
+    // Tall windows above the gallery, so the hall reads as part of the city outside.
+    for (let i = 0; i < 4; i++) {
+      const z = hz0 - 12 - i * 13;
+      box(parts, side * 18.9, hy0 + 12.6, z, .4, 6, 7, 'glassWarm');
+      box(parts, side * 18.7, hy0 + 12.6, z, .3, 6.6, .6, 'gold');
+    }
+  }
+  // Braziers along the carpet and the floor mosaic under the dais.
+  for (let i = 0; i < 4; i++) {
+    for (const side of [-1, 1]) {
+      const z = hz1 + 14 + i * 12;
+      cyl(parts, side * 8, hy0 + 1.6, z, .3, .45, 3.2, 'gold', { seg: 8 });
+      ball(parts, side * 8, hy0 + 3.5, z, .42, 'flame', { seg: 8 });
+    }
+  }
+  for (const side of [-1, 1]) banner(parts, side * 18.2, hy0 + 10, hz1 + 14, 3.4, 8, side < 0 ? 'bannerBlue' : 'cloth', side * .04);
+  torus(parts, 0, hy0 + .04, hz1 + 10, 9, .3, 'gold', { rx: Math.PI / 2 });
+  torus(parts, 0, hy0 + .04, hz1 + 10, 5.5, .22, 'gold', { rx: Math.PI / 2 });
+  for (let i = 0; i < 8; i++) {
+    const a = i * TAU / 8;
+    box(parts, Math.cos(a) * 7.2, hy0 + .04, hz1 + 10 + Math.sin(a) * 7.2, .5, .05, 3.4, 'gold', { ry: -a });
   }
 
   // Bifrost: dome of light at the bridge's end.
@@ -1243,15 +1437,16 @@ export const PALETTES = {
     roofBlue: '#4f7f9c', wood: '#7a5433', water: '#2f7ba8', cloud: '#eef5f9',
     leaf: '#3f7a44', trunk: '#5a4230', glassWarm: '#ffd79a', glassBlue: '#8fdcff',
     banner: '#d8452f', bannerBlue: '#2f6fd0', skin: '#d9a982', cloth: '#3f6f8c', cloth2: '#c7b26a',
-    metal: '#8d9099', crate: '#8a6a44', flame: '#ffd9a0', dark: '#2a2a2e'
+    metal: '#8d9099', crate: '#8a6a44', flame: '#ffd9a0', dark: '#2a2a2e',
+    panel: '#cfd8e0', glassCool: '#bfe9ff', steel: '#9aa4b2', floorStripe: '#d5dbe2', moss: '#5f7a45'
   },
   asgard: {
     rock: '#4d4a52', marble: '#b4b1a8', gold: '#d7aa42', goldLight: '#f3d77d',
     stone: '#918e86', stoneDark: '#5f5c56', roofGold: '#a8792c', sand: '#c2b48e',
     wood: '#6b4b30', water: '#54d6ff', crystal: '#7fe8ff', crystalGlow: '#5fd0ff', grass: '#4c7a4a',
     leaf: '#4c7a4a', trunk: '#4a3527', glassWarm: '#ffe6b0', roof: '#6f6a62',
-    bannerBlue: '#2f6fd0', cloth: '#c9b26a', cloth2: '#3f6f8c', skin: '#d9a982', cloud: '#f2f7ff',
-    flame: '#ffe6b0', crate: '#7c5c3e', metal: '#9aa0a8', panel: '#7d8188'
+    bannerBlue: '#2f6fd0', banner: '#a8272f', cloth: '#c9b26a', cloth2: '#3f6f8c', skin: '#d9a982', cloud: '#f2f7ff',
+    flame: '#ffe6b0', crate: '#7c5c3e', metal: '#9aa0a8', panel: '#7d8188', steel: '#a3a8b0', moss: '#4f7140'
   },
   deathstar: {
     metal: '#5b6572', metalDark: '#333a45', floor: '#4a525d', floorCommand: '#414956',
@@ -1302,10 +1497,17 @@ export const WORLDS = {
       ] }),
       loc('dbz_west_city', 'West City Streets', 'district', [-122, -44, -54, 44], [-78, -6, 3.2, -96, 6, 3.2], { exits: [
         { x: -56, z: -34, to: 'dbz_main_entrance', label: 'Main Entrance' },
-        { x: -80, z: -42, to: 'dbz_capsule_corp', label: 'Capsule Corporation' }
+        { x: -80, z: -42, to: 'dbz_capsule_corp', label: 'Capsule Corporation' },
+        { x: -58, z: 36, to: 'dbz_backstreets', label: 'West City Backstreets' }
       ] }),
-      loc('dbz_capsule_corp', 'Capsule Corporation', 'campus', [-82, -98, -42, -50], [-62, -96, 3.55, -62, -52, 3.55], { ground: 3.55, exits: [{ x: -46, z: -52, to: 'dbz_west_city', label: 'West City Streets' }] }),
-      loc('dbz_dojo', 'Martial Arts Dojo', 'dojo', [-11, 52, 11, 66], [-6, 56, 3.8, 6, 58, 3.8], { ground: 3.8, exits: [{ x: 0, z: 54, to: 'dbz_grand_prize', label: 'Grand Prize Stage' }] }),
+      loc('dbz_capsule_corp', 'Capsule Corporation', 'campus', [-82, -98, -42, -50], [-62, -96, 3.55, -62, -52, 3.55], { ground: 3.55, exits: [
+        { x: -46, z: -52, to: 'dbz_west_city', label: 'West City Streets' },
+        { x: -44, z: -56, to: 'dbz_capsule_lab', label: 'Capsule Research Lab' }
+      ] }),
+      loc('dbz_dojo', 'Martial Arts Dojo', 'dojo', [-11, 52, 11, 66], [-6, 56, 3.8, 6, 58, 3.8], { ground: 3.8, exits: [
+        { x: 0, z: 54, to: 'dbz_grand_prize', label: 'Grand Prize Stage' },
+        { x: 0, z: 64, to: 'dbz_rocky_grounds', label: 'Rocky Training Grounds' }
+      ] }),
       loc('dbz_training', 'Training Grounds', 'grounds', [28, -84, 92, -28], [44, -70, 3.2, 70, -46, 3.2], { exits: [
         { x: 30, z: -34, to: 'dbz_main_entrance', label: 'Main Entrance' },
         { x: 88, z: -30, to: 'dbz_cliffs', label: 'Ring Out Cliffs' }
@@ -1314,14 +1516,31 @@ export const WORLDS = {
         { x: 66, z: -84, to: 'dbz_training', label: 'Training Grounds' },
         { x: 0, z: -118, to: 'dbz_king_kai', label: "King Kai's Planet" }
       ] }),
-      loc('dbz_king_kai', "King Kai's Planet", 'sky-island', [-14, -146, 14, -118], [-5, -128, 62.0, 5, -132, 62.0], { ringOut: true, fallBelow: 40, ground: 62.0, exits: [{ x: 0, z: -137, to: 'dbz_cliffs', label: 'Ring Out Cliffs' }] })
+      loc('dbz_king_kai', "King Kai's Planet", 'sky-island', [-14, -146, 14, -118], [-5, -128, 62.0, 5, -132, 62.0], { ringOut: true, fallBelow: 40, ground: 62.0, exits: [{ x: 0, z: -137, to: 'dbz_cliffs', label: 'Ring Out Cliffs' }] }),
+      loc('dbz_rocky_grounds', 'Rocky Training Grounds', 'grounds', [-26, 112, 26, 150], [-10, 120, 3.2, 2, 141, 3.2], { exits: [
+        { x: 0, z: 115, to: 'dbz_dojo', label: 'Martial Arts Dojo' },
+        { x: 22, z: 118, to: 'dbz_capsule_lab', label: 'Capsule Research Lab' },
+        { x: -22, z: 145, to: 'dbz_backstreets', label: 'West City Backstreets' }
+      ] }),
+      loc('dbz_capsule_lab', 'Capsule Research Lab', 'lab', [72, 88, 100, 106], [78, 100, 3.2, 90, 104, 3.2], { interior: true, camera: { tilt: .12, scale: .62 }, exits: [
+        { x: 96, z: 89, to: 'dbz_capsule_corp', label: 'Capsule Corporation' },
+        { x: 82, z: 104, to: 'dbz_rocky_grounds', label: 'Rocky Training Grounds' }
+      ] }),
+      loc('dbz_backstreets', 'West City Backstreets', 'district', [-142, 78, -98, 114], [-126, 88, 3.2, -110, 102, 3.2], { exits: [
+        { x: -120, z: 111.5, to: 'dbz_west_city', label: 'West City Streets' },
+        { x: -128, z: 82, to: 'dbz_rocky_grounds', label: 'Rocky Training Grounds' }
+      ] })
     ]
   },
   asgard: {
     id: 'asgard', label: 'Asgard', subtitle: 'Home of the Æsir', paletteKey: 'asgard',
     build: buildAsgard, ground: 0.5,
     locations: [
-      loc('asgard_palace_court', 'Royal Palace Court', 'palace', [-42, -78, 42, -32], [-10, -40, 0.5, 10, -34, 0.5], { exits: [{ x: 0, z: -34, to: 'asgard_marketplace', label: 'Marketplace Plaza' }] }),
+      loc('asgard_palace_court', 'Royal Palace Court', 'palace', [-42, -78, 42, -32], [-10, -40, 0.5, 10, -34, 0.5], { exits: [
+        { x: 0, z: -34, to: 'asgard_marketplace', label: 'Marketplace Plaza' },
+        { x: 0, z: -58, to: 'asgard_throne_hall', label: 'Throne Hall' }
+      ] }),
+      loc('asgard_throne_hall', 'Throne Hall', 'interior', [-13, -164, 13, -140], [-8, -146, 0.5, 8, -158, 0.5], { interior: true, camera: { tilt: .12, scale: 1.1 }, exits: [{ x: 0, z: -142, to: 'asgard_palace_court', label: 'Royal Palace Court' }] }),
       loc('asgard_marketplace', 'Marketplace Plaza', 'district', [30, -6, 96, 54], [50, 6, 0.5, 72, 30, 0.5], { exits: [
         { x: 46, z: 0, to: 'asgard_palace_court', label: 'Royal Palace Court' },
         { x: 30, z: 48, to: 'asgard_rainbow_bridge', label: 'Rainbow Bridge' }

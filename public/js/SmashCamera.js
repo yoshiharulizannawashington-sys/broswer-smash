@@ -26,6 +26,9 @@ export default class SmashCamera {
     // back further. Small arenas keep the original close overhead framing.
     this.stageTilt = 0;
     this.stageScale = 1;
+    // Some rooms are wider than they are deep, so the default camera side (+Z) leaves no
+    // room to pull back. A stage can turn the shot along its own long axis instead.
+    this.stageYaw = 0;
     // Solid volumes the camera must stay out of on large world stages (see setStageBounds).
     this.collisionBlocks = null;
     this.collisionReach = Infinity;
@@ -100,6 +103,9 @@ export default class SmashCamera {
     this.stageScale = THREE.MathUtils.clamp(scale || 1, 1, 1.8);
   }
 
+  /** Rotate the pulled-back shot around the fighters, for rooms that are wider than deep. */
+  setStageYaw(value) { this.stageYaw = Number.isFinite(value) ? value : 0; }
+
   impact(amount = 0.35) { this.shake = Math.min(1.5, this.shake + amount); }
 
   setZoom(value) { this.zoom = THREE.MathUtils.clamp(value, this.minZoom, this.maxZoom); }
@@ -151,10 +157,13 @@ export default class SmashCamera {
     const horizontal = reach * Math.sqrt(Math.max(0, 1 - elevation * elevation));
     this.framing.distance = reach;
     this.framing.angle = elevation;
+    // The pulled-back offset normally sits on +Z. A yawed stage rotates that offset around
+    // the fighters so a wide room is framed along its length instead of into the near wall.
+    const yaw = this.stageYaw || 0;
     return {
-      x: midX,
+      x: midX + horizontal * Math.sin(yaw),
       y: Math.max(2.4, midY * .55) + reach * elevation,
-      z: midZ + horizontal,
+      z: midZ + horizontal * Math.cos(yaw),
       lookX: midX,
       lookY: Math.max(1.1, midY * .72),
       lookZ: midZ

@@ -267,7 +267,7 @@ grain, skin pores) once and applies them to cloned prefab materials, classified 
 
 ## Worlds, stages and travel
 
-The four reference worlds now hold 33 battle locations (Dragon Ball Z 8, Asgard 5, Death Star 11,
+The four reference worlds now hold 37 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
 Hogwarts 9). Each world is one built environment; the locations inside it are rectangles over that
 same geometry, so switching stages within a world does not rebuild the map.
 
@@ -284,12 +284,31 @@ Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hul
 spine, the east/west spur and the Trench Run-to-city corridor are built as geometry, so the rooms
 are visibly joined even though each remains its own battle stage.
 
-Hogwarts stages: Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest,
-Black Lake Boathouse, Hogsmeade, The Dungeons (a vaulted undercroft with cells and a water channel)
-and Hagrid's Hut (a real walkable stage around the hut and pumpkin patch).
+Asgard stages: Royal Palace Court, Throne Hall, Marketplace Plaza, Rainbow Bridge, Bifrost Realm
+and the Outer Floating Isle. The Throne Hall is a real interior behind the palace: a 40 x 64 m
+nave on its own rock spur, an 18 m gold-coffered ceiling, four column pairs down the nave, a
+three-step throne dais under a great window, side-chamber alcoves with lit arches, a balcony
+gallery reached by stairs at both corners, tall windows above the gallery, braziers, banners and a
+red processional carpet. The court's doorway sits at the palace gate (the ziggurat itself is still
+facade), so the hall is entered the same way as every other stage transition.
 
-What is still scenery rather than a stage: Asgard's palace is a facade with a lit colonnade, not a
-walkable interior; the shipyards and grounds beyond the named stages are decoration, and there is
+Dragon Ball Z stages: Grand Prize Stage, Main Entrance, West City Streets, West City Backstreets,
+Capsule Corporation, Capsule Research Lab, Martial Arts Dojo, Rocky Training Grounds, Training
+Grounds, Ring Out Cliffs and King Kai's Planet. Three of those are new geography rather than
+renamed platforms:
+
+- **Rocky Training Grounds** — a southern peninsula joined to the island by a causeway, with two
+  climbable mesas (5 m and 7 m tops, stairs up both), a rock arch, a spring pool and a boulder
+  ring. The elevation is solid collision geometry, so the mesas are real high ground.
+- **Capsule Research Lab** — an offshore Capsule Corporation platform on its own rock base, joined
+  by a road bridge: glazed shell, a cylindrical test chamber, four consoles, capsule pods, a
+  ceiling gantry and a side stairs. The deck is the stage floor.
+- **West City Backstreets** — a waterfront city block on its own deck and bridge: six shopfronts
+  with awnings, banners, crates, fire escapes, a service alley and an elevated walkway with stairs
+  at both ends.
+
+What is still scenery rather than a stage: Asgard's tiered ziggurat and spires beyond the Throne
+Hall are facade; the shipyards and grounds beyond the named stages are decoration, and there is
 no continuous walk from one end of a world to the other.
 
 ## Large world materials
@@ -327,15 +346,15 @@ Check each downloaded asset's license and relevant rights before distributing th
 ## Large worlds
 
 Four reference worlds are built as playable environments, not pictures. Each is one large
-map with several named battle locations (26 in total); a location is a rectangle inside the
+map with several named battle locations (37 in total); a location is a rectangle inside the
 same geometry, so switching stages inside a world does not rebuild anything.
 
 | World | Battle locations |
 |---|---|
-| Dragon Ball Z — World Tournament Island | Grand Prize Stage, Main Entrance, West City Streets, Capsule Corporation, Martial Arts Dojo, Training Grounds, Ring Out Cliffs, King Kai's Planet |
-| Asgard — Home of the Æsir | Royal Palace Court, Marketplace Plaza, Rainbow Bridge, Bifrost Realm, Outer Floating Isle |
-| Death Star — Imperial Battle Station | Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control, Escape Pod Bay |
-| Hogwarts — Castle and Grounds | Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest, Black Lake Boathouse, Hogsmeade Village |
+| Dragon Ball Z — World Tournament Island | Grand Prize Stage, Main Entrance, West City Streets, West City Backstreets, Capsule Corporation, Capsule Research Lab, Martial Arts Dojo, Rocky Training Grounds, Training Grounds, Ring Out Cliffs, King Kai's Planet |
+| Asgard — Home of the Æsir | Royal Palace Court, Throne Hall, Marketplace Plaza, Rainbow Bridge, Bifrost Realm, Outer Floating Isle |
+| Death Star — Imperial Battle Station | Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control, Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hull |
+| Hogwarts — Castle and Grounds | Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest, Black Lake Boathouse, Hogsmeade Village, The Dungeons, Hagrid's Hut |
 
 - `public/js/worlds/world_catalog.js` holds the worlds as deterministic geometry plans plus
   palettes, themes, battle-location bounds and spawn points. It is plain data with no Three.js
@@ -354,6 +373,9 @@ same geometry, so switching stages inside a world does not rebuild anything.
 - `SmashCamera` pulls back and lowers its angle on these stages (`setStageTilt(tilt, scale)`),
   and derives a minimum distance from the fighters' separation so a wide spawn cannot push one
   fighter out of frame.
+- A location may carry a `camera` hint (`tilt`, `scale`, `yaw`) that overrides that default for its
+  stage. Enclosed rooms use it to shorten the pull-back so the shot stays inside the room, and the
+  Throne Hall turns the offset with `yaw` where the room's long axis is not the default +Z.
 
 Adding another location to an existing world is a catalog entry: bounds, two spawn points,
 and the collision volumes are shared automatically.
