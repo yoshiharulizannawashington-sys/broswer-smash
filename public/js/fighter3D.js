@@ -339,6 +339,15 @@ export default class Fighter3D {
 
   updateProceduralPose(i, dt) {
     const u = this.model.userData;
+    // Which skeleton this pose writer is allowed to touch. The pose below was authored for
+    // the procedural body: it writes absolute joint positions (pelvis at y=1.02, torso at
+    // y=0.28) and assumes a T-pose bind. The Blender prefab is the same skeleton exported
+    // Z-up, so its joint offsets live on local Z under a +90 degree root rotation - writing
+    // those Y positions moved every limb about a metre off its parent and tore the body
+    // apart. A prefab keeps its authored hierarchy and only takes rotations.
+    const rigKind = this.model.userData.rigKind
+      || (this.model.userData.blenderRigVersion ? 'prefab' : 'procedural');
+    const proceduralRig = rigKind === 'procedural';
     const speed = Math.min(1, Math.hypot(this.velocity.x, this.velocity.z) / 7);
     const phase = this.t * (5 + speed * 9);
     const dodge = this.dodgeTimer > 0 ? Math.sin((this.dodgeTimer / 0.48) * Math.PI) : 0;
@@ -569,12 +578,14 @@ export default class Fighter3D {
       const breathing = Math.sin(this.t * 2.7) * 0.018;
       u.torso.rotation.z = -this.velocity.x * 0.018 + hit * 0.12;
       if (!(this.attackPose > 0)) u.torso.rotation.x = this.flightMode ? THREE.MathUtils.clamp(-this.velocity.y * .018, -.22, .12) : airborne ? -0.12 : 0;
-      u.torso.position.y = 0.28 + (this.isGrounded ? breathing : 0.03);
+      if (proceduralRig) u.torso.position.y = 0.28 + (this.isGrounded ? breathing : 0.03);
     }
     if (u.pelvis) {
       u.pelvis.rotation.x = this.flightMode ? -.16 : airborne ? -0.12 : 0;
-      u.pelvis.position.y = 1.02 - this.landPulse * 0.12;
-      u.pelvis.scale.y = 1 + this.landPulse * 0.08;
+      if (proceduralRig) {
+        u.pelvis.position.y = 1.02 - this.landPulse * 0.12;
+        u.pelvis.scale.y = 1 + this.landPulse * 0.08;
+      }
     }
     if (u.head) {
       u.head.rotation.x = airborne ? 0.12 : Math.sin(this.t * 1.8) * 0.025;
@@ -588,7 +599,9 @@ export default class Fighter3D {
     // fighter a resting silhouette while leaving punches, guards and weapon arcs intact.
     if (u.leftArm && u.rightArm) {
       const resting = this.attackQueue.length === 0 && !guard && !this.webSwinging && this.attackPose <= 0;
-      const drop = resting ? 1.16 : .34;
+      // 1.16 rad unbends the procedural body's horizontal T-pose arms. The prefab's arms
+      // are authored hanging down already, so it only gets a small settle.
+      const drop = proceduralRig ? (resting ? 1.16 : .34) : (resting ? .12 : .04);
       u.leftArm.rotation.z += drop;
       u.rightArm.rotation.z -= drop;
       if (resting) {
@@ -599,11 +612,21 @@ export default class Fighter3D {
         if (u.pelvis) u.pelvis.rotation.z = sway * .5;
       }
     }
-    this.model.rotation.y = Math.atan2(this.facingZ, this.facing);
+    // Both rigs are authored facing +Z (cape behind at -Z), so the yaw that turns +Z onto the
+    // facing vector is atan2(facing.x, facing.z). The swapped form pointed every fighter 90
+    // degrees away from where it was moving or aiming.
+    this.model.rotation.y = Math.atan2(this.facing, this.facingZ);
     this.model.position.y += 0; // root stays grounded; vertical motion remains in the physics body
     this.model.rotation.z = THREE.MathUtils.damp(this.model.rotation.z, dodge * -0.2 + hit * 0.12, 12, dt);
     const visualScale=this.model.userData.visualScale||this.model.userData.characterScale||1;
-    this.model.scale.y = THREE.MathUtils.damp(this.model.scale.y, visualScale * (1 - this.landPulse * 0.08), 14, dt);
+    if (proceduralRig) {
+      this.model.scale.y = THREE.MathUtils.damp(this.model.scale.y, visualScale * (1 - this.landPulse * 0.08), 14, dt);
+    } else {
+      // A prefab is scaled uniformly: a per-axis Y squash would bake a non-uniform scale onto
+      // the rig, which rig_validation.js rejects and which the landing pulse does not need.
+      const nextScale = THREE.MathUtils.damp(this.model.scale.x, visualScale * (1 - this.landPulse * 0.04), 14, dt);
+      this.model.scale.setScalar(nextScale);
+    }
   }
 
   updateAttackQueue(dt) {

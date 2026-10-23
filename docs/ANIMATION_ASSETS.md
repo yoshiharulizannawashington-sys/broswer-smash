@@ -55,6 +55,11 @@ shipping.
   0 skins and 0 animations. Articulation comes from 11 rigid joint nodes per fighter, which the clip
   library drives. It can never look like the sculpted hero models in a AAA fighter; only a real
   skinned character GLB will.
+- The prefab library is re-based by `scripts/normalize-character-rig.mjs` after every Blender
+  export: the generator's +90 degree root is folded into the children so the rig ships with an
+  identity root, authored Y-up joint offsets and feet on y=0. Any clip or retarget work must assume
+  that frame (root rotation 0, +Y up, +Z forward), because `Fighter3D` poses the joints directly.
+  `npm run validate:assets` fails when a regenerated GLB skips the normaliser.
 
 ## Installing a clip pack (Chromebook-friendly)
 

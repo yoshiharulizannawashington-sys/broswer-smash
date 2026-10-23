@@ -92,12 +92,25 @@ try {
         const joints = ['pelvis', 'torso', 'head', 'leftArm', 'rightArm', 'leftFore', 'rightFore', 'leftLeg', 'rightLeg', 'leftShin', 'rightShin'];
         if (model?.name?.startsWith('Blender fighter ') && fighter.identity === fighterName
           && model.userData.equippedWeaponRight && joints.every(joint => model.userData[joint])) {
+          // A mounted prefab is not a working fighter: run the same structural gate the game
+          // applies before the swap, on the live model, so a detached part, a broken ground
+          // origin or a legacy Z-up root fails the audit instead of passing on a node name.
+          const rig = window.__browserSmashRigCheck?.(fighter) || { ok: false, issues: ['rig check hook missing'], metrics: {} };
+          let visibleMeshes = 0;
+          model.traverse(node => { if (node.isMesh && node.visible) visibleMeshes++; });
           return {
             model: model.name,
             rig: model.userData.blenderRigVersion || null,
             weapon: model.userData.weaponLabel || null,
             kind: model.userData.weaponKind || null,
-            detail: Object.keys(model.userData.surfaceDetail || {})
+            detail: Object.keys(model.userData.surfaceDetail || {}),
+            visibleMeshes,
+            rigOk: rig.ok,
+            rigIssues: rig.issues,
+            height: rig.metrics?.height ?? null,
+            feetY: rig.metrics?.feetY ?? null,
+            headAbovePelvis: rig.metrics?.headAbovePelvis ?? null,
+            renderable: rig.metrics?.renderableMeshes ?? 0
           };
         }
         await new Promise(done => setTimeout(done, 25));
@@ -113,25 +126,35 @@ try {
     }, name);
 
     if (mounted.error) failures.push({ name, ...mounted });
-    else rows.push({ name, ...mounted });
+    else if (!mounted.rigOk || mounted.visibleMeshes === 0 || mounted.renderable === 0) {
+      failures.push({ name, ...mounted, error: 'mounted rig is not structurally valid' });
+    } else rows.push({ name, ...mounted });
     process.stdout.write(`\r${rows.length + failures.length}/${libraries.roster.length} fighters audited`);
   }
   process.stdout.write('\n');
 
   const withoutDetail = rows.filter(row => row.detail.length === 0);
+  const heights = rows.map(row => row.height).filter(value => typeof value === 'number');
+  const feet = rows.map(row => row.feetY).filter(value => typeof value === 'number');
   console.log(JSON.stringify({
     audit: failures.length === 0 ? 'pass' : 'fail',
     prefabs: libraries.characters,
     weapons: libraries.weapons,
     selectable: libraries.roster.length,
     mounted: rows.length,
+    structurallyValid: rows.length,
     withSurfaceDetail: rows.length - withoutDetail.length,
     weaponsAttached: rows.filter(row => row.weapon).length,
+    heightRange: heights.length ? [Math.min(...heights), Math.max(...heights)] : null,
+    worstGroundOffset: feet.length ? Math.max(...feet.map(value => Math.abs(value))) : null,
     pageErrors: pageErrors.length,
     failures,
     detailClasses: [...new Set(rows.flatMap(row => row.detail))].sort()
   }, null, 2));
-  assert.deepEqual(failures, [], 'fighters failed to mount: ' + JSON.stringify(failures, null, 2));
+  assert.deepEqual(failures, [], 'fighters failed to mount or failed rig validation: ' + JSON.stringify(failures, null, 2));
+  assert.ok(rows.every(row => row.visibleMeshes > 0), 'every mounted fighter must have visible meshes');
+  assert.ok(rows.every(row => Math.abs(row.feetY) <= 0.2), 'every mounted fighter must stand on its own origin');
+  assert.ok(rows.every(row => row.headAbovePelvis >= 0.35), 'every mounted fighter must have its head above its pelvis');
   assert.deepEqual(pageErrors, [], 'page raised runtime errors: ' + pageErrors.join('\n'));
   console.log('Roster audit passed: every selectable fighter mounted its prefab rig and weapon.');
 } finally {

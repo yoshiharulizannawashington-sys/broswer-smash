@@ -187,7 +187,9 @@ def cape(parent,name,material,width=.76,height=1.35):
     rows=8;cols=7
     for r in range(rows+1):
         t=r/rows
-        y=.54-height*t
+        # The cape hangs from the shoulder line (pelvis 1.02 + torso 0.28 + arm 0.35, collar
+        # just above) down over the back. Starting at 0.54 dropped the cloth through the floor.
+        y=1.9-height*t
         w=(.34*(1-t)+width*t)
         for c in range(cols+1):
             u=c/cols*2-1
@@ -211,10 +213,15 @@ def rig_name(key, part):
 def create_character(key, data, index):
     display,archetype,style,primary_hex,secondary_hex,accent_hex,skin_hex,dark_hex,hair_hex,scale=data
     root=empty("character_"+key,None,(index%8*5.0,0,-(index//8)*7.0))
-    # Scripted body coordinates use Y-up; convert the prefab into Blender Z-up before glTF exports Y-up.
-    root.rotation_euler.x = math.pi / 2
-    # Character shapes are authored Y-up to match Three.js joint coordinates. Pre-rotate the
-    # Blender root so Blender's Z-up -> glTF Y-up export conversion cancels that axis change.
+    # Character shapes are authored Y-up to match the Three.js joint coordinates. The root is
+    # pre-rotated +90 degrees about X so glTF's Z-up -> Y-up export conversion cancels that
+    # axis change and the rest pose lands upright.
+    #
+    # That cancellation leaves every joint's *local* frame rotated 90 degrees against the
+    # frame fighter3D.js poses in (an arm's local +Z becomes its own down axis), so the
+    # export pipeline runs scripts/normalize-character-rig.mjs after Blender to fold the
+    # offset out of the hierarchy and leave an identity root. Keep the rotation here: the
+    # normaliser expects this authored layout and re-bases it losslessly.
     root.rotation_euler.x=math.pi/2
     root["identity"]=display;root["characterScale"]=scale;root["rigVersion"]="bs-articulated-v1"
     primary=mat(key+" Suit",primary_hex,.12,.46,0,.25)

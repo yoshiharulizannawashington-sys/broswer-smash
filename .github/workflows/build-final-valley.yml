@@ -44,6 +44,16 @@ jobs:
           blender --background --factory-startup --python assets/blender/character_models.py
           blender --background --factory-startup --python assets/blender/cinematic_arenas.py
 
+      - name: Re-base the character rig frames
+        run: |
+          # The Blender generator authors the body Y-up under a +90 degree root so glTF's
+          # export conversion cancels out. That leaves every joint's local frame rotated
+          # against the frame fighter3D.js poses in, so a regenerated GLB must go through
+          # the same re-base the shipped one did. The script asserts the world-space rest
+          # pose is unchanged before it writes.
+          npm install --no-save three@0.152.2
+          node scripts/normalize-character-rig.mjs
+
       - name: Validate Blender file and GLB structure
         run: |
           python3 - <<'PY'
@@ -106,6 +116,10 @@ jobs:
               assert "character_" + key in char_nodes, f"Missing character model prefab: {key}"
               for joint in ("torso", "pelvis", "head", "leftArm", "rightArm", "leftFore", "rightFore", "leftLeg", "rightLeg", "leftShin", "rightShin"):
                   assert "joint_" + key + "_" + joint in char_nodes, f"Missing articulated joint {joint} on {key}"
+              root_node = next(node for node in cdoc["nodes"] if node.get("name") == "character_" + key)
+              assert "rotation" not in root_node, f"character_{key} root still carries the +90 degree axis offset; run scripts/normalize-character-rig.mjs"
+              pelvis_node = next(node for node in cdoc["nodes"] if node.get("name") == "joint_" + key + "_pelvis")
+              assert pelvis_node.get("translation", [0, 0, 0])[1] > 0.9, f"character_{key} pelvis is not authored Y-up after the re-base"
           print(f"Character Blender library: {characters_blend.stat().st_size/1024/1024:.1f} MiB")
           print(f"Character GLB: {characters_glb.stat().st_size/1024/1024:.1f} MiB; {len(cdoc['meshes'])} meshes; {len(cdoc['materials'])} materials")
           print(f"Character prefabs found: {sum(1 for name in char_nodes if name.startswith('character_'))}")

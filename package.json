@@ -15,7 +15,8 @@
     "test:feel": "node scripts/test-stage-feel.mjs",
     "test:gameplay": "node scripts/test-gameplay.mjs",
     "test:smoke": "node scripts/browser-smoke.mjs",
-    "audit:roster": "node scripts/audit-roster.mjs"
+    "audit:roster": "node scripts/audit-roster.mjs",
+    "test:rig": "node scripts/test-rig.mjs"
   },
   "devDependencies": {
     "vite": "^6.4.1"

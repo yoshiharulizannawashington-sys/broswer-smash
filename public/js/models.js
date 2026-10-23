@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { enhanceSurfaceMaterials, surfaceDetailReport } from './surface_detail.js?v=browser-smash-surface-detail-v31-20261022';
+import { bindRigJoints, validateFighterRig, describeRigValidation } from './rig_validation.js?v=browser-smash-rig-v1-20261023';
 
 const runtimeAssetState = typeof window !== 'undefined'
   ? (window.__browserSmashAssets ||= {})
@@ -305,7 +306,9 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   if(feature==='madara'){for(const side of [-1,1])part(torso,new THREE.BoxGeometry(.2,.56,.14),armor,[side*.42,.25,.2]);}
 
     // Circular ground markers removed; the environment lighting supplies contact shadows.
-  g.userData={...g.userData,archetype,identity,characterScale:look?.scale||1,visualScale:look?.scale||1,torso,pelvis,head,blade};
+  // rigKind tells the pose writer which skeleton it is driving: this one is Y-up with
+  // absolute joint offsets the procedural pose owns, unlike the Z-up Blender prefab.
+  g.userData={...g.userData,archetype,identity,rigKind:'procedural',characterScale:look?.scale||1,visualScale:look?.scale||1,torso,pelvis,head,blade};
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   return g;
 }
@@ -362,22 +365,22 @@ export async function upgradeCharacterWithBlenderModel(fighter){
   const avatar=template.clone(true);
   avatar.name='Blender fighter '+(fighter.identity||fighter.name);
   avatar.position.copy(oldModel.position);
-  // Keep the Blender-to-glTF axis correction authored on each prefab; take the live fighter
-  // heading from the fallback, otherwise its zero rotation lays the prefab flat.
-  avatar.rotation.set(template.rotation.x, oldModel.rotation.y + template.rotation.y, template.rotation.z);
+  // The prefab is authored Y-up with an identity root (scripts/normalize-character-rig.mjs),
+  // so it only needs the fighter's current heading - the same convention the procedural body
+  // and fighter3D.js use. Carry the armour template's own rotation through in case a prefab
+  // ever ships one.
+  const heading = Math.atan2(Number(fighter.facingZ) || 0, Number(fighter.facing) || 1);
+  avatar.rotation.set(template.rotation.x, heading + template.rotation.y, template.rotation.z);
   avatar.scale.copy(oldModel.scale);
   avatar.userData={...avatar.userData,
+    rigKind:'prefab',
     identity:fighter.identity||fighter.name,
     archetype:fighter.archetype,
     characterScale:Number(template.userData.characterScale)||Number(oldModel.userData.characterScale)||1,
     visualScale:Number(oldModel.userData.visualScale)||1,
     blenderRigVersion:template.userData.rigVersion||'bs-articulated-v1'
   };
-  const parts=['pelvis','torso','head','leftArm','rightArm','leftFore','rightFore','leftLeg','rightLeg','leftShin','rightShin'];
-  for(const partName of parts){
-    const joint=avatar.getObjectByName('joint_'+key+'_'+partName);
-    if(joint)avatar.userData[partName]=joint;
-  }
+  bindRigJoints(avatar,key);
   if(!avatar.userData.rightArm||!avatar.userData.rightFore||!avatar.userData.torso||!avatar.userData.pelvis){
     console.warn('Incomplete Blender rig for '+key+'; keeping procedural model.');
     await equipCharacterWeapons(fighter).catch(()=>false);
@@ -393,9 +396,16 @@ export async function upgradeCharacterWithBlenderModel(fighter){
   runtimeAssetState.lastCharacterDetail={key,...detail,classes:avatar.userData.surfaceDetail};
   avatar.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
   avatar.updateMatrixWorld(true);
-  const modelBounds=new THREE.Box3().setFromObject(avatar);
-  const modelSize=modelBounds.getSize(new THREE.Vector3());
-  runtimeAssetState.lastCharacter={key,loaded:true,bounds:{width:modelSize.x,height:modelSize.y,depth:modelSize.z},upright:modelSize.y>Math.max(modelSize.x,modelSize.z)*1.2};
+  // Gate the swap on structure, not on "the GLB parsed": detached parts, a cape through the
+  // floor, joints flung off the body or a legacy Z-up root all keep the working procedural
+  // fighter instead of shipping a broken one into the arena.
+  const validation=validateFighterRig(avatar,{ground:avatar.position.y});
+  runtimeAssetState.lastCharacter={key,loaded:true,...validation.metrics,validation:{ok:validation.ok,issues:validation.issues}};
+  if(!validation.ok){
+    console.warn('Character rig for '+key+' failed validation; keeping the procedural fighter. '+describeRigValidation(validation));
+    await equipCharacterWeapons(fighter).catch(()=>false);
+    return false;
+  }
   parent.add(avatar);
   parent.remove(oldModel);
   fighter.model=avatar;

@@ -112,6 +112,49 @@ if (characterLibrary) {
   // models.js treats >= 57 prefabs as "loaded" and fewer as "partial", so mirror that here.
   if (prefabs.length < 57) fail('character prefabs', `only ${prefabs.length} character_* prefabs, models.js needs 57`);
   else ok(`character prefabs — ${prefabs.length} rigged fighters available for the roster`);
+
+  // Rig frame contract. The Blender generator authors the body Y-up under a +90 degree root
+  // so glTF's export conversion cancels out, which leaves every joint's local frame rotated
+  // against the frame fighter3D.js poses in - the fighter lies down as soon as it turns.
+  // scripts/normalize-character-rig.mjs folds that offset out; a re-exported GLB that skips
+  // it must fail here rather than in an arena.
+  const nodes = characterLibrary.nodes || [];
+  const rootNodes = nodes.filter(node => String(node.name || '').startsWith('character_'));
+  const stiffnessRoots = rootNodes.filter(node => node.rotation);
+  if (stiffnessRoots.length) {
+    fail('character rig frames', `${stiffnessRoots.length}/${rootNodes.length} prefabs still carry the +90 degree axis offset (run scripts/normalize-character-rig.mjs)`);
+  } else {
+    ok(`character rig frames — ${rootNodes.length} prefabs have an identity root`);
+  }
+  const misAuthored = rootNodes.filter(node => {
+    const key = String(node.name).replace(/^character_/, '');
+    const pelvis = nodes.find(candidate => candidate.name === `joint_${key}_pelvis`);
+    if (!pelvis) return true;
+    const [x, y, z] = pelvis.translation || [0, 0, 0];
+    return !(y > 0.9 && Math.abs(z) < 0.05);
+  });
+  if (misAuthored.length) {
+    fail('character joint frames', `${misAuthored.length} prefabs have joint offsets that are not authored Y-up: ${misAuthored.slice(0, 4).map(node => node.name).join(', ')}`);
+  } else {
+    ok('character joint frames — pelvis offsets are authored Y-up on every prefab');
+  }
+  // Costume meshes parented straight to the prefab root (capes, cloaks, coats) must not hang
+  // through the floor: the generator used to start them at y=0.54 instead of the shoulders.
+  const parentOf = new Map();
+  nodes.forEach((node, index) => (node.children || []).forEach(child => parentOf.set(child, index)));
+  const rootIndices = new Set(rootNodes.map(node => nodes.indexOf(node)));
+  const costume = nodes
+    .filter(node => node.mesh != null && rootIndices.has(parentOf.get(nodes.indexOf(node))))
+    .map(node => {
+      const accessor = characterLibrary.accessors[characterLibrary.meshes[node.mesh].primitives[0].attributes.POSITION];
+      return { name: node.name, minY: accessor?.min?.[1] ?? 0, maxY: accessor?.max?.[1] ?? 0 };
+    });
+  const sunken = costume.filter(mesh => mesh.minY < -0.2);
+  if (sunken.length) {
+    fail('character costumes', `${sunken.length} cape/cloak meshes hang below the floor: ${sunken.slice(0, 4).map(mesh => `${mesh.name} (${mesh.minY.toFixed(2)})`).join(', ')}`);
+  } else if (costume.length) {
+    ok(`character costumes — ${costume.length} capes/cloaks hang above the floor`);
+  }
 }
 
 // ---------------------------------------------------------------- weapon library

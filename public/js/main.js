@@ -6,6 +6,7 @@ import InputManager from './InputManager.js?v=browser-smash-gameplay-v36-2026102
 import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v36-20261022';
 import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v36-20261022';
 import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v36-20261022';
+import { validateFighterRig, isEquippedWeapon } from './rig_validation.js?v=browser-smash-rig-v1-20261023';
 import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v36-20261022';
 import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v36-20261022';
 import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v36-20261022';
@@ -1017,6 +1018,13 @@ function resolveArenaCollision(fighter){
 if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&savedMap!=='valley')?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
 const selectScreen=initCharacterSelect({roster,specials:SPECIAL_MOVES,themes:mapThemes,worlds:worldGroups(),arenas:Object.keys(ARENA_LAYOUTS).map(key=>[key,ARENA_LAYOUTS[key]]).filter(([key])=>document.querySelector('#menuMapSelect option[value="'+key+'"]')||document.querySelector('#mapSelect option[value="'+key+'"]')),onFighter:(side,name)=>{const select=side==='p1'?characterSelects.p1:characterSelects.cpu;if(!select)return;select.value=name;select.dispatchEvent(new Event('change'));},onArena:(key)=>{if(!mapSelect)return;mapSelect.value=key;mapSelect.dispatchEvent(new Event('change'));},onMode:(mode)=>{twoPlayer=mode==='2p';fighterTypeRefresh();updateHud();}});
 window.__browserSmashSelect=selectScreen;
+// Test hook: the same structural gate the roster swap applies to a prefab, so audit:roster
+// can assert the mounted fighter is renderable instead of only that a swap happened.
+window.__browserSmashRigCheck=(fighter=player)=>{
+ if(!fighter?.model)return {ok:false,issues:['no fighter model'],metrics:{}};
+ fighter.model.updateMatrixWorld(true);
+ return validateFighterRig(fighter.model,{ground:fighter.position?.y??0,ignore:isEquippedWeapon});
+};
 roundHud();
 function clearFighterCombatState(f){
  f.velocity.set(0,0,0);f.percent=0;f.hitstun=0;f.attackQueue=[];f.attackBuffer=0;f.hitboxes=[];

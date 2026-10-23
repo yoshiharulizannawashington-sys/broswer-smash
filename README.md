@@ -265,6 +265,27 @@ grain, skin pores) once and applies them to cloned prefab materials, classified 
   instead of standing in a T-pose, and the menu keeps posing both fighters while the simulation is
   paused.
 
+### Rig frame contract (why the fighters used to come apart)
+
+The Blender generator authors each body Y-up and pre-rotates the exported root by +90 degrees about
+X so glTF's Z-up export conversion cancels out. That puts the rest pose in the right place but
+leaves every joint's *local* frame rotated 90 degrees against the frame
+`Fighter3D.updateProceduralPose` writes in, and it made `model.rotation.y = yaw` tip the whole
+fighter off its feet as soon as it faced anything but +Z. `scripts/normalize-character-rig.mjs`
+folds that offset out of the shipped library: identity root, authored Y-up joint offsets, cape
+meshes lifted from y=0.54 to the shoulder line, and the boots raised onto the origin. It asserts
+the world-space rest pose is unchanged (worst drift 2e-16 m) before it writes, `--check` reports
+drift only, and the Blender export workflow runs it after every regeneration.
+
+The GLB now holds one convention: root rotation 0, +Y up, +Z forward, feet on y=0, joints at the
+authored offsets. `public/js/rig_validation.js` gates the roster swap on structure rather than on
+"the GLB parsed" - root tilt, missing joints, drawable meshes, height and silhouette, feet on the
+origin, nothing hanging below the floor, head above the pelvis, every joint inside the body. A
+prefab that fails keeps the working procedural fighter and logs the reason to
+`window.__browserSmashAssets.lastCharacter`. `npm run test:rig` exercises one synthetic defect per
+check plus all 57 shipped prefabs, and `npm run audit:roster` now runs the same gate on the live
+fighter, so a mounted-but-broken rig fails the audit instead of passing on a node name.
+
 ## Worlds, stages and travel
 
 The four reference worlds now hold 37 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
