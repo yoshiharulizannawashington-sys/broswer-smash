@@ -179,9 +179,16 @@ function buildDbz() {
   // tournament rather than a plinth.
   for (const side of [-1, 1]) {
     for (let tier = 0; tier < 3; tier++) {
-      box(parts, 0, GROUND + .55 + tier * .95, side * (25.5 + tier * 3.1), 70 - tier * 6, .95, 3.1, tier % 2 ? 'stoneLight' : 'stone', solid({ bottom: GROUND }));
-      box(parts, 0, GROUND + 1.05 + tier * .95, side * (25.5 + tier * 3.1), 70 - tier * 6, .1, 3.2, 'stoneDark');
-      box(parts, side * (25.5 + tier * 3.1), GROUND + .55 + tier * .95, 0, 3.1, .95, 70 - tier * 6, tier % 2 ? 'stoneLight' : 'stone', solid({ bottom: GROUND }));
+      const y = GROUND + .55 + tier * .95;
+      const zr = side * (25.5 + tier * 3.1);
+      const span = 70 - tier * 6;
+      const half = span / 2 - 4;
+      // Two halves with a gate gap at the centre line, so the stage is not walled in.
+      for (const end of [-1, 1]) {
+        box(parts, end * (half / 2 + 4), y, zr, half, .95, 3.1, tier % 2 ? 'stoneLight' : 'stone', solid({ bottom: GROUND }));
+        box(parts, end * (half / 2 + 4), GROUND + 1.05 + tier * .95, zr, half, .1, 3.2, 'stoneDark');
+        box(parts, side * (25.5 + tier * 3.1), y, end * (half / 2 + 4), 3.1, .95, half, tier % 2 ? 'stoneLight' : 'stone', solid({ bottom: GROUND }));
+      }
     }
   }
   for (let i = 0; i < 22; i++) {
@@ -762,6 +769,175 @@ function buildDeathStar() {
     ball(parts, -57, GROUND + 3, z, 2.4, 'dark', { sx: .8, seg: 10 });
     box(parts, -56.6, GROUND + 3, z, .3, 3, 6, 'glowRed');
   }
+
+  // Corridor network -------------------------------------------------------
+  // A spine runs north out of the hangar, branches east and west to Engineering and the Droid
+  // Factory, and continues past the Trench Run to the Imperial City. The rooms are separate
+  // battle stages; the corridors are the walkable seams between them that the exits use.
+  const corridor = (x, z, w, d, h = 9) => {
+    floor(x, z, w, d, 'floorCorridor');
+    wall(x, z - d / 2, w, h, 1.2);
+    wall(x, z + d / 2, w, h, 1.2);
+    ceiling(x, h, z, w, d);
+    for (let i = -w / 2 + 3; i < w / 2; i += 4) box(parts, x + i, GROUND + .06, z, .6, .04, d * .82, 'floorStripe');
+  };
+  // Hangar -> Trench Run (north spine, x = 0).
+  box(parts, 0, GROUND - .3, 95, 16, .6, 16, 'floorCorridor', solid({ bottom: -1 }));
+  for (const side of [-1, 1]) box(parts, side * 8, GROUND + 4.5, 95, 1.2, 9, 16, 'metal', solid({ bottom: GROUND }));
+  box(parts, 0, GROUND + 9, 95, 17.2, .5, 16, 'metalDark', solid({ bottom: GROUND + 8.75 }));
+  for (const side of [-1, 1]) box(parts, side * 7.6, GROUND + .04, 95, .4, .06, 14, 'glowBlue');
+  // East / west spur at the T-junction (z = 96) feeding Engineering and the Droid Factory.
+  for (const side of [-1, 1]) {
+    box(parts, side * 34, GROUND - .3, 96, 52, .6, 14, 'floorCorridor', solid({ bottom: -1 }));
+    box(parts, 0, GROUND + 4.5, 89, 60, 9, 1.2, 'metal', solid({ bottom: GROUND }));
+    box(parts, 0, GROUND + 4.5, 103, 60, 9, 1.2, 'metal', solid({ bottom: GROUND }));
+    box(parts, 0, GROUND + 9, 96, 68.4, .5, 14.6, 'metalDark', solid({ bottom: GROUND + 8.75 }));
+    for (let i = 0; i < 9; i++) box(parts, side * (14 + i * 5), GROUND + 8.4, 96, .3, .16, 12, 'glowBlue');
+    for (let i = 0; i < 8; i++) box(parts, side * (12 + i * 6), GROUND + .05, 96, .5, .1, 12.6, 'floorStripe');
+  }
+  // Trench Run -> Imperial City (north spine continues past the trench).
+  box(parts, 0, GROUND - .3, 200, 14, .6, 24, 'floorCorridor', solid({ bottom: -1 }));
+  for (const side of [-1, 1]) box(parts, side * 7, GROUND + 5, 200, 1.2, 10, 24, 'metal', solid({ bottom: GROUND }));
+  box(parts, 0, GROUND + 10, 200, 15.2, .5, 24, 'metalDark', solid({ bottom: GROUND + 9.75 }));
+  for (let i = 0; i < 5; i++) box(parts, 0, GROUND + 9.4, 192 + i * 4, 13, .16, .6, 'glowBlue');
+
+  // Trench Run -------------------------------------------------------------
+  // A sealed channel running north from the hangar spine: deep walls, buttress frames,
+  // turbolaser emplacements and a floor marked with launch lanes.
+  const tz0 = 104, tz1 = 188, tzMid = (tz0 + tz1) / 2;
+  floor(0, tzMid, 26, tz1 - tz0, 'floorCorridor');
+  for (const side of [-1, 1]) {
+    box(parts, side * 13.6, GROUND + 13, tzMid, 2.6, 26, tz1 - tz0, 'metal', solid({ bottom: GROUND }));
+    for (let z = tz0 + 4; z < tz1; z += 8) {
+      box(parts, side * 12.2, GROUND + 13, z, 1.2, 25, 1.6, 'metalDark', solid({ bottom: GROUND }));
+      box(parts, side * 11.6, GROUND + 17, z, .3, 6, .8, 'glowRed');
+    }
+    box(parts, side * 12.1, GROUND + 5, tzMid, .4, .3, tz1 - tz0 - 6, 'glowBlue');
+  }
+  for (let i = 0; i < 6; i++) {
+    const z = tz0 + 8 + i * 14;
+    box(parts, 0, GROUND + 21, z, 27, 1.2, 2.2, 'metalDark', solid({ bottom: GROUND + 20.4 }));
+    for (const side of [-1, 1]) box(parts, side * 9, GROUND + 19.6, z, 1.6, 1.6, 1.6, 'steel');
+  }
+  for (let i = 0; i < 6; i++) {
+    const z = tz0 + 6 + i * 15;
+    for (const side of [-1, 1]) {
+      cyl(parts, side * 10.4, GROUND + 8, z, 1.8, 2.2, 3.2, 'dark', solid({ bottom: GROUND + 6.4, seg: 10 }));
+      cyl(parts, side * 9.4, GROUND + 8, z, .42, .42, 2.2, 'glowRed', { seg: 8 });
+    }
+  }
+  for (const side of [-1, 1]) box(parts, side * 9.4, GROUND + .05, tzMid, 1.2, .06, tz1 - tz0, 'floorStripe');
+  for (let z = tz0 + 10; z < tz1; z += 12) box(parts, 0, GROUND + .05, z, 20, .06, 1.1, 'floorStripe');
+  // End caps with a lit doorway at each end so the exits read as doors.
+  for (const [z, depth] of [[tz0 - 1.5, 3], [tz1 + 1.5, 3]]) {
+    for (const side of [-1, 1]) box(parts, side * 8.5, GROUND + 13, z, 9.6, 26, depth, 'metal', solid({ bottom: GROUND }));
+    box(parts, 0, GROUND + 15, z, 16, 8, depth, 'metal', solid({ bottom: GROUND + 11 }));
+    box(parts, 0, GROUND + .3, z, 7.4, 6, depth * .6, 'glowBlue');
+    for (const side of [-1, 1]) box(parts, side * 4, GROUND + 5, z, 1.4, 10, depth * .5, 'steel', solid({ bottom: GROUND }));
+  }
+
+  // Engineering ------------------------------------------------------------
+  // Two machine halls at different heights, joined by a stair flight and overhead pipes.
+  const ex = 86, ez = 134;
+  floor(ex, ez, 56, 46, 'floorCommand');
+  wall(ex - 28, ez, 1.4, 22, 46);
+  wall(ex + 28, ez, 1.4, 22, 46);
+  wall(ex, ez - 23, 56, 22, 1.4);
+  wall(ex, ez + 23, 56, 22, 1.4);
+  ceiling(ex, 22, ez, 56, 46);
+  box(parts, ex, GROUND + 3, ez + 12, 38, 6, 16, 'panel', solid({ bottom: GROUND }));
+  stairs(parts, ex - 12, ez + 2, { steps: 7, width: 6, rise: .85, run: 1, base: GROUND, mat: 'metal', dir: 'z' });
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, ex - 22 + i * 9, GROUND + 12, ez - 14, 1.5, 1.5, 26, 'metalDark', { seg: 10 });
+    for (let j = 0; j < 4; j++) torus(parts, ex - 22 + i * 9, GROUND + 4 + j * 5, ez - 14, 1.9, .3, 'steel', { rx: Math.PI / 2 });
+  }
+  for (let i = 0; i < 4; i++) {
+    const z = ez - 16 + i * 10;
+    box(parts, ex + 20, GROUND + 4, z, 8, 8, 6, 'metal', solid({ bottom: GROUND }));
+    box(parts, ex + 20, GROUND + 6, z, 5, 3, .3, 'glowGreen');
+  }
+  for (const side of [-1, 1]) catwalk(parts, ex + side * 22, 9, ez - 4, 5, 30, { axis: 'z' });
+  for (let i = 0; i < 14; i++) box(parts, ex - 24 + i * 3.6, GROUND + .05, ez + 2, .5, .1, 40, 'floorStripe');
+
+  // Droid Factory -----------------------------------------------------------
+  // Conveyor lanes, assembly frames and hanging arms.
+  const fx = -88, fz = 130;
+  floor(fx, fz, 52, 46, 'floorCorridor');
+  wall(fx - 26, fz, 1.4, 20, 46);
+  wall(fx + 26, fz, 1.4, 20, 46);
+  wall(fx, fz - 23, 52, 20, 1.4);
+  wall(fx, fz + 23, 52, 20, 1.4);
+  ceiling(fx, 20, fz, 52, 46);
+  for (const lane of [-19, -11, 11, 19]) {
+    box(parts, fx, GROUND + 1.5, fz + lane, 46, .5, 4.4, 'metalDark', solid({ bottom: GROUND + 1.2 }));
+    for (let i = 0; i < 22; i++) cyl(parts, fx - 22 + i * 2.1, GROUND + 1.8, fz + lane, .28, .28, 4.2, 'steel', { rx: Math.PI / 2, seg: 8 });
+    for (let i = 0; i < 5; i++) box(parts, fx - 16 + i * 8, GROUND + 2.4, fz + lane, 1.6, 1.6, 1.6, 'metal');
+  }
+  for (let i = 0; i < 5; i++) {
+    box(parts, fx - 18 + i * 9, GROUND + 7, fz - 16, .7, 11, .7, 'steel', solid({ bottom: GROUND }));
+    box(parts, fx - 18 + i * 9, GROUND + 12.4, fz - 16, 5.4, .6, .6, 'steel');
+    box(parts, fx - 18 + i * 9, GROUND + 11.6, fz - 12, .5, 1.4, .5, 'steel');
+    box(parts, fx - 18 + i * 9, GROUND + 10.6, fz - 12, .6, .8, .6, 'glowRed');
+  }
+  for (let i = 0; i < 8; i++) {
+    box(parts, fx - 20 + i * 5.6, GROUND + 14, fz + 18, 3.4, .4, 3.4, 'metalDark');
+    box(parts, fx - 20 + i * 5.6, GROUND + 13.4, fz + 18, .5, 1.2, .5, 'steel');
+  }
+  for (let i = 0; i < 16; i++) box(parts, fx - 24 + i * 3.2, GROUND + .05, fz - 20.6, 2.2, .06, .5, 'floorStripe');
+
+  // Imperial City (Habitat) --------------------------------------------------
+  // A lit street between habitation blocks, with a raised gallery and a transit spine.
+  const ix = 0, iz = 236;
+  floor(ix, iz, 76, 52, 'floorCommand');
+  for (const side of [-1, 1]) {
+    wall(ix + side * 39, iz, 1.4, 34, 52);
+    for (let i = 0; i < 6; i++) {
+      building(parts, ix + side * 30, iz - 20 + i * 8, { w: 12, d: 7, h: 10 + (i % 3) * 5, base: GROUND, mat: 'panel', roof: 'metalDark', win: 'glassWarm', winRows: 3 });
+      box(parts, ix + side * 22, GROUND + 2.4, iz - 20 + i * 8, 4, .3, 6, 'glowBlue');
+    }
+    for (let i = 0; i < 8; i++) {
+      cyl(parts, ix + side * 20, GROUND + 3, iz - 22 + i * 6.4, .2, .3, 6, 'steel', { seg: 6 });
+      ball(parts, ix + side * 20, GROUND + 6.2, iz - 22 + i * 6.4, .34, 'glowWarm', { seg: 6 });
+    }
+  }
+  ceiling(ix, 34, iz, 78, 52);
+  for (const end of [-1, 1]) {
+    box(parts, ix, GROUND + 17, iz + end * 25.2, 78, 34, 1.6, 'metal', solid({ bottom: GROUND }));
+    for (let i = 0; i < 7; i++) box(parts, ix - 30 + i * 10, GROUND + 8, iz + end * 24.2, 8, 12, .4, 'metalDark');
+    box(parts, ix, GROUND + 2.5, iz + end * 24.4, 12, 5, .5, 'glowBlue');
+  }
+  box(parts, ix, GROUND + 1.8, iz, 14, 3.6, 44, 'metal', solid({ bottom: GROUND }));
+  for (let i = 0; i < 9; i++) {
+    box(parts, ix, GROUND + 3.7, iz - 20 + i * 5, 15, .4, .5, 'glowBlue');
+    for (const side of [-1, 1]) box(parts, ix + side * 7.4, GROUND + .9, iz - 20 + i * 5, .3, 1.8, .3, 'steel');
+  }
+  for (let i = 0; i < 10; i++) box(parts, ix - 30 + i * 6.6, GROUND + .05, iz - 24, 3.6, .08, 46, 'floorStripe');
+
+  // Outer Hull ---------------------------------------------------------------
+  // Station plating in vacuum: gantries, hull plates and a rail along the drop.
+  const ox = -120, oz = 225;
+  floor(ox, oz, 58, 48, 'metal');
+  for (let i = 0; i < 12; i++) {
+    box(parts, ox - 27 + i * 4.9, GROUND + .05, oz - 22, .4, .06, 44, 'metalDark');
+    box(parts, ox - 25 + i * 4.9, GROUND + .05, oz + 22, .4, .06, 44, 'metalDark');
+  }
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, ox - 6 + i * 2.4, GROUND + 2, oz + 12, .5, .6, 4, 'steel', { seg: 8 });
+    ball(parts, ox - 6 + i * 2.4, GROUND + 4.4, oz + 12, .6, 'glowRed', { seg: 8 });
+  }
+  for (let i = 0; i < 4; i++) {
+    box(parts, ox - 20 + i * 13, GROUND + 3, oz - 18, 8, 6, 8, 'metal', solid({ bottom: GROUND }));
+    box(parts, ox - 20 + i * 13, GROUND + 6.2, oz - 18, 5, .4, 5, 'steel');
+  }
+  catwalk(parts, ox + 16, 7, oz + 2, 18, 5, { axis: 'x' });
+  stairs(parts, ox + 10, oz - 6, { steps: 8, width: 4, rise: .9, run: 1, base: GROUND, mat: 'steel', dir: 'z' });
+  for (const side of [-1, 1]) railing(parts, ox + side * 28.4, GROUND, oz, 46, 'z');
+  for (let i = 0; i < 90; i++) ball(parts, ox + (starRng() - .5) * 240, 8 + starRng() * 60, oz + (starRng() - .5) * 240, .16 + starRng() * .22, 'star', { seg: 4 });
+  ball(parts, ox + 70, 18, oz - 40, 16, 'metalDark', { seg: 20, sx: 1.4, sy: .9 });
+  // Hull walkway across to the habitat blocks.
+  box(parts, -62, GROUND - .3, 225, 58, .6, 10, 'metal', solid({ bottom: -1 }));
+  for (const side of [-1, 1]) railing(parts, -62, GROUND, 225 + side * 4.6, 56, 'x', 'steel');
+  for (let i = 0; i < 5; i++) box(parts, -84 + i * 11, GROUND + .05, 225, .5, .06, 9, 'glowBlue');
   return parts;
 }
 
@@ -1018,6 +1194,43 @@ function buildHogwarts() {
     rock(parts, x, 34, 1.6 + rng() * 1.6, GROUND, rng, 'moss');
   }
   for (let i = 0; i < 10; i++) tree(parts, -40 + rng() * 90, 10 + rng() * 20, .8 + rng(), GROUND, rng);
+
+  // Dungeons ---------------------------------------------------------------
+  // A tall undercroft inside the castle's west range: cells, columns, a water channel and a
+  // stair up to the courtyard. It is an interior room at ground level, clear of the curtain
+  // wall towers, not a pit under the terrain (a sunken stage put the camera outside the world).
+  const dgx = -38, dgz = -94, dgy = GROUND;
+  box(parts, dgx, dgy - .3, dgz, 26, .6, 31, 'cobble', solid({ bottom: dgy - .6 }));
+  for (const [x, z, w, d] of [[dgx - 12, dgz, 1.6, 28], [dgx + 12, dgz, 1.6, 28], [dgx, dgz - 14, 25.6, 1.6], [dgx, dgz + 14, 25.6, 1.6]]) {
+    box(parts, x, dgy + 6.5, z, w, 13, d, 'brick', solid({ bottom: dgy }));
+  }
+  box(parts, dgx, dgy + 13.4, dgz, 26, .8, 30, 'brick', solid({ bottom: dgy + 13 }));
+  for (let i = 0; i < 3; i++) {
+    for (const side of [-1, 1]) {
+      cyl(parts, dgx + side * 7, dgy + 5, dgz - 9 + i * 9, 1, 1.25, 10, 'stoneDark', solid({ bottom: dgy, seg: 10 }));
+      box(parts, dgx + side * 7, dgy + 10.4, dgz - 9 + i * 9, 3, .7, 3, 'stoneDark');
+      box(parts, dgx + side * 7, dgy + .2, dgz - 9 + i * 9, 2.8, .4, 2.8, 'stoneDark');
+    }
+  }
+  // Cell row with iron bars along the north wall.
+  for (let i = 0; i < 4; i++) {
+    const x = dgx - 9 + i * 6;
+    box(parts, x, dgy + 2.6, dgz - 12.4, 5, 5.2, 1.6, 'brick', solid({ bottom: dgy }));
+    for (let b = 0; b < 5; b++) box(parts, x - 1.9 + b * .95, dgy + 2.4, dgz - 11.5, .18, 4.4, .18, 'dark');
+    box(parts, x, dgy + 5.4, dgz - 11.4, 5.6, .3, .3, 'dark');
+  }
+  // Torches, barrels and a channel of water down the middle.
+  for (const [x, z] of [[dgx - 10, dgz - 8], [dgx + 10, dgz - 8], [dgx - 10, dgz + 7], [dgx + 10, dgz + 7], [dgx, dgz - 11]]) {
+    cyl(parts, x, dgy + 3.4, z, .16, .22, 1.2, 'wood', { seg: 6 });
+    ball(parts, x, dgy + 4.2, z, .28, 'flame', { seg: 6 });
+  }
+  for (let i = 0; i < 5; i++) cyl(parts, dgx - 9 + i * 1.6, dgy + .55, dgz + 9, .55, .5, 1.1, 'trunk', { seg: 8 });
+  box(parts, dgx, dgy + .06, dgz + 3, 18, .12, 3, 'water');
+  railing(parts, dgx, dgy, dgz + 1.5, 18, 'x', 'dark');
+  railing(parts, dgx, dgy, dgz + 4.5, 18, 'x', 'dark');
+  // Stair shaft up towards the courtyard gate.
+  stairs(parts, dgx + 9, dgz + 8, { steps: 10, width: 5, rise: .62, run: .9, base: dgy, mat: 'stoneDark', dir: 'z' });
+  box(parts, dgx, dgy + 13, dgz, 1.2, .3, 1.2, 'gold');
   return parts;
 }
 
@@ -1045,7 +1258,7 @@ export const PALETTES = {
     floorHangar: '#4d5563', floorCorridor: '#3d4450', floorStripe: '#c9d6e4',
     panel: '#6d7a88', steel: '#93a4b6', dark: '#22272f', crate: '#6b6250',
     glowBlue: '#79dfff', glowRed: '#ff4b3a', glowGreen: '#7dff9c', glass: '#101826',
-    star: '#dfe9ff', core: '#a8ffb6'
+    star: '#dfe9ff', core: '#a8ffb6', glowWarm: '#ffe3b0', glassWarm: '#ffd79a'
   },
   hogwarts: {
     stone: '#6f6c66', stoneDark: '#4a4844', stoneLight: '#a29c90', brick: '#5a4a42',
@@ -1078,24 +1291,46 @@ export const WORLDS = {
     id: 'dbz', label: 'Dragon Ball Z', subtitle: 'World Tournament Island', paletteKey: 'dbz',
     build: buildDbz, ground: 3.2,
     locations: [
-      loc('dbz_grand_prize', 'Grand Prize Stage', 'arena', [-26, -26, 26, 26], [-9, -7, 4.05, 9, 7, 4.05], { ground: 4.05 }),
-      loc('dbz_main_entrance', 'Main Entrance', 'gate', [-18, -46, 18, -24], [-7, -40, 3.2, 7, -34, 3.2]),
-      loc('dbz_west_city', 'West City Streets', 'district', [-122, -44, -54, 44], [-78, -6, 3.2, -96, 6, 3.2]),
-      loc('dbz_capsule_corp', 'Capsule Corporation', 'campus', [-82, -98, -42, -50], [-62, -96, 3.55, -62, -52, 3.55], { ground: 3.55 }),
-      loc('dbz_dojo', 'Martial Arts Dojo', 'dojo', [-11, 52, 11, 66], [-6, 56, 3.8, 6, 58, 3.8], { ground: 3.8 }),
-      loc('dbz_training', 'Training Grounds', 'grounds', [28, -84, 92, -28], [44, -70, 3.2, 70, -46, 3.2]),
-      loc('dbz_cliffs', 'Ring Out Cliffs', 'cliff', [-74, -124, 74, -78], [-14, -98, 3.2, 14, -104, 3.2], { ringOut: true, fallBelow: -2 }),
-      loc('dbz_king_kai', "King Kai's Planet", 'sky-island', [-14, -146, 14, -118], [-5, -128, 62.0, 5, -132, 62.0], { ringOut: true, fallBelow: 40, ground: 62.0 })
+      loc('dbz_grand_prize', 'Grand Prize Stage', 'arena', [-26, -26, 26, 26], [-9, -7, 4.05, 9, 7, 4.05], { ground: 4.05, exits: [
+        { x: 0, z: -24, to: 'dbz_main_entrance', label: 'Main Entrance' },
+        { x: 0, z: 24, to: 'dbz_dojo', label: 'Martial Arts Dojo' }
+      ] }),
+      loc('dbz_main_entrance', 'Main Entrance', 'gate', [-18, -46, 18, -24], [-7, -40, 3.2, 7, -34, 3.2], { exits: [
+        { x: 0, z: -29, to: 'dbz_grand_prize', label: 'Grand Prize Stage' },
+        { x: -14, z: -44, to: 'dbz_west_city', label: 'West City Streets' },
+        { x: 14, z: -44, to: 'dbz_training', label: 'Training Grounds' }
+      ] }),
+      loc('dbz_west_city', 'West City Streets', 'district', [-122, -44, -54, 44], [-78, -6, 3.2, -96, 6, 3.2], { exits: [
+        { x: -56, z: -34, to: 'dbz_main_entrance', label: 'Main Entrance' },
+        { x: -80, z: -42, to: 'dbz_capsule_corp', label: 'Capsule Corporation' }
+      ] }),
+      loc('dbz_capsule_corp', 'Capsule Corporation', 'campus', [-82, -98, -42, -50], [-62, -96, 3.55, -62, -52, 3.55], { ground: 3.55, exits: [{ x: -46, z: -52, to: 'dbz_west_city', label: 'West City Streets' }] }),
+      loc('dbz_dojo', 'Martial Arts Dojo', 'dojo', [-11, 52, 11, 66], [-6, 56, 3.8, 6, 58, 3.8], { ground: 3.8, exits: [{ x: 0, z: 54, to: 'dbz_grand_prize', label: 'Grand Prize Stage' }] }),
+      loc('dbz_training', 'Training Grounds', 'grounds', [28, -84, 92, -28], [44, -70, 3.2, 70, -46, 3.2], { exits: [
+        { x: 30, z: -34, to: 'dbz_main_entrance', label: 'Main Entrance' },
+        { x: 88, z: -30, to: 'dbz_cliffs', label: 'Ring Out Cliffs' }
+      ] }),
+      loc('dbz_cliffs', 'Ring Out Cliffs', 'cliff', [-74, -124, 74, -78], [-14, -98, 3.2, 14, -104, 3.2], { ringOut: true, fallBelow: -2, exits: [
+        { x: 66, z: -84, to: 'dbz_training', label: 'Training Grounds' },
+        { x: 0, z: -118, to: 'dbz_king_kai', label: "King Kai's Planet" }
+      ] }),
+      loc('dbz_king_kai', "King Kai's Planet", 'sky-island', [-14, -146, 14, -118], [-5, -128, 62.0, 5, -132, 62.0], { ringOut: true, fallBelow: 40, ground: 62.0, exits: [{ x: 0, z: -137, to: 'dbz_cliffs', label: 'Ring Out Cliffs' }] })
     ]
   },
   asgard: {
     id: 'asgard', label: 'Asgard', subtitle: 'Home of the Æsir', paletteKey: 'asgard',
     build: buildAsgard, ground: 0.5,
     locations: [
-      loc('asgard_palace_court', 'Royal Palace Court', 'palace', [-42, -78, 42, -32], [-10, -40, 0.5, 10, -34, 0.5]),
-      loc('asgard_marketplace', 'Marketplace Plaza', 'district', [30, -6, 96, 54], [50, 6, 0.5, 72, 30, 0.5]),
-      loc('asgard_rainbow_bridge', 'Rainbow Bridge', 'bridge', [-9, 34, 9, 132], [0, 44, 1.75, 0, 60, 1.75], { ringOut: true, fallBelow: -8, ground: 1.75 }),
-      loc('asgard_bifrost', 'Bifrost Realm', 'arena', [-26, 132, 26, 164], [-8, 142, 1.75, 8, 154, 1.75], { ringOut: true, fallBelow: -8, ground: 1.75 }),
+      loc('asgard_palace_court', 'Royal Palace Court', 'palace', [-42, -78, 42, -32], [-10, -40, 0.5, 10, -34, 0.5], { exits: [{ x: 0, z: -34, to: 'asgard_marketplace', label: 'Marketplace Plaza' }] }),
+      loc('asgard_marketplace', 'Marketplace Plaza', 'district', [30, -6, 96, 54], [50, 6, 0.5, 72, 30, 0.5], { exits: [
+        { x: 46, z: 0, to: 'asgard_palace_court', label: 'Royal Palace Court' },
+        { x: 30, z: 48, to: 'asgard_rainbow_bridge', label: 'Rainbow Bridge' }
+      ] }),
+      loc('asgard_rainbow_bridge', 'Rainbow Bridge', 'bridge', [-9, 34, 9, 132], [0, 44, 1.75, 0, 60, 1.75], { ringOut: true, fallBelow: -8, ground: 1.75, exits: [
+        { x: 0, z: 36, to: 'asgard_marketplace', label: 'Marketplace Plaza' },
+        { x: 0, z: 130, to: 'asgard_bifrost', label: 'Bifrost Realm' }
+      ] }),
+      loc('asgard_bifrost', 'Bifrost Realm', 'arena', [-26, 132, 26, 164], [-8, 142, 1.75, 8, 154, 1.75], { ringOut: true, fallBelow: -8, ground: 1.75, exits: [{ x: 0, z: 134, to: 'asgard_rainbow_bridge', label: 'Rainbow Bridge' }] }),
       loc('asgard_floating_isle', 'Outer Floating Isle', 'sky-island', [-162, 36, -112, 92], [-140, 58, 24.5, -128, 72, 24.5], { ringOut: true, fallBelow: 2, ground: 24.5 })
     ]
   },
@@ -1103,25 +1338,54 @@ export const WORLDS = {
     id: 'deathstar', label: 'Death Star', subtitle: 'Imperial Battle Station', paletteKey: 'deathstar',
     build: buildDeathStar, ground: 0,
     locations: [
-      loc('deathstar_command_deck', 'Command Deck', 'interior', [-30, -116, 30, -70], [-12, -84, 0, 12, -80, 0], { interior: true }),
-      loc('deathstar_hangar', 'Main Hangar', 'interior', [-48, 12, 48, 88], [-16, 40, 0, 16, 52, 0], { interior: true }),
-      loc('deathstar_corridor', 'Corridor Junction', 'interior', [-13, -74, 13, 4], [0, -58, 0, 0, -44, 0], { interior: true }),
+      loc('deathstar_command_deck', 'Command Deck', 'interior', [-30, -116, 30, -70], [-12, -84, 0, 12, -80, 0], { interior: true, exits: [{ x: 0, z: -74, to: 'deathstar_corridor', label: 'Corridor Junction' }] }),
+      loc('deathstar_hangar', 'Main Hangar', 'interior', [-48, 12, 48, 88], [-16, 40, 0, 16, 52, 0], { interior: true, exits: [
+        { x: 0, z: 84, to: 'deathstar_trench', label: 'Trench Run' },
+        { x: 0, z: 20, to: 'deathstar_corridor', label: 'Corridor Junction' }
+      ] }),
+      loc('deathstar_corridor', 'Corridor Junction', 'interior', [-13, -74, 13, 4], [0, -58, 0, 0, -44, 0], { interior: true, exits: [
+        { x: 0, z: -70, to: 'deathstar_command_deck', label: 'Command Deck' },
+        { x: 0, z: 1, to: 'deathstar_hangar', label: 'Main Hangar' }
+      ] }),
       loc('deathstar_reactor', 'Reactor Core', 'interior', [-30, -178, 30, -126], [-12, -152, 0, 12, -146, 0], { interior: true }),
       loc('deathstar_superlaser', 'Superlaser Control', 'interior', [56, -176, 104, -128], [72, -152, 0, 88, -148, 0], { interior: true }),
-      loc('deathstar_escape_pods', 'Escape Pod Bay', 'interior', [-70, -30, -50, 2], [-66, -24, 0, -66, -4, 0], { interior: true })
+      loc('deathstar_escape_pods', 'Escape Pod Bay', 'interior', [-70, -30, -50, 2], [-66, -24, 0, -66, -4, 0], { interior: true }),
+      loc('deathstar_trench', 'Trench Run', 'trench', [-11, 106, 11, 186], [-5, 118, 0, 5, 174, 0], { interior: true, exits: [
+        { x: 0, z: 108, to: 'deathstar_hangar', label: 'Main Hangar' },
+        { x: 0, z: 184, to: 'deathstar_imperial_city', label: 'Imperial City' },
+        { x: 10, z: 132, to: 'deathstar_engineering', label: 'Engineering' },
+        { x: -10, z: 154, to: 'deathstar_droid_factory', label: 'Droid Factory' }
+      ] }),
+      loc('deathstar_engineering', 'Engineering', 'interior', [59, 112, 113, 156], [70, 122, 0, 100, 132, 0], { interior: true, exits: [{ x: 62, z: 118, to: 'deathstar_trench', label: 'Trench Run' }] }),
+      loc('deathstar_droid_factory', 'Droid Factory', 'interior', [-113, 108, -63, 152], [-100, 124, 0, -76, 136, 0], { interior: true, exits: [{ x: -66, z: 130, to: 'deathstar_trench', label: 'Trench Run' }] }),
+      loc('deathstar_imperial_city', 'Imperial City', 'district', [-37, 212, 37, 260], [-14, 222, 0, 14, 250, 0], { interior: true, exits: [
+        { x: -18, z: 214, to: 'deathstar_trench', label: 'Trench Run' },
+        { x: -20, z: 232, to: 'deathstar_outer_hull', label: 'Outer Hull' }
+      ] }),
+      loc('deathstar_outer_hull', 'Outer Hull', 'hull', [-149, 201, -91, 249], [-132, 214, 0, -108, 236, 0], { ringOut: true, fallBelow: -22, exits: [{ x: -93, z: 228, to: 'deathstar_imperial_city', label: 'Imperial City' }] })
     ]
   },
   hogwarts: {
     id: 'hogwarts', label: 'Hogwarts', subtitle: 'Castle and Grounds', paletteKey: 'hogwarts',
     build: buildHogwarts, ground: 0.3,
     locations: [
-      loc('hogwarts_great_hall', 'Great Hall', 'interior', [-19, -132, 19, -64], [-8, -100, 0.57, 8, -92, 0.57], { interior: true, ground: 0.57 }),
-      loc('hogwarts_courtyard', 'Castle Courtyard', 'courtyard', [-30, -62, 30, -30], [-9, -52, 0.3, 9, -46, 0.3]),
-      loc('hogwarts_viaduct', 'Viaduct Bridge', 'bridge', [-6, -30, 6, 22], [0, -22, 1.25, 0, -10, 1.25], { ringOut: true, fallBelow: -6, ground: 1.25 }),
+      loc('hogwarts_great_hall', 'Great Hall', 'interior', [-19, -132, 19, -64], [-8, -100, 0.57, 8, -92, 0.57], { interior: true, ground: 0.57, exits: [{ x: 0, z: -66, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }] }),
+      loc('hogwarts_courtyard', 'Castle Courtyard', 'courtyard', [-30, -62, 30, -30], [-9, -52, 0.3, 9, -46, 0.3], { exits: [
+        { x: 0, z: -60, to: 'hogwarts_great_hall', label: 'Great Hall' },
+        { x: 0, z: -32, to: 'hogwarts_viaduct', label: 'Viaduct Bridge' },
+        { x: -28, z: -50, to: 'hogwarts_dungeons', label: 'The Dungeons' },
+        { x: -28, z: -34, to: 'hogwarts_hagrid', label: "Hagrid's Hut" }
+      ] }),
+      loc('hogwarts_viaduct', 'Viaduct Bridge', 'bridge', [-6, -30, 6, 22], [0, -22, 1.25, 0, -10, 1.25], { ringOut: true, fallBelow: -6, ground: 1.25, exits: [{ x: 0, z: -28, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }] }),
       loc('hogwarts_quidditch', 'Quidditch Pitch', 'arena', [58, -12, 132, 56], [82, 16, 0.5, 112, 34, 0.5], { ground: 0.5 }),
-      loc('hogwarts_forest', 'Forbidden Forest', 'forest', [-124, -78, -42, -16], [-96, -56, 0.3, -70, -34, 0.3]),
+      loc('hogwarts_forest', 'Forbidden Forest', 'forest', [-124, -78, -42, -16], [-96, -56, 0.3, -70, -34, 0.3], { exits: [{ x: -96, z: -18, to: 'hogwarts_hagrid', label: "Hagrid's Hut" }] }),
       loc('hogwarts_boathouse', 'Black Lake Boathouse', 'dock', [54, 101, 70, 115], [58, 105, 0.6, 66, 111, 0.6], { ground: 0.6 }),
-      loc('hogwarts_hogsmeade', 'Hogsmeade Village', 'village', [-122, 32, -48, 92], [-96, 50, 0.3, -56, 70, 0.3])
+      loc('hogwarts_hogsmeade', 'Hogsmeade Village', 'village', [-122, 32, -48, 92], [-96, 50, 0.3, -56, 70, 0.3]),
+      loc('hogwarts_dungeons', 'The Dungeons', 'dungeon', [-49, -107, -27, -81], [-44, -100, 0.3, -32, -88, 0.3], { interior: true, exits: [{ x: -38, z: -83, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }] }),
+      loc('hogwarts_hagrid', "Hagrid's Hut", 'hut', [-108, -4, -84, 20], [-103, 6, 0.3, -89, 15, 0.3], { exits: [
+        { x: -96, z: -2, to: 'hogwarts_forest', label: 'Forbidden Forest' },
+        { x: -86, z: -2, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }
+      ] })
     ]
   }
 };

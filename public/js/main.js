@@ -1,24 +1,24 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v35-20261022';
-import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v35-20261022';
-import InputManager from './InputManager.js?v=browser-smash-gameplay-v35-20261022';
-import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v35-20261022';
-import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v35-20261022';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v35-20261022';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v35-20261022';
-import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v35-20261022';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v35-20261022';
-import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v35-20261022';
-import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v35-20261022';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v35-20261022';
-import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v35-20261022';
-import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v35-20261022';
-import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v35-20261022';
-import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v35-20261022';
-import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v35-20261022';
-import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v35-20261022';
-import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v35-20261022';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v36-20261022';
+import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v36-20261022';
+import InputManager from './InputManager.js?v=browser-smash-gameplay-v36-20261022';
+import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v36-20261022';
+import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v36-20261022';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v36-20261022';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v36-20261022';
+import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v36-20261022';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v36-20261022';
+import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v36-20261022';
+import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v36-20261022';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v36-20261022';
+import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v36-20261022';
+import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v36-20261022';
+import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v36-20261022';
+import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v36-20261022';
+import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v36-20261022';
+import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v36-20261022';
+import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v36-20261022';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -500,6 +500,20 @@ const mapDecor=new THREE.Group();scene.add(mapDecor);
 // Large worlds are built once as merged per-material geometry and stay alive while the player
 // fights in any of that world's locations. Leaving the world frees its merged geometry.
 const worldStage=new THREE.Group();worldStage.name='world-stage';scene.add(worldStage);
+// Lit rings mark the doorways that lead to a neighbouring stage, so a transition is a place
+// the player can see rather than a hidden trigger.
+const exitMarkers=new THREE.Group();exitMarkers.name='exit-markers';scene.add(exitMarkers);
+function buildExitMarkers(location){
+ while(exitMarkers.children.length){const node=exitMarkers.children.pop();node.traverse?.(child=>{child.geometry?.dispose?.();child.material?.dispose?.();});exitMarkers.remove(node);}
+ if(!location)return;
+ const ground=location.layout?.ground??0;
+ for(const exit of (location.exits||[])){
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.6,.13,8,26),new THREE.MeshBasicMaterial({color:0x63e6ff}));
+  ring.position.set(exit.x,ground+.1,exit.z);ring.rotation.x=Math.PI/2;exitMarkers.add(ring);
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.8,1.4,3.4,14,1,true),new THREE.MeshBasicMaterial({color:0x63e6ff,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false}));
+  beam.position.set(exit.x,ground+1.7,exit.z);exitMarkers.add(beam);
+ }
+}
 let activeWorldGroup=null,activeWorldId=null;
 function ensureWorldGroup(worldId){
  if(activeWorldId===worldId&&activeWorldGroup)return activeWorldGroup;
@@ -514,14 +528,15 @@ function applyWorldStage(key){
  // The procedural valley skyline only belongs to the valley maps.
  cinematicEnvironment.visible=!location;
  if(!location){
-  worldStage.visible=false;floor.visible=true;smashCamera.setStageTilt?.(0,1);smashCamera.setStageBounds?.(null,null);sun.castShadow=true;
+  worldStage.visible=false;floor.visible=true;buildExitMarkers(null);smashCamera.setStageTilt?.(0,1);smashCamera.setStageBounds?.(null,null);sun.castShadow=true;
   if(activeWorldGroup){worldStage.remove(activeWorldGroup);disposeWorldGroup(activeWorldGroup);activeWorldGroup=null;activeWorldId=null;}
   const classicLayout=ARENA_LAYOUTS[key];
-  window.__browserSmashWorld={world:null,location:null,label:classicLayout?.label||key,ground:classicLayout?.ground??0,bounds:classicLayout?.bounds??null};
+  window.__browserSmashWorld={world:null,location:null,label:classicLayout?.label||key,ground:classicLayout?.ground??0,bounds:classicLayout?.bounds??null,exits:[]};
   return;
  }
  worldStage.visible=true;
  ensureWorldGroup(location.world);
+ buildExitMarkers(location);
  // Larger arenas get a lower, pulled-back shot so the architecture is visible.
  // Enclosed rooms get a steeper, higher shot: a shallow pitch over a long interior filled
  // the frame with table tops instead of the room.
@@ -551,7 +566,7 @@ function applyWorldStage(key){
  // Interior stages are lit from above; open worlds get a low sun for long shadows.
  sun.position.set(...lamp.sunPos);
  rim.position.set(...lamp.rimPos);
- window.__browserSmashWorld={world:location.world,worldLabel:location.worldLabel,location:key,label:location.label,ground:location.layout.ground,bounds:location.layout.bounds,spawns:location.layout.spawns,blocks:location.layout.blocks.length,parts:activeWorldGroup?.userData.parts||0,drawCalls:activeWorldGroup?.userData.drawCalls||0};
+ window.__browserSmashWorld={world:location.world,worldLabel:location.worldLabel,location:key,label:location.label,ground:location.layout.ground,bounds:location.layout.bounds,spawns:location.layout.spawns,exits:location.exits||[],blocks:location.layout.blocks.length,parts:activeWorldGroup?.userData.parts||0,drawCalls:activeWorldGroup?.userData.drawCalls||0};
 }
 const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;
 const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
@@ -1052,6 +1067,40 @@ const groundedState=new WeakMap();
 const clock=new THREE.Clock();
 // One fixed 60 Hz gameplay tick, separate from the render loop so automated tests can
 // advance the simulation deterministically without GPU acceleration.
+// ---- World travel -----------------------------------------------------------
+// Each world location can carry a few exits: lit doorways at the edge of a stage that lead to
+// the neighbouring stage in the same world. Walking into one moves the match there - a
+// deliberate transition rather than a pretence of one seamless open world.
+let exitCooldown=0;
+function nearbyWorldExit(){
+ const exits=window.__browserSmashWorld?.exits;
+ if(!started||exploration||!exits||!exits.length)return null;
+ for(const exit of exits){
+   const range=exit.range||2.6;
+   if(Math.hypot(player.position.x-exit.x,player.position.z-exit.z)<=range)return exit;
+ }
+ return null;
+}
+function travelToLocation(key,label){
+ if(!worldLocation(key))return false;
+ exitCooldown=2.2;
+ window.showCombatCallout?.('TRAVEL · '+String(label||key).toUpperCase(),'#bfe9ff');
+ window.__browserSmashSelect?.chooseArena?.(key);
+ window.__browserSmashSpawnFighters?.();
+ player.invulnerable=Math.max(player.invulnerable||0,.8);
+ return true;
+}
+function updateWorldTravel(dt){
+ exitCooldown=Math.max(0,exitCooldown-dt);
+ if(exitCooldown>0)return;
+ const exit=nearbyWorldExit();
+ if(exit)travelToLocation(exit.to,exit.label);
+}
+window.__browserSmashTravel=(key,label)=>travelToLocation(key,label);
+window.__browserSmashExits=()=>(window.__browserSmashWorld?.exits||[]);
+window.__browserSmashExitMarkers=()=>exitMarkers.children.length;
+window.__browserSmashNearbyExit=()=>{const exit=nearbyWorldExit();return exit?{...exit}:null;};
+
 function simulationStep(dt){
   if(started&&hitStop>0){
     // Impact freeze: bodies stop, sparks and camera shake keep moving.
@@ -1065,6 +1114,7 @@ function simulationStep(dt){
   }else{
     player.simulate(dt,input);
     cpu.simulate(dt,twoPlayer&&!exploration?p2Input:ai);
+    updateWorldTravel(dt);
     window.updateSignatureMoves?.(dt);
     resolveArenaCollision(player);
     if(!exploration)resolveArenaCollision(cpu);

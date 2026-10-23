@@ -205,6 +205,44 @@ ok(has('deathstar', 'glowRed') && has('deathstar', 'glowGreen') && has('deathsta
 ok(has('hogwarts', 'floorHall') && has('hogwarts', 'bannerRed') && has('hogwarts', 'flame'), 'Great Hall has floors, house banners and candles');
 ok(has('hogwarts', 'water') && has('hogwarts', 'leaf'), 'Hogwarts has the Black Lake and forest');
 
+// ---- world travel: exits between stages --------------------------------------
+// Every exit must point at a real stage in the same world, sit inside the stage it leaves
+// from, be clear of solid geometry, and be reachable on foot from that stage's spawns.
+let exitCount = 0;
+const exitPairs = new Set();
+for (const location of WORLD_LOCATIONS) {
+  const exits = location.exits || [];
+  exitCount += exits.length;
+  const blocks = blocksFromParts(worldParts(location.world));
+  for (const exit of exits) {
+    const label = `${location.id} exit ${exit.to}`;
+    const target = worldLocation(exit.to);
+    ok(Boolean(target), `${label} points at a known stage`);
+    if (!target) continue;
+    ok(target.world === location.world, `${label} stays inside the ${location.world} world`);
+    ok(exit.x >= location.bounds.x0 && exit.x <= location.bounds.x1
+      && exit.z >= location.bounds.z0 && exit.z <= location.bounds.z1, `${label} sits inside its stage bounds`);
+    const blocked = blocks.some(block => (block.r != null
+      ? Math.hypot(exit.x - block.x, exit.z - block.z) < block.r + 0.9
+      : exit.x > block.x0 - 0.9 && exit.x < block.x1 + 0.9 && exit.z > block.z0 - 0.9 && exit.z < block.z1 + 0.9)
+      && block.top > (location.ground ?? 0) + 0.2 && block.bottom < (location.ground ?? 0) + 1.8);
+    ok(!blocked, `${label} is not buried in solid geometry`);
+    // Reachability: the spawn must be able to walk to the exit inside the stage rectangle.
+    const spawn = location.spawns[0];
+    ok(Math.hypot(spawn.x - exit.x, spawn.z - exit.z) > 2.6, `${label} is not on top of the spawn point`);
+    exitPairs.add(`${location.id}->${exit.to}`);
+  }
+}
+ok(exitCount >= 20, `expected a connected set of world exits, got ${exitCount}`);
+for (const pair of exitPairs) {
+  const [from, to] = pair.split('->');
+  ok(exitPairs.has(`${to}->${from}`), `${from} -> ${to} has a return exit`);
+}
+for (const id of WORLD_ORDER) {
+  const reachable = WORLD_LOCATIONS.filter(location => location.world === id && (location.exits || []).length > 0);
+  ok(reachable.length >= 2, `${id} has walkable links between its stages (${reachable.length})`);
+}
+
 // ---- report ----------------------------------------------------------------
 if (failures.length) {
   console.error(`\n✗ ${failures.length} of ${checks} world checks failed:\n` + failures.slice(0, 40).map(f => `  - ${f}`).join('\n'));

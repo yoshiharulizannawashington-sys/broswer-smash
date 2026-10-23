@@ -265,6 +265,33 @@ grain, skin pores) once and applies them to cloned prefab materials, classified 
   instead of standing in a T-pose, and the menu keeps posing both fighters while the simulation is
   paused.
 
+## Worlds, stages and travel
+
+The four reference worlds now hold 33 battle locations (Dragon Ball Z 8, Asgard 5, Death Star 11,
+Hogwarts 9). Each world is one built environment; the locations inside it are rectangles over that
+same geometry, so switching stages within a world does not rebuild the map.
+
+Stages are joined by marked doorways: a lit ring and light column at the edge of a stage that
+leads to a neighbouring stage. Walking into one moves the match there (callout, then the new
+stage's spawns). That is a deliberate transition between separate stages, **not** one streaming
+open world: `WORLD_LOCATIONS` carries the `exits` graph, `scripts/test-worlds.mjs` checks every
+exit for a real destination, same-world containment, distance from spawns, solid-geometry overlap
+and a reciprocal return exit, and the browser test drives a fighter into a doorway and asserts the
+match moved, the fighters landed on the new spawns and only one world group stayed mounted.
+
+Death Star stages: Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control,
+Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hull. The hangar
+spine, the east/west spur and the Trench Run-to-city corridor are built as geometry, so the rooms
+are visibly joined even though each remains its own battle stage.
+
+Hogwarts stages: Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest,
+Black Lake Boathouse, Hogsmeade, The Dungeons (a vaulted undercroft with cells and a water channel)
+and Hagrid's Hut (a real walkable stage around the hut and pumpkin patch).
+
+What is still scenery rather than a stage: Asgard's palace is a facade with a lit colonnade, not a
+walkable interior; the shipyards and grounds beyond the named stages are decoration, and there is
+no continuous walk from one end of a world to the other.
+
 ## Large world materials
 
 `public/js/worlds/world_textures.js` draws the tileable surface maps the four reference worlds

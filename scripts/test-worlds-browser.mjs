@@ -250,6 +250,43 @@ try {
   });
   check('the camera is given the stage geometry to avoid', camera.collides, `${camera.blocks} blocks registered`);
 
+  // ---- Travelling between connected stages --------------------------------
+  // A doorway is a deliberate transition: walking into it moves the match to the stage it
+  // leads to, puts both fighters on that stage's spawns, and keeps one world group mounted.
+  await page.evaluate(() => window.__browserSmashSelect.chooseArena('deathstar_hangar'));
+  await page.waitForFunction(() => window.__browserSmashWorld?.location === 'deathstar_hangar', null, { timeout: 60_000 });
+  await page.evaluate(() => window.__browserSmashSpawnFighters());
+  const doorway = await page.evaluate(() => window.__browserSmashExits()[0]);
+  check('the hangar exposes a connected doorway', Boolean(doorway) && doorway.to === 'deathstar_trench',
+    JSON.stringify(doorway));
+  await page.evaluate(exit => {
+    const fighter = window.fighters[0];
+    fighter.position.set(exit.x, fighter.position.y, exit.z);
+    fighter.velocity.set(0, 0, 0);
+  }, doorway);
+  await step(0.25);
+  const travelled = await page.evaluate(() => {
+    const stage = window.__browserSmashScene.children.find(child => child.name === 'world-stage');
+    return {
+      world: window.__browserSmashWorld,
+      match: window.__browserSmashMatch(),
+      groups: stage ? stage.children.length : 0,
+      markers: window.__browserSmashExitMarkers?.() ?? 0,
+      fighters: window.fighters.map(fighter => ({ x: fighter.position.x, y: fighter.position.y, z: fighter.position.z, ground: fighter.groundLevel }))
+    };
+  });
+  check('walking into a doorway travels to the connected stage', travelled.world.location === 'deathstar_trench',
+    String(travelled.world.location));
+  check('travel keeps the match running on the new stage', travelled.match.arena === 'deathstar_trench', travelled.match.arena);
+  const trench = travelled.world.bounds;
+  check('travel places both fighters on the new stage spawns',
+    travelled.fighters.every(fighter => fighter.x >= trench.x0 && fighter.x <= trench.x1
+      && fighter.z >= trench.z0 && fighter.z <= trench.z1 && Math.abs(fighter.y - fighter.ground) < 0.8),
+    JSON.stringify(travelled.fighters.map(fighter => [Math.round(fighter.x), Math.round(fighter.z)])));
+  check('travel does not duplicate world geometry', travelled.groups === 1, `${travelled.groups} groups`);
+  check('every doorway in the new stage is marked in the scene',
+    travelled.markers === travelled.world.exits.length * 2, `${travelled.markers} markers for ${travelled.world.exits.length} exits`);
+
   // ---- Switching worlds and back ------------------------------------------
   await page.evaluate(() => window.__browserSmashSelect.chooseArena('asgard_bifrost'));
   await page.waitForFunction(() => window.__browserSmashWorld?.location === 'asgard_bifrost', null, { timeout: 60_000 });
