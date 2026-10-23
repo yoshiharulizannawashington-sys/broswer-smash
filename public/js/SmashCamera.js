@@ -208,7 +208,11 @@ export default class SmashCamera {
       if (length > .01) {
         const feet = Math.min(a.position.y || 0, b.position.y || 0);
         const hit = this.obstruction(ox, oy, oz, vx / length, vy / length, vz / length, length, feet);
-        const allowed = hit == null ? length : Math.max(4.6, hit - .9);
+        // A flat minimum reach used to win over a closer wall, which parked the camera
+        // inside pillars and walls whenever a fighter was pressed into a corner. Keep the
+        // shot's comfort floor, but never place it past the surface that blocked it.
+        const allowed = hit == null ? length
+          : Math.min(Math.max(hit - .9, 2.2), Math.max(.6, hit - .35));
         // Shorten instantly, and also snap when the shot has clearly opened up again (a
         // teleport, a spawn onto a raised deck); only gentle changes ease out.
         this.collisionReach = allowed < this.collisionReach || allowed > this.collisionReach * 1.8
@@ -218,6 +222,9 @@ export default class SmashCamera {
         if (use < length) {
           this.positionTarget.set(ox + vx / length * use, oy + vy / length * use, oz + vz / length * use);
         }
+        // Record a capped shot: with a wall directly behind it the camera cannot pull back
+        // any further, so the lens has to open up instead (see the FOV step below).
+        this.framing.capped = hit != null;
       }
     }
 
@@ -239,7 +246,16 @@ export default class SmashCamera {
     this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, this.positionTarget.z, 3.4, dt);
     // A narrower lens keeps the duel large in frame; widening it past ~50 degrees was
     // the fastest way to shrink both fighters into specks while still "framing" them.
-    const nextFov = THREE.MathUtils.damp(this.camera.fov, THREE.MathUtils.clamp(38 + spread * 12 + (this.zoom - 1) * 4, 37, 58), 2.5, dt);
+    // When scenery caps the shot, though, a wider lens is the only way to keep a fighter
+    // that is already at the frame edge from falling out of it entirely.
+    let targetFov = 38 + spread * 12 + (this.zoom - 1) * 4;
+    if (this.framing.capped) {
+      const reach = Math.max(2, this.positionTarget.distanceTo(this.lookTarget));
+      const halfSpan = distance * .5 + 1.8;
+      const aspect = this.camera.aspect || 1.6;
+      targetFov = Math.max(targetFov, THREE.MathUtils.radToDeg(2 * Math.atan(halfSpan / (reach * aspect))));
+    }
+    const nextFov = THREE.MathUtils.damp(this.camera.fov, THREE.MathUtils.clamp(targetFov, 37, 64), 2.5, dt);
     if (Math.abs(nextFov - this.camera.fov) > 0.015) {
       this.camera.fov = nextFov;
       this.camera.updateProjectionMatrix();

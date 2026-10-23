@@ -375,11 +375,14 @@ function buildDbz() {
   cyl(parts, lx + 7, GROUND + 2.4, lz - 6, 4.2, 4.2, 4.8, 'glassCool', { seg: 18 });
   cyl(parts, lx + 7, GROUND + 2.4, lz - 6, 4.6, 4.6, .5, 'panel', solid({ seg: 18, bottom: GROUND }));
   ball(parts, lx + 7, GROUND + 3.4, lz - 6, 1.8, 'glassBlue', { seg: 12 });
-  for (let i = 0; i < 4; i++) {
-    const x = lx - 11 + i * 7.4;
-    box(parts, x, GROUND + 1.1, lz + 9, 4.4, 1.5, 2.2, 'panel', solid({ bottom: GROUND }));
-    box(parts, x, GROUND + 1.95, lz + 8.3, 3.6, .18, 1.5, 'glassBlue');
-    box(parts, x, GROUND + 2.2, lz + 8.3, 1, .1, .7, 'glassWarm');
+  // Control bank kept to the front-west corner and kept low: a four-wide row across the
+  // near side sat between the camera and the arena, hiding the fighters' feet and the
+  // test chamber behind a line of cabinets.
+  for (let i = 0; i < 2; i++) {
+    const x = lx - 13.6 + i * 4.9;
+    box(parts, x, GROUND + .95, lz + 11.2, 4.6, 1.2, 2.4, 'panel', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 1.6, lz + 11.2, 4, .18, 1.7, 'glassBlue');
+    box(parts, x, GROUND + 1.85, lz + 11.2, 1.1, .1, .8, 'glassWarm');
   }
   for (const side of [-1, 1]) {
     for (let i = 0; i < 3; i++) {
@@ -633,8 +636,32 @@ function buildAsgard() {
   for (let i = 0; i < 3; i++) {
     box(parts, 0, hy0 + .3 + i * .5, hz1 + 8 + i * 1.7, 20 - i * 2.4, .5, 7.4 - i * 1.5, 'goldLight', solid({ bottom: hy0 }));
   }
-  box(parts, 0, hy0 + 3.6, hz1 + 4.4, 5.4, 4.4, 3.2, 'gold', solid({ bottom: hy0 + 1.6 }));
-  box(parts, 0, hy0 + 4.6, hz1 + 3.2, 4.4, 3.2, .8, 'goldLight');
+  // The seat: a raised platform, a low cushion, a tall panelled back between two gold-
+  // capped posts and a spired crest, so the silhouette reads as an ornate throne instead
+  // of a heavy bench. Everything sits north of the playable rectangle (z <= -164).
+  box(parts, 0, hy0 + .7, hz1 + 5, 9.4, 1.4, 6.4, 'marble', solid({ bottom: hy0 }));
+  box(parts, 0, hy0 + 1.5, hz1 + 5, 8.6, .2, 5.6, 'goldLight');
+  box(parts, 0, hy0 + 1.55, hz1 + 4.6, 4.8, .3, 3.2, 'gold');
+  box(parts, 0, hy0 + 1.95, hz1 + 4.6, 4.2, .55, 2.8, 'cloth', solid({ bottom: hy0 + 1.4 }));
+  for (const side of [-1, 1]) {
+    // Back posts, finials and the spires above them.
+    box(parts, side * 2.1, hy0 + 5.7, hz1 + 3.3, .6, 8.5, .6, 'gold', solid({ bottom: hy0 + 1.4 }));
+    ball(parts, side * 2.1, hy0 + 10.1, hz1 + 3.3, .55, 'gold', { seg: 8 });
+    cyl(parts, side * 2.1, hy0 + 11, hz1 + 3.3, .12, .24, 1.5, 'gold', { seg: 6 });
+    // Arms, with a knob at the front end.
+    box(parts, side * 2.5, hy0 + 2.85, hz1 + 4.9, .5, .5, 2.6, 'goldLight', solid({ bottom: hy0 + 1.4 }));
+    box(parts, side * 2.5, hy0 + 2.2, hz1 + 5.9, .6, 1.1, .6, 'gold');
+    ball(parts, side * 2.5, hy0 + 3.2, hz1 + 3.8, .34, 'gold', { seg: 8 });
+  }
+  // Back panel with three inset fields and the crest above it.
+  box(parts, 0, hy0 + 6.2, hz1 + 3.5, 3.7, 6.6, .45, 'gold', solid({ bottom: hy0 + 1.4 }));
+  for (let i = 0; i < 3; i++) box(parts, 0, hy0 + 4.4 + i * 1.7, hz1 + 3.78, 2.6, 1.2, .12, 'goldLight');
+  box(parts, 0, hy0 + 9.9, hz1 + 3.5, 3.1, .5, .9, 'goldLight');
+  box(parts, 0, hy0 + 10.5, hz1 + 3.5, 1.9, .6, .9, 'gold');
+  box(parts, 0, hy0 + 11, hz1 + 3.5, .8, .5, .9, 'goldLight');
+  // Footstool on the top step.
+  box(parts, 0, hy0 + 1.45, hz1 + 7.9, 3.8, .15, 2, 'gold');
+  box(parts, 0, hy0 + 1.7, hz1 + 7.9, 3.4, .4, 1.7, 'marble', solid({ bottom: hy0 + 1.4 }));
   box(parts, 0, hy0 + 9, hz1 + 2.2, 24, 14, .4, 'glassWarm');
   for (let i = 0; i < 6; i++) box(parts, -10 + i * 4, hy0 + 9, hz1 + 2.5, .5, 14, .5, 'gold');
   for (const side of [-1, 1]) {

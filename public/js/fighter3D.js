@@ -141,13 +141,16 @@ export default class Fighter3D {
       }
     }
 
-    if (this.bounds && !this.roamMode) {
-      // Per-arena playable rectangle. Roaming keeps the wider legacy box so exploration is
-      // not fenced into the fighting area.
+    if (this.bounds) {
+      // Per-arena playable rectangle. This has to win over the roam movement set: a match
+      // runs with roamMode on (faster ground speed, triple jump), and stages such as the
+      // Asgard throne hall sit entirely outside the legacy ±125 box. Clamping to that box
+      // first pinned every fighter to its edge and left the arena's own clamp fighting it.
       const pad = this.hurtboxRadius;
       this.position.x = THREE.MathUtils.clamp(this.position.x, this.bounds.x0 + pad, this.bounds.x1 - pad);
       this.position.z = THREE.MathUtils.clamp(this.position.z, this.bounds.z0 + pad, this.bounds.z1 - pad);
     } else {
+      // Legacy arenas and free roam have no stage rectangle; keep the wide exploration box.
       this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -125 : -17, this.roamMode ? 125 : 17);
       this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -125 : -8, this.roamMode ? 125 : 8);
     }

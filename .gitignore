@@ -150,3 +150,6 @@ vite.config.ts.timestamp-*
 
 # Local verification screenshots and the headless browser runtime (scratch, not shipped)
 artifacts/
+
+# Local (root-free) browser shared libraries materialised by scripts/setup-browser-libs.sh
+.browser-libs/
