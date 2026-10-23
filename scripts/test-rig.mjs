@@ -12,6 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { bindRigJoints, validateFighterRig, describeRigValidation, isEquippedWeapon } from '../public/js/rig_validation.js';
+import { mountImportedCharacter, facingYaw, TARGET_FIGHTER_HEIGHT } from '../public/js/fighter_model_placement.js';
 
 globalThis.self = globalThis;
 
@@ -207,6 +208,72 @@ check('the cape hangs from the shoulders, not the floor',
 const pelvis = superman.getObjectByName('joint_superman_pelvis');
 check('joint offsets are authored Y-up', pelvis.position.y > 0.9 && Math.abs(pelvis.position.z) < 0.02,
   `pelvis local ${pelvis.position.toArray().map(value => value.toFixed(2)).join(', ')}`);
+
+// ---------------------------------------------------------------------------- imported models
+// A character model imported from outside the prefab library (a Sketchfab GLB, Goku's FBX)
+// arrives at an arbitrary scale with its origin wherever the author put it. These are the
+// placement rules the loader applies before the rig gate runs; they used to be inline and
+// untested, which is how a stale variable in the import path went unnoticed.
+console.log('\nImported-model placement');
+
+function importedBody(heightMetres, centreY = 0, facing = 'Z') {
+  const root = new THREE.Group();
+  root.name = 'Imported';
+  const mesh = box(0.6, heightMetres, 0.3);
+  mesh.name = 'body';
+  mesh.position.set(0, centreY, 0);
+  root.add(mesh);
+  if (facing === '-Z') root.rotation.y = Math.PI;
+  root.updateMatrixWorld(true);
+  return root;
+}
+
+{
+  const hips = importedBody(1.8, 1.1);
+  const stand = new THREE.Group();
+  stand.position.set(-12, 0.18, 4);
+  const { holder, placement } = mountImportedCharacter(hips, stand, { facing: 1, facingZ: 0 });
+  holder.position.copy(stand.position);
+  holder.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(holder);
+  check('an imported model is scaled to the roster height', Math.abs(bounds.max.y - bounds.min.y - TARGET_FIGHTER_HEIGHT) < 0.02,
+    `${(bounds.max.y - bounds.min.y).toFixed(3)} m from a ${placement.sourceHeight.toFixed(2)} m source`);
+  check('an imported model lands its feet on the fighter origin', Math.abs(bounds.min.y - holder.position.y) < 0.02,
+    `feet ${bounds.min.y.toFixed(3)} vs origin y ${holder.position.y.toFixed(3)}`);
+  check('an imported model inherits the fighter position', holder.position.x === -12 && holder.position.z === 4,
+    holder.position.toArray().join(', '));
+  check('the imported root keeps its own transform', Math.abs(hips.rotation.x) < 1e-6, `root x rotation ${hips.rotation.x}`);
+  check('the holder reads the imported userData', holder.userData === hips.userData,
+    holder.userData === hips.userData ? 'shared' : 'copied');
+}
+
+{
+  const centimetres = importedBody(180, 90);
+  const stand = new THREE.Group();
+  const { holder, placement } = mountImportedCharacter(centimetres, stand, {});
+  holder.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(holder);
+  check('a 180-unit (centimetre-authored) export is normalised', Math.abs(bounds.max.y - bounds.min.y - TARGET_FIGHTER_HEIGHT) < 0.02,
+    `scale ${placement.scale.toFixed(4)} for a ${placement.sourceHeight} m source`);
+  check('the normalised scale is recorded for diagnostics', placement.scale > 0.01 && placement.scale < 0.02, String(placement.scale));
+}
+
+{
+  const up = new THREE.Vector3(0, 1, 0);
+  for (const [facing, facingZ, expected] of [[1, 0, 'x+'], [-1, 0, 'x-'], [0, 1, 'z+'], [0, -1, 'z-']]) {
+    const direction = new THREE.Vector3(0, 0, 1).applyAxisAngle(up, facingYaw(facing, facingZ));
+    const wanted = new THREE.Vector3(facing, 0, facingZ);
+    check(`a +Z model faces ${expected}`, direction.distanceTo(wanted) < 1e-6,
+      `forward ${direction.toArray().map(v => v.toFixed(2)).join(', ')} vs wanted ${wanted.toArray().join(', ')}`);
+  }
+  // Sketchfab exports are frequently authored facing -Z: the manifest yawOffset corrects it.
+  const back = importedBody(1.9, 0.95, '-Z');
+  const flipped = mountImportedCharacter(back, new THREE.Group(), { facing: 1, facingZ: 0, yawOffset: Math.PI });
+  const direction = new THREE.Vector3(0, 0, -1).applyAxisAngle(up, flipped.holder.rotation.y);
+  check('a -Z model with a 180 degree offset faces the fighter direction',
+    direction.distanceTo(new THREE.Vector3(1, 0, 0)) < 1e-6,
+    `forward ${direction.toArray().map(v => v.toFixed(2)).join(', ')}`);
+}
 
 console.log(`\n${checks - failures}/${checks} rig checks passed`);
 if (failures) {

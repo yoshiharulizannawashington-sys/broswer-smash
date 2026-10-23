@@ -11,6 +11,16 @@
       "url": "/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf",
       "format": "gltf",
       "enabled": false
+    },
+    "iron_spider": {
+      "url": "/models/characters/iron_spider/iron_spider.glb",
+      "format": "gltf",
+      "enabled": false,
+      "yawOffset": 0,
+      "source": "https://sketchfab.com/3d-models/iron-spider-avengers-infinity-war-99e52e57a8dc4feda750af87b87d2955",
+      "creator": "Kabiidev (https://sketchfab.com/kabiidev)",
+      "license": "CC Attribution (exact version unconfirmed - check the licence link on the model page)",
+      "notes": "Staged, not bundled. Download the model from Sketchfab while signed in, then run: node scripts/install-character-model.mjs <downloaded .glb> --identity \"Iron Spider\" --facing 0 --attribution \"<credit>\" --license \"<licence>\" --source <model url>. The installer copies it here, enables this entry and prints the credit line to paste into public/ATTRIBUTIONS.md."
     }
   }
 }

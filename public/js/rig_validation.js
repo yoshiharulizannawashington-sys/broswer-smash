@@ -19,6 +19,8 @@ const scratch = new THREE.Vector3();
  *   `scale` is the model's uniform render scale, so the limits hold for a 1.35x Hulk as well
  *   as a 1x roster fighter. `ground` is the world height the fighter's origin stands on.
  *   `ignore` excludes nodes (equipped weapons, VFX hooks) from the silhouette measurement.
+ *   `requireJoints` (default true) demands the prefab's eleven named joints; set it false for
+ *   an imported skinned model, which has a Mixamo/Sketchfab skeleton instead.
  * @returns {{ok: boolean, issues: string[], metrics: object}}
  */
 export function validateFighterRig(model, options = {}) {
@@ -64,12 +66,13 @@ export function validateFighterRig(model, options = {}) {
     issues.push(`root is tilted ${metrics.rootTilt} degrees off world up; run scripts/normalize-character-rig.mjs`);
   }
 
+  const requireJoints = options.requireJoints !== false;
   const missing = RIG_JOINTS.filter(name => !model.userData?.[name]);
-  if (missing.length) issues.push('missing joints: ' + missing.join(', '));
+  if (requireJoints && missing.length) issues.push('missing joints: ' + missing.join(', '));
   metrics.joints = RIG_JOINTS.length - missing.length;
 
   const pelvis = model.userData?.pelvis;
-  if (pelvis && pelvis.position.y < 0.6) {
+  if (requireJoints && pelvis && pelvis.position.y < 0.6) {
     issues.push(`pelvis sits at local y=${pelvis.position.y.toFixed(2)} (expected +Y up)`);
   }
 

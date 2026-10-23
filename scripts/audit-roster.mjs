@@ -71,6 +71,7 @@ try {
 
   const libraries = await page.evaluate(() => ({
     characters: window.__browserSmashAssets.characters.count,
+    prefabs: window.__browserSmashAssets.characters.keys || [],
     weapons: window.__browserSmashAssets.weapons.count,
     roster: window.characterRosters?.launch?.map(([name]) => name) || []
   }));
@@ -78,18 +79,49 @@ try {
   assert.ok(libraries.weapons >= 68, 'weapon prefab library is incomplete: ' + libraries.weapons);
   assert.ok(libraries.roster.length >= 32, 'launch roster is missing from the page');
 
+  const slugOf = name => String(name).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   const failures = [];
   const rows = [];
+  const withoutPrefab = [];
   for (const name of libraries.roster) {
-    const mounted = await page.evaluate(async fighterName => {
+    // Not every roster identity has a Blender prefab yet (a newly registered fighter keeps the
+    // procedural body until one is generated). That is a different outcome from a prefab that
+    // exists and fails to mount, so the audit tells them apart instead of failing both.
+    const hasPrefab = libraries.prefabs.includes('character_' + slugOf(name));
+    if (!hasPrefab) withoutPrefab.push(name);
+    const mounted = await page.evaluate(async ({ fighterName, expectPrefab }) => {
       const select = document.querySelector('#p1Character');
       select.value = fighterName;
       select.dispatchEvent(new Event('change'));
       const fighter = window.fighters[0];
+      const joints = ['pelvis', 'torso', 'head', 'leftArm', 'rightArm', 'leftFore', 'rightFore', 'leftLeg', 'rightLeg', 'leftShin', 'rightShin'];
+      if (!expectPrefab) {
+        // Give the async upgrade a chance to land, then judge the body that is on screen.
+        await new Promise(done => setTimeout(done, 900));
+        const model = fighter.model;
+        const rig = window.__browserSmashRigCheck?.(fighter) || { ok: false, issues: ['rig check hook missing'], metrics: {} };
+        let visibleMeshes = 0;
+        model?.traverse(node => { if (node.isMesh && node.visible) visibleMeshes++; });
+        return {
+          body: 'procedural',
+          model: model?.name || null,
+          rig: model?.userData?.blenderRigVersion || null,
+          weapon: model?.userData?.weaponLabel || null,
+          kind: model?.userData?.weaponKind || null,
+          detail: Object.keys(model?.userData?.surfaceDetail || {}),
+          visibleMeshes,
+          rigOk: rig.ok,
+          rigIssues: rig.issues,
+          height: rig.metrics?.height ?? null,
+          feetY: rig.metrics?.feetY ?? null,
+          headAbovePelvis: rig.metrics?.headAbovePelvis ?? null,
+          renderable: rig.metrics?.renderableMeshes ?? 0,
+          joints: joints.filter(joint => model?.userData?.[joint])
+        };
+      }
       // The swap is async (prefab clone + weapon attach); poll the live fighter.
       for (let attempt = 0; attempt < 240; attempt++) {
         const model = fighter.model;
-        const joints = ['pelvis', 'torso', 'head', 'leftArm', 'rightArm', 'leftFore', 'rightFore', 'leftLeg', 'rightLeg', 'leftShin', 'rightShin'];
         if (model?.name?.startsWith('Blender fighter ') && fighter.identity === fighterName
           && model.userData.equippedWeaponRight && joints.every(joint => model.userData[joint])) {
           // A mounted prefab is not a working fighter: run the same structural gate the game
@@ -99,6 +131,7 @@ try {
           let visibleMeshes = 0;
           model.traverse(node => { if (node.isMesh && node.visible) visibleMeshes++; });
           return {
+            body: 'prefab',
             model: model.name,
             rig: model.userData.blenderRigVersion || null,
             weapon: model.userData.weaponLabel || null,
@@ -121,9 +154,9 @@ try {
         model: model?.name || null,
         identity: fighter.identity,
         weapon: model?.userData?.equippedWeaponRight ? 'mounted' : 'missing',
-        joints: ['pelvis', 'torso', 'head', 'leftArm', 'rightArm', 'leftFore', 'rightFore', 'leftLeg', 'rightLeg', 'leftShin', 'rightShin'].filter(joint => model?.userData?.[joint])
+        joints: joints.filter(joint => model?.userData?.[joint])
       };
-    }, name);
+    }, { fighterName: name, expectPrefab: hasPrefab });
 
     if (mounted.error) failures.push({ name, ...mounted });
     else if (!mounted.rigOk || mounted.visibleMeshes === 0 || mounted.renderable === 0) {
@@ -142,6 +175,8 @@ try {
     weapons: libraries.weapons,
     selectable: libraries.roster.length,
     mounted: rows.length,
+    prefabBacked: rows.filter(row => row.body === 'prefab').length,
+    proceduralFallback: withoutPrefab,
     structurallyValid: rows.length,
     withSurfaceDetail: rows.length - withoutDetail.length,
     weaponsAttached: rows.filter(row => row.weapon).length,
@@ -152,11 +187,18 @@ try {
     detailClasses: [...new Set(rows.flatMap(row => row.detail))].sort()
   }, null, 2));
   assert.deepEqual(failures, [], 'fighters failed to mount or failed rig validation: ' + JSON.stringify(failures, null, 2));
+  // Every fighter that owns a prefab must still mount it: this is the guard that a newly added
+  // identity cannot quietly replace or break the existing rigged roster.
+  assert.ok(rows.filter(row => row.body === 'prefab').length >= 32,
+    'too few fighters mounted a prefab rig: ' + rows.filter(row => row.body === 'prefab').length);
+  assert.deepEqual(rows.filter(row => row.body === 'procedural').map(row => row.name), withoutPrefab,
+    'procedural fallbacks do not match the identities without a prefab');
   assert.ok(rows.every(row => row.visibleMeshes > 0), 'every mounted fighter must have visible meshes');
   assert.ok(rows.every(row => Math.abs(row.feetY) <= 0.2), 'every mounted fighter must stand on its own origin');
   assert.ok(rows.every(row => row.headAbovePelvis >= 0.35), 'every mounted fighter must have its head above its pelvis');
   assert.deepEqual(pageErrors, [], 'page raised runtime errors: ' + pageErrors.join('\n'));
-  console.log('Roster audit passed: every selectable fighter mounted its prefab rig and weapon.');
+  console.log('Roster audit passed: every selectable fighter mounted a valid rig, and ' + withoutPrefab.length
+    + ' identity/identities without a prefab kept a validated procedural body (' + withoutPrefab.join(', ') + ').');
 } finally {
   if (browser) await browser.close();
   await new Promise(resolveClose => server.close(resolveClose));

@@ -97,10 +97,18 @@ try {
   const setup = await page.evaluate(() => ({
     step1: !document.querySelector('.bs-step[data-step="1"]').hidden,
     cards: document.querySelectorAll('#selectScreen .bs-card').length,
+    launch: window.characterRosters?.launch?.length || 0,
+    fighters: [...document.querySelectorAll('#selectScreen .bs-card')].map(card => card.dataset.fighter),
     arenas: document.querySelectorAll('#selectScreen .bs-arena').length
   }));
   check('selection screen opens on the fighter step', setup.step1);
-  check('all 32 roster fighters are selectable', setup.cards === 32, `${setup.cards} cards`);
+  // Held to the roster the page itself publishes, so adding a fighter cannot pass by
+  // shrinking the list and cannot fail just because the launch roster grew.
+  check('every launch roster fighter is selectable', setup.cards === setup.launch && setup.launch >= 32,
+    `${setup.cards} cards for ${setup.launch} launch fighters`);
+  check('Iron Spider is selectable alongside Iron Man',
+    setup.fighters.includes('Iron Spider') && setup.fighters.includes('Iron Man (Tony Stark)'),
+    setup.fighters.filter(name => /spider|iron man/i.test(name)).join(', '));
   check('all arenas are selectable', setup.arenas >= 10, `${setup.arenas} arenas`);
 
   await page.screenshot({ path: 'artifacts/select-fighters.png' });

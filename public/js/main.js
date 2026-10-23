@@ -1,25 +1,25 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v36-20261022';
-import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v36-20261022';
-import InputManager from './InputManager.js?v=browser-smash-gameplay-v36-20261022';
-import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v36-20261022';
-import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v36-20261022';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v36-20261022';
-import { validateFighterRig, isEquippedWeapon } from './rig_validation.js?v=browser-smash-rig-v1-20261023';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v36-20261022';
-import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v36-20261022';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v36-20261022';
-import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v36-20261022';
-import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v36-20261022';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v36-20261022';
-import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v36-20261022';
-import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v36-20261022';
-import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v36-20261022';
-import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v36-20261022';
-import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v36-20261022';
-import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v36-20261022';
-import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v36-20261022';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v37-20261023';
+import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v37-20261023';
+import InputManager from './InputManager.js?v=browser-smash-gameplay-v37-20261023';
+import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v37-20261023';
+import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v37-20261023';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v37-20261023';
+import { validateFighterRig, isEquippedWeapon } from './rig_validation.js?v=browser-smash-gameplay-v37-20261023';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v37-20261023';
+import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v37-20261023';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v37-20261023';
+import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v37-20261023';
+import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v37-20261023';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v37-20261023';
+import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v37-20261023';
+import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v37-20261023';
+import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v37-20261023';
+import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v37-20261023';
+import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v37-20261023';
+import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v37-20261023';
+import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v37-20261023';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -104,7 +104,7 @@ const roundScoreEl=document.createElement('div');roundScoreEl.id='roundScore';
 Object.assign(roundScoreEl.style,{position:'fixed',left:'50%',top:'76px',transform:'translateX(-50%)',zIndex:'6',font:'900 10px/1 system-ui,sans-serif',letterSpacing:'.2em',color:'#c8ecff',textShadow:'0 2px 8px #000',pointerEvents:'none',whiteSpace:'nowrap',textAlign:'center'});
 document.body.appendChild(roundScoreEl);
 const combatCallout=document.createElement('div');combatCallout.setAttribute('aria-live','polite');Object.assign(combatCallout.style,{position:'fixed',left:'50%',top:'23%',zIndex:'7',pointerEvents:'none',opacity:'0',transform:'translateX(-50%)',font:'1000 clamp(22px,4vw,42px)/1 system-ui,sans-serif',letterSpacing:'.12em',textAlign:'center',whiteSpace:'nowrap',textShadow:'0 3px 0 #06111d,0 0 18px currentColor,0 0 34px #00131e',WebkitTextStroke:'1px #05111b',maxWidth:'96vw'});document.body.appendChild(combatCallout);window.showCombatCallout=(label,color='#a8f6ff')=>{combatCallout.textContent=label;combatCallout.style.color=color;combatCallout.animate([{opacity:0,transform:'translate(-50%,8px) scale(.82)'},{opacity:1,transform:'translate(-50%,0) scale(1.04)',offset:.18},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.62},{opacity:0,transform:'translate(-50%,-12px) scale(1.02)'}],{duration:760,easing:'cubic-bezier(.16,1,.3,1)',fill:'forwards'});};
-const allRoster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"]];const roster=[["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","aang","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
+const allRoster=[["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"],["Iron Spider","cyborg"]];const roster=[["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"],["Iron Spider","cyborg"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","aang","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
 // Signature specials use distinct attack silhouettes and balance values instead of recolored generic bolts.
 const SPECIAL_MOVES={
 superman:{label:'HEAT VISION',type:'beam',color:0xff372e,damage:18,speed:39,cooldown:.86,stun:.48,knockback:5.8},
@@ -139,9 +139,13 @@ lord_voldemort:{label:'AVADA KEDAVRA',type:'curse',color:0x55ff86,damage:20,spee
 sasuke_uchiha:{label:'CHIDORI',type:'lightning',color:0x78d8ff,damage:20,speed:33,cooldown:.95,stun:.42,knockback:7.2,behavior:'dashStrike',dashSpeed:39,range:15.5},
 edna_mode:{label:'FASHION EMERGENCY GADGET',type:'gadget',color:0xff5ca8,damage:9,speed:25,cooldown:.8,stun:.38,knockback:2.8},
 captain_jack_sparrow:{label:'PIRATE PISTOL',type:'bullet',color:0xffd39a,damage:14,speed:40,cooldown:.9,stun:.32,knockback:4.5},
-spider_man:{label:'WEB ZIP STRIKE',type:'web',color:0xf5fbff,damage:13,speed:34,cooldown:.78,stun:.62,knockback:5.4,behavior:'dashStrike',dashSpeed:43,range:16}
+spider_man:{label:'WEB ZIP STRIKE',type:'web',color:0xf5fbff,damage:13,speed:34,cooldown:.78,stun:.62,knockback:5.4,behavior:'dashStrike',dashSpeed:43,range:16},
+// Four articulated legs stab out of the back harness and sweep the ground around the
+// fighter. Reuses the shockwave arc-hit formula, so damage/stun/knockback scale exactly
+// like every other radial special; only the silhouette is new.
+iron_spider:{label:'SPIDER-LEG ASSAULT',type:'legs',color:0xffc23d,damage:17,speed:26,cooldown:.9,stun:.55,knockback:6.4,behavior:'shockwave',radius:5.4,legs:4}
 };
-const COMBAT_PROFILES={hulk_bruce_banner:{damage:1.28,knockback:1.28,weight:1.35,launch:1.18},saitama:{damage:1.38,knockback:1.3,weight:1.18,launch:1.2},all_might:{damage:1.24,knockback:1.22,weight:1.24,launch:1.14},kratos:{damage:1.22,knockback:1.2,weight:1.25,launch:1.1},superman:{damage:1.12,knockback:1.12,weight:1.16,launch:1.1},goku:{damage:1.14,knockback:1.12,weight:1.04,launch:1.12},vegeta:{damage:1.12,knockback:1.1,weight:1.04,launch:1.1},the_flash_barry_allen:{damage:.92,knockback:.9,weight:.92,launch:.92},professor_x_charles_xavier:{damage:.86,knockback:.78,weight:.86,launch:.8},l_death_note_style:{damage:.78,knockback:.74,weight:.82,launch:.72},edna_mode:{damage:.8,knockback:.78,weight:.8,launch:.8},spider_man:{damage:.96,knockback:.9,weight:.92,launch:.92},thor:{damage:1.18,knockback:1.2,weight:1.18,launch:1.14},master_chief:{damage:1.1,knockback:1.08,weight:1.12,launch:1.08}};
+const COMBAT_PROFILES={hulk_bruce_banner:{damage:1.28,knockback:1.28,weight:1.35,launch:1.18},saitama:{damage:1.38,knockback:1.3,weight:1.18,launch:1.2},all_might:{damage:1.24,knockback:1.22,weight:1.24,launch:1.14},kratos:{damage:1.22,knockback:1.2,weight:1.25,launch:1.1},superman:{damage:1.12,knockback:1.12,weight:1.16,launch:1.1},goku:{damage:1.14,knockback:1.12,weight:1.04,launch:1.12},vegeta:{damage:1.12,knockback:1.1,weight:1.04,launch:1.1},the_flash_barry_allen:{damage:.92,knockback:.9,weight:.92,launch:.92},professor_x_charles_xavier:{damage:.86,knockback:.78,weight:.86,launch:.8},l_death_note_style:{damage:.78,knockback:.74,weight:.82,launch:.72},edna_mode:{damage:.8,knockback:.78,weight:.8,launch:.8},spider_man:{damage:.96,knockback:.9,weight:.92,launch:.92},thor:{damage:1.18,knockback:1.2,weight:1.18,launch:1.14},master_chief:{damage:1.1,knockback:1.08,weight:1.12,launch:1.08},iron_spider:{damage:1.02,knockback:1,weight:1.02,launch:1.02}};
 function upgradeFighterVisual(fighter){
   const startingModel=fighter.model;
   upgradeFighterModel(fighter,fighter.archetype).then(loaded=>{
@@ -244,7 +248,25 @@ window.performSignatureMove=(owner,profile)=>{
    const outer=new THREE.Mesh(new THREE.TorusGeometry(.78,.145,10,48),new THREE.MeshBasicMaterial({color:profile.color||0xffc05d,transparent:true,opacity:.95,emissive:profile.color||0xffc05d,emissiveIntensity:1.7,depthWrite:false}));
    const inner=new THREE.Mesh(new THREE.TorusGeometry(.46,.065,8,40),new THREE.MeshBasicMaterial({color:0xfff2ca,transparent:true,opacity:.9,emissive:0xffe6a0,emissiveIntensity:1.1,depthWrite:false}));
    for(const mesh of [outer,inner]){mesh.position.copy(owner.position);mesh.position.y=.12;mesh.rotation.x=Math.PI/2;scene.add(mesh);}
-   signatureMoves.push({kind:'shockwave',owner,profile,age:0,life:.48,radius:profile.radius||6,origin:owner.position.clone(),direction:facing.clone(),outer,inner,hitTargets:new Set()});
+   // Mechanical legs: four articulated shafts hinged at the fighter's back. They are VFX, not
+   // gameplay bodies - the hit test is still the shared shockwave radius below.
+   let legParts=null,legGeometry=null,legMaterial=null;
+   if(profile.legs>0){
+     const legColor=profile.color||0xffc23d;
+     legGeometry=new THREE.CylinderGeometry(.032,.095,1,6);
+     legMaterial=new THREE.MeshStandardMaterial({color:legColor,metalness:.88,roughness:.2,emissive:legColor,emissiveIntensity:1.7,transparent:true,opacity:.95});
+     legParts=[];
+     for(let i=0;i<profile.legs;i++){
+       const pivot=new THREE.Group();
+       pivot.rotation.y=(i/profile.legs)*Math.PI*2+Math.PI/4;
+       pivot.position.copy(owner.position);pivot.position.y=.98;
+       const shaft=new THREE.Mesh(legGeometry,legMaterial);
+       shaft.rotation.x=Math.PI/2;shaft.position.z=.5;
+       pivot.add(shaft);scene.add(pivot);
+       legParts.push({pivot,shaft});
+     }
+   }
+   signatureMoves.push({kind:'shockwave',owner,profile,age:0,life:.48,radius:profile.radius||6,origin:owner.position.clone(),direction:facing.clone(),outer,inner,legParts,legGeometry,legMaterial,hitTargets:new Set()});
    owner.velocity.x+=facing.x*1.5;owner.velocity.z+=facing.z*1.5;owner.velocity.y=Math.max(owner.velocity.y,1.1);
    burst(owner.position.clone().add(new THREE.Vector3(0,.18,0)),profile.color||0xffb764,28,4.8);
    window.spawnImpact?.(owner.position.clone().add(new THREE.Vector3(0,.18,0)),12,profile.color||0xffb764);
@@ -310,6 +332,16 @@ window.updateSignatureMoves=(dt)=>{
      const scale=radius/.78;
      move.outer.scale.setScalar(Math.max(.08,scale));move.inner.scale.setScalar(Math.max(.08,scale*.78));
      move.outer.material.opacity=.95*(1-t);move.inner.material.opacity=.9*(1-t);
+     if(move.legParts){
+       // Stab out over the first quarter of the move, hold, then retract: the legs track the
+       // shockwave ring so a player reads the radius the attack actually covers.
+       const extend=t<.25?t/.25:t<.6?1:Math.max(0,1-(t-.6)/.4);
+       for(const leg of move.legParts){
+         leg.pivot.scale.set(1,1,.25+extend*1.35);
+         leg.pivot.rotation.x=.5+extend*.38;
+       }
+       if(move.legMaterial)move.legMaterial.opacity=.95*(1-t*.9);
+     }
      for(const other of (window.fighters||[])){
        if(other===owner||move.hitTargets.has(other)||other.model?.visible===false)continue;
        const offset=other.position.clone().sub(move.origin);const horizontal=Math.hypot(offset.x,offset.z);
@@ -351,6 +383,7 @@ window.updateSignatureMoves=(dt)=>{
    if(remove){
      if(move.outer){scene.remove(move.outer);move.outer.geometry.dispose();move.outer.material.dispose();}
      if(move.inner){scene.remove(move.inner);move.inner.geometry.dispose();move.inner.material.dispose();}
+     if(move.legParts){for(const leg of move.legParts)scene.remove(leg.pivot);move.legGeometry?.dispose();move.legMaterial?.dispose();}
      if(move.visual){scene.remove(move.visual);move.visual.traverse(node=>{node.geometry?.dispose();if(node.material){if(Array.isArray(node.material))node.material.forEach(material=>material.dispose());else node.material.dispose();}});}
      if(move.trail){scene.remove(move.trail);move.trail.geometry?.dispose();move.trail.material?.dispose();}
      if(move.ring){scene.remove(move.ring);move.ring.geometry?.dispose();move.ring.material?.dispose();}

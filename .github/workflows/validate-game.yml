@@ -106,9 +106,13 @@ jobs:
           const launch = JSON.parse(launchMatch[1]);
           const all = JSON.parse(allMatch[1]);
           const launchNames = launch.map(([name]) => name);
-          assert.equal(launch.length, 32, 'Expected 32 launch fighters');
-          assert.equal(new Set(launchNames).size, 32, 'Launch fighter names must be unique');
+          // 32 original launch fighters plus Iron Spider, who was registered as a separate
+          // playable fighter; Iron Man and everyone else stay in place.
+          assert.equal(launch.length, 33, 'Expected 33 launch fighters');
+          assert.equal(new Set(launchNames).size, 33, 'Launch fighter names must be unique');
           assert.ok(launchNames.includes('Spider-Man'), 'Spider-Man must be in launch roster');
+          assert.ok(launchNames.includes('Iron Man (Tony Stark)'), 'Iron Man must stay in the launch roster');
+          assert.ok(launchNames.includes('Iron Spider'), 'Iron Spider must be in the launch roster');
           assert.equal(all.length - launch.length, 25, 'DLC reserve should retain 25 characters');
 
           for (const required of [
@@ -149,7 +153,10 @@ jobs:
           assert.ok(main.includes('window.performSignatureMove'), 'Character signature move system is missing');
           assert.ok(main.includes('window.updateSignatureMoves'), 'Signature movement updates are missing');
           assert.ok(fighter.includes('ODM-style cross cuts'), 'Individual combo choreography is missing');
-          for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB ZIP STRIKE'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
+          for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB ZIP STRIKE'", "label:'SPIDER-LEG ASSAULT'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
+          assert.equal(manifest.characters.iron_spider.url, '/models/characters/iron_spider/iron_spider.glb', 'Iron Spider asset is not staged');
+          assert.equal(manifest.characters.iron_spider.enabled, false, 'Iron Spider must stay disabled until its GLB is installed');
+          assert.ok(launchNames.includes('Iron Spider'), 'Iron Spider is not in the launch roster');
           console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
           NODE
       - name: Validate the animation library and state machine
@@ -183,3 +190,6 @@ jobs:
       - name: Play-test every world battle location in the browser
         timeout-minutes: 10
         run: node scripts/test-worlds-browser.mjs
+      - name: Play-test Iron Spider from selection through a full match
+        timeout-minutes: 8
+        run: node scripts/test-iron-spider.mjs

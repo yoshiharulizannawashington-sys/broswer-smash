@@ -81,6 +81,7 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     edna_mode:{body:0x11151b,armor:0x2a3038,accent:0xe8e5df,head:'hair',feature:'edna',scale:.83},
     captain_jack_sparrow:{body:0x68513e,armor:0x272e38,accent:0xb98f52,head:'hair',feature:'pirate'},
     spider_man:{body:0xc62930,armor:0x154b91,accent:0xe54244,skin:0x8c99a7,head:'mask',feature:'spiderman',scale:1.0},
+    iron_spider:{body:0xb81f27,armor:0xd8a640,accent:0xffcf63,skin:0x8c99a7,head:'mask',feature:'ironspider',scale:1.04},
     sesshomaru:{body:0xe6e1d5,armor:0xe8e1d1,accent:0x9973ad,skin:0xe6d8c9,head:'hair',feature:'sesshomaru'},
     norman_bates:{body:0x454b55,armor:0x6c6558,accent:0xc4baa3,head:'hair',feature:'knife'},
     han_solo:{body:0xe6e1d4,armor:0x28313c,accent:0xb78e4f,head:'hair',feature:'blaster'},
@@ -299,6 +300,41 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   }
 
 
+  if(feature==='ironspider'){
+    const gold=mat(0xd8a640,.88,.22,0xffb63c), lens=mat(0xf2dfae,.3,.16,.12), steel=mat(0x2b2f38,.7,.3);
+    // Nano-suit lenses and the raised gold spider emblem, so the fallback body still reads as
+    // the Iron Spider rather than a recoloured Iron Man.
+    for(const side of [-1,1]){
+      const rim=part(head,new THREE.BoxGeometry(.26,.16,.045),steel,[side*.132,.055,.232]);rim.rotation.z=side*.16;
+      part(head,new THREE.BoxGeometry(.19,.06,.03),lens,[side*.132,.05,.255]);
+    }
+    part(torso,new THREE.SphereGeometry(.07,12,8),gold,[0,.3,.347],[.7,1.7,.3]);
+    for(const side of [-1,1]){
+      const upper=part(torso,new THREE.BoxGeometry(.035,.19,.025),gold,[side*.1,.34,.344]);upper.rotation.z=side*.5;
+      const lower=part(torso,new THREE.BoxGeometry(.03,.2,.025),gold,[side*.145,.22,.344]);lower.rotation.z=-side*.4;
+    }
+    // Four folded mechanical legs on the back harness: the character's defining silhouette.
+    // Segments are built between explicit joint positions so the folded legs sit outside the
+    // shoulder armour instead of disappearing inside the torso.
+    const legSegment=(from,to,radius,material)=>{
+      const direction=new THREE.Vector3().subVectors(to,from);
+      const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.022,radius,direction.length(),6),material);
+      mesh.position.copy(from).addScaledVector(direction,.5);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize());
+      mesh.castShadow=true;mesh.receiveShadow=true;torso.add(mesh);
+      return mesh;
+    };
+    for(let i=0;i<4;i++){
+      const side=i%2===0?-1:1, tier=i<2?0:1;
+      const hip=new THREE.Vector3(side*.3,.52-tier*.2,-.3);
+      const knee=new THREE.Vector3(side*(.66+tier*.06),.8-tier*.2,-.5);
+      const tip=new THREE.Vector3(side*(.74+tier*.04),1.2-tier*.24,-.66);
+      legSegment(hip,knee,.038,gold);
+      legSegment(knee,tip,.028,steel);
+      part(torso,new THREE.SphereGeometry(.05,8,6),gold,[knee.x,knee.y,knee.z]);
+      part(torso,new THREE.SphereGeometry(.04,8,6),gold,[tip.x,tip.y,tip.z]);
+    }
+  }
   if(feature==='fedora'){part(head,new THREE.CylinderGeometry(.28,.28,.11,16),mat(0x563521,.04,.8),[0,.24,0]);part(head,new THREE.CylinderGeometry(.15,.21,.26,12),mat(0x563521,.04,.8),[0,.4,-.03]);part(g,new THREE.BoxGeometry(.5,.035,.1),mat(0x563521),[0,1.1,.25]);}
 
   if(feature==='hashirama'){cape(0x3c5365,.78,1.25);}
@@ -331,7 +367,11 @@ function loadCharacterModelLibrary(){
         characterModelLibraryState.prefabs=prefabs;
         runtimeAssetState.characters={
           status:prefabs.size>=57?'loaded':'partial',
-          count:prefabs.size,meshCount,url:url.href
+          count:prefabs.size,
+          // The roster audit reads this to tell "this identity has a prefab that failed to
+          // mount" (a regression) from "this identity has no prefab yet" (a fallback body).
+          keys:[...prefabs.keys()],
+          meshCount,url:url.href
         };
         resolve(prefabs);
       },undefined,error=>{

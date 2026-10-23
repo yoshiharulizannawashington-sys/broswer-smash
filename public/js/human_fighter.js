@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+import { mountImportedCharacter, faceFighterModel } from './fighter_model_placement.js?v=browser-smash-model-place-v1-20261023';
+import { validateFighterRig, describeRigValidation, isEquippedWeapon } from './rig_validation.js?v=browser-smash-rig-v1-20261023';
 
 const MODEL_BASE='/models/characters/';
 const MODEL_MANIFEST_URL=`${MODEL_BASE}manifest.json`;
@@ -37,7 +39,13 @@ async function loadCharacterModel(fighter,archetype,GLTFLoader,FBXLoader){
       const loader=isFbx?new FBXLoader():new GLTFLoader();
       const loaded=await new Promise((resolve,reject)=>loader.load(url,resolve,undefined,reject));
       const gltf=isFbx?{scene:loaded,animations:loaded.animations||[]}:loaded;
-      return {gltf,url,format:isFbx?'fbx':'gltf'};
+      // A model authored facing -Z needs half a turn; the manifest carries the correction so
+      // a new asset can be dialled in without touching code. FBX imports have historically
+      // been authored facing away from the fighter, glTF exports face +Z.
+      const yawOffset=Number.isFinite(entry?.yawOffset)
+        ? THREE.MathUtils.degToRad(entry.yawOffset)
+        : (isFbx?Math.PI:0);
+      return {gltf,url,format:isFbx?'fbx':'gltf',yawOffset};
     }catch(_error){
       // An explicitly registered but broken asset should still fall back safely.
     }
@@ -144,19 +152,16 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   const {GLTFLoader,FBXLoader}=await getLoader();
   const loaded=await loadCharacterModel(fighter,archetype,GLTFLoader,FBXLoader);
   if(!loaded||fighter.model!==previous||String(fighter.identity||fighter.name||'')!==identityAtStart)return false;
-  const {gltf,url,format}=loaded;
+  const {gltf,url,format,yawOffset}=loaded;
   const root=gltf.scene;
   // Normalize imported GLTF/FBX character height so models authored in centimeters or meters
   // line up with the existing fighter physics and camera framing.
   root.updateMatrixWorld(true);
-  const modelBounds=new THREE.Box3().setFromObject(root);
-  const modelHeight=Math.max(.001,modelBounds.max.y-modelBounds.min.y);
-  root.scale.setScalar(2.05/modelHeight);
   if(format==='fbx')applyGokuTextures(root,url.slice(0,url.lastIndexOf('/')+1));
-  // Imported rigs in this project face +Z; retain that correction as an offset while the
-  // fighter controller turns the outer model toward its opponent.
-  root.rotation.y=0;
-  root.userData.modelFacingOffset=Math.PI;
+  // Scale, ground contact and facing are normalised by mountImportedCharacter: it keeps the
+  // asset's own transform and animation intact, puts the model's lowest point on the
+  // fighter's origin and records the yaw offset the controller adds every frame.
+  root.userData.modelFacingOffset=yawOffset;
   root.userData.characterAssetUrl=url;
   root.userData.characterAssetIdentity=identityAtStart;
   root.traverse(o=>{
@@ -173,7 +178,6 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
     if(Array.isArray(o.material))o.material=o.material.map(tuneMaterial);
     else if(o.material)o.material=tuneMaterial(o.material);
   });
-  root.position.copy(fighter.position);
   const mixer=new THREE.AnimationMixer(root),animations={};
   for(const clip of gltf.animations||[])animations[clip.name.toLowerCase()]=mixer.clipAction(clip);
   const find=(...words)=>Object.entries(animations).find(([n])=>words.some(w=>n.includes(w)))?.[1];
@@ -211,18 +215,40 @@ export async function upgradeFighterModel(fighter,archetype='warrior'){
   const parent=previous.parent;
   if(!parent)return false;
   root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-  parent.add(root);parent.remove(previous);
-  fighter.model=root;fighter.position=root.position;
-  fighter.characterModelLoaded=true;
+  const {holder,placement}=mountImportedCharacter(root,previous,{
+    yawOffset,
+    facing:fighter.facing,
+    facingZ:fighter.facingZ
+  });
+  // Same gate as the prefab swap: an import that lands squashed, buried or empty keeps the
+  // procedural fighter instead of putting a broken body in the arena.
+  // The holder itself is unscaled: mountImportedCharacter has already folded the source scale
+  // into the imported root, so the limits are checked against the 2.05 m target body.
+  const validation=validateFighterRig(holder,{ground:holder.position.y,ignore:isEquippedWeapon,requireJoints:false});
   window.__browserSmashAssets=window.__browserSmashAssets||{};
   window.__browserSmashAssets.characterModels=window.__browserSmashAssets.characterModels||{};
-  window.__browserSmashAssets.characterModels[characterSlug(fighter,archetype)]={status:'loaded',url,animations:(gltf.animations||[]).map(c=>c.name),bones:Object.keys(joints)};
+  window.__browserSmashAssets.characterModels[characterSlug(fighter,archetype)]={
+    status:validation.ok?'loaded':'rejected',
+    url,
+    animations:(gltf.animations||[]).map(c=>c.name),
+    bones:Object.keys(joints),
+    placement,
+    validation:{ok:validation.ok,issues:validation.issues},
+    metrics:validation.metrics
+  };
+  if(!validation.ok){
+    console.warn('Imported character model for '+characterSlug(fighter,archetype)+' failed rig validation; keeping the procedural fighter. '+describeRigValidation(validation));
+    return false;
+  }
+  parent.add(holder);parent.remove(previous);
+  fighter.model=holder;fighter.position=holder.position;
+  fighter.characterModelLoaded=true;
   return true;
 }
 export function animateHumanFighter(fighter,dt){
   const root=fighter.model;if(!root?.userData?.humanMixer)return;
   fighter.position=root.position;
-  root.rotation.y=Math.atan2(fighter.facingZ,Math.abs(fighter.facing))+(fighter.facing>=0?Math.PI:0)+(root.userData.modelFacingOffset||0);
+  faceFighterModel(root,fighter.facing,fighter.facingZ,root.userData.modelFacingOffset||0);
   // A rig the clip controller drives is owned by that controller. The legacy mixer and the
   // per-joint overlay would otherwise rewrite the same bones on the same frame.
   if(root.userData.animationController){

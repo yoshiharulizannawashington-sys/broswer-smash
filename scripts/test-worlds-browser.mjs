@@ -203,6 +203,11 @@ try {
   await step(0.1);
   const beforeFall = await page.evaluate(() => window.__browserSmashMatch());
   await page.evaluate(() => {
+    // Hold the CPU still for this one exchange. A ring-out stage has no clamp, so an AI that
+    // chases a fighter who has just been thrown past the edge can walk off the cliff itself,
+    // and a double ring-out is a drawn round that credits nobody - which says nothing about
+    // whether the fighter who actually went over the edge lost.
+    window.__browserSmashTrainingDummy = true;
     const fighter = window.fighters[0];
     const bounds = window.__browserSmashWorld.bounds;
     fighter.position.set(bounds.x1 + 26, 3.2, (bounds.z0 + bounds.z1) / 2);
@@ -211,6 +216,7 @@ try {
   });
   await step(0.25);
   const afterFall = await page.evaluate(() => window.__browserSmashMatch());
+  await page.evaluate(() => { window.__browserSmashTrainingDummy = false; });
   check('a ring-out ends the round for the fighter who went over the edge',
     afterFall.wins[1] === beforeFall.wins[1] + 1,
     `${beforeFall.wins.join('-')} -> ${afterFall.wins.join('-')} (${afterFall.status})`);
