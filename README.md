@@ -265,6 +265,20 @@ grain, skin pores) once and applies them to cloned prefab materials, classified 
   instead of standing in a T-pose, and the menu keeps posing both fighters while the simulation is
   paused.
 
+## Large world materials
+
+`public/js/worlds/world_textures.js` draws the tileable surface maps the four reference worlds
+are built from: stone courses, riveted metal panels, timber planks, grass, marble veining and
+shingles. Each world part is merged per material, so per-object tiling is impossible; instead
+`world_builder.js` projects every vertex's UV from its own world position, and the texture repeat
+turns those metre-space UVs into a fixed tile size per surface family (3-8 m). One 256px canvas
+per family is shared by every material that asks for the same tile size, so the four worlds still
+render in roughly 17-31 draw calls each and no external texture assets are required. Palette
+colours stay authoritative, which is how the same stone map reads as DBZ sandstone, Asgard marble
+and Hogwarts granite. `STAGE_LIGHTING` in `world_catalog.js` gives each world its own key strength,
+rim tint, hemisphere fill, exposure and fog scale, and `SmashCamera.setStageBounds()` keeps the
+camera out of the stage's solid volumes on the large maps.
+
 ## Authored arenas
 
 `public/assets/arenas/*.glb` hold the authored Blender versions of the Asgard, Stark

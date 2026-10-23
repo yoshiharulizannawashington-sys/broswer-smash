@@ -1,24 +1,24 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v34-20261022';
-import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v34-20261022';
-import InputManager from './InputManager.js?v=browser-smash-gameplay-v34-20261022';
-import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v34-20261022';
-import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v34-20261022';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v34-20261022';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v34-20261022';
-import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v34-20261022';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v34-20261022';
-import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v34-20261022';
-import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v34-20261022';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v34-20261022';
-import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v34-20261022';
-import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v34-20261022';
-import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v34-20261022';
-import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v34-20261022';
-import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v34-20261022';
-import { worldLocation, worldGroups, WORLD_LOCATIONS } from './worlds/world_catalog.js?v=browser-smash-gameplay-v34-20261022';
-import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v34-20261022';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v35-20261022';
+import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v35-20261022';
+import InputManager from './InputManager.js?v=browser-smash-gameplay-v35-20261022';
+import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v35-20261022';
+import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v35-20261022';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v35-20261022';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v35-20261022';
+import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v35-20261022';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v35-20261022';
+import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v35-20261022';
+import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v35-20261022';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v35-20261022';
+import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v35-20261022';
+import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v35-20261022';
+import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v35-20261022';
+import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v35-20261022';
+import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v35-20261022';
+import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v35-20261022';
+import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v35-20261022';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -514,7 +514,7 @@ function applyWorldStage(key){
  // The procedural valley skyline only belongs to the valley maps.
  cinematicEnvironment.visible=!location;
  if(!location){
-  worldStage.visible=false;floor.visible=true;smashCamera.setStageTilt?.(0,1);sun.castShadow=true;
+  worldStage.visible=false;floor.visible=true;smashCamera.setStageTilt?.(0,1);smashCamera.setStageBounds?.(null,null);sun.castShadow=true;
   if(activeWorldGroup){worldStage.remove(activeWorldGroup);disposeWorldGroup(activeWorldGroup);activeWorldGroup=null;activeWorldId=null;}
   const classicLayout=ARENA_LAYOUTS[key];
   window.__browserSmashWorld={world:null,location:null,label:classicLayout?.label||key,ground:classicLayout?.ground??0,bounds:classicLayout?.bounds??null};
@@ -523,7 +523,11 @@ function applyWorldStage(key){
  worldStage.visible=true;
  ensureWorldGroup(location.world);
  // Larger arenas get a lower, pulled-back shot so the architecture is visible.
- smashCamera.setStageTilt?.(location.world==='asgard'?.16:.19,1.45);
+ // Enclosed rooms get a steeper, higher shot: a shallow pitch over a long interior filled
+ // the frame with table tops instead of the room.
+ const tiltByWorld={asgard:.16,hogwarts:.07,deathstar:.1};
+ smashCamera.setStageTilt?.(tiltByWorld[location.world]??.19,1.45);
+ smashCamera.setStageBounds?.(location.layout.bounds,location.layout.blocks);
  floor.visible=false;platform.visible=false;mapDecor.visible=false;
  scene.background.setHex(location.theme.sky);
  scene.fog.color.setHex(location.theme.fog);
@@ -531,19 +535,22 @@ function applyWorldStage(key){
  sun.color.setHex(location.theme.light);
  // Open worlds are lit by a softer key than the small arenas: their materials are large
  // flat surfaces, and a 3.0 sun blew pale stone out to pure white.
- sun.intensity=location.interior?1.9:.9;
+ const lighting=STAGE_LIGHTING[location.world]||STAGE_LIGHTING.dbz;
+ const lamp=location.interior?lighting.interior:lighting.exterior;
+ scene.fog.density=location.theme.density*(lamp.fogScale||1);
+ sun.intensity=lamp.sun;
  // Interior rooms have ceilings, so a shadow-casting key sun only lights the roof: indoors
  // the key is a non-shadowing fill and the room's own emissive strips carry the mood.
- sun.castShadow=!location.interior;
- rim.intensity=location.interior?1.0:.3;
- rim.color.setHex(location.interior?0x5f8dff:0x8fc4ff);
- hemisphere.color.setHex(location.interior?0x8098b8:0x9ecfff);
- hemisphere.groundColor.setHex(location.interior?0x151b24:0x2b3326);
- hemisphere.intensity=location.interior?1.25:.55;
- renderer.toneMappingExposure=location.interior?1.0:.95;
+ sun.castShadow=lamp.shadow;
+ rim.intensity=lamp.rim;
+ rim.color.setHex(lamp.rimColor);
+ hemisphere.color.setHex(lamp.hemiSky);
+ hemisphere.groundColor.setHex(lamp.hemiGround);
+ hemisphere.intensity=lamp.hemi;
+ renderer.toneMappingExposure=lamp.exposure;
  // Interior stages are lit from above; open worlds get a low sun for long shadows.
- sun.position.set(location.interior?10:34,location.interior?42:46,location.interior?-16:-52);
- rim.position.set(-18,26,30);
+ sun.position.set(...lamp.sunPos);
+ rim.position.set(...lamp.rimPos);
  window.__browserSmashWorld={world:location.world,worldLabel:location.worldLabel,location:key,label:location.label,ground:location.layout.ground,bounds:location.layout.bounds,spawns:location.layout.spawns,blocks:location.layout.blocks.length,parts:activeWorldGroup?.userData.parts||0,drawCalls:activeWorldGroup?.userData.drawCalls||0};
 }
 const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;

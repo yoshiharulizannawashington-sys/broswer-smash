@@ -151,8 +151,11 @@ function buildDbz() {
       box(parts, x, stageY + .57, z, 3.24, .06, 3.24, (ix + iz) % 2 ? 'stone' : 'stoneDark', { rx: 0 });
     }
   }
-  torus(parts, 0, stageY + .62, 0, 8.4, .34, 'gold', { rx: Math.PI / 2 });
-  torus(parts, 0, stageY + .62, 0, 4.2, .26, 'gold', { rx: Math.PI / 2 });
+  // Painted centre emblem, as on the reference ring: a red disc inside the gold circles.
+  cyl(parts, 0, stageY + .6, 0, 8.3, 8.3, .04, 'banner', { seg: 40 });
+  cyl(parts, 0, stageY + .62, 0, 5.6, 5.6, .04, 'stoneLight', { seg: 36 });
+  torus(parts, 0, stageY + .64, 0, 8.4, .34, 'gold', { rx: Math.PI / 2 });
+  torus(parts, 0, stageY + .64, 0, 4.2, .26, 'gold', { rx: Math.PI / 2 });
   for (let i = 0; i < 8; i++) {
     const a = i * TAU / 8;
     box(parts, Math.cos(a) * 12.2, stageY + .58, Math.sin(a) * 12.2, .5, .05, 2.6, 'gold', { ry: -a });
@@ -171,6 +174,39 @@ function buildDbz() {
   crowdBlock(parts, 26, 2, 12, 0, GROUND, 3);
   crowdBlock(parts, 0, 21, 30, 0, GROUND, 2);
 
+  // Spectator terraces on all four sides, plus a banner ring. In the reference the arena sits
+  // inside a bowl of packed stands rather than on an open platform, so the skyline reads as a
+  // tournament rather than a plinth.
+  for (const side of [-1, 1]) {
+    for (let tier = 0; tier < 3; tier++) {
+      box(parts, 0, GROUND + .55 + tier * .95, side * (25.5 + tier * 3.1), 70 - tier * 6, .95, 3.1, tier % 2 ? 'stoneLight' : 'stone', solid({ bottom: GROUND }));
+      box(parts, 0, GROUND + 1.05 + tier * .95, side * (25.5 + tier * 3.1), 70 - tier * 6, .1, 3.2, 'stoneDark');
+      box(parts, side * (25.5 + tier * 3.1), GROUND + .55 + tier * .95, 0, 3.1, .95, 70 - tier * 6, tier % 2 ? 'stoneLight' : 'stone', solid({ bottom: GROUND }));
+    }
+  }
+  for (let i = 0; i < 22; i++) {
+    const a = i * TAU / 22;
+    const r = 21.5;
+    box(parts, Math.cos(a) * r, stageY + 2.9, Math.sin(a) * r, .18, 5.4, .18, 'gold');
+    banner(parts, Math.cos(a) * r, stageY + 4.4, Math.sin(a) * r, 1.7, 3.2, i % 3 === 0 ? 'banner' : i % 3 === 1 ? 'bannerBlue' : 'cloth2', -a + Math.PI / 2);
+  }
+  // Shrine gate and its roof behind the stage, matching the reference silhouette.
+  box(parts, 0, GROUND + 5.4, -30, 22, 1.4, 7, 'roof', { ry: 0 });
+  box(parts, 0, GROUND + 8.2, -30, 16, 1.2, 5.4, 'roof');
+  for (const side of [-1, 1]) box(parts, side * 8.6, GROUND + 4, -30, 1.6, 8, 1.6, 'wood', solid({ bottom: GROUND }));
+  // Plaza palms, lamps and paving bands.
+  for (let i = 0; i < 10; i++) {
+    const a = i * TAU / 10 + .3;
+    const r = 33 + (i % 2) * 3;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r * .8;
+    tree(parts, x, z, 1.15 + (i % 3) * .18, GROUND, rng);
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = i * TAU / 14;
+    cyl(parts, Math.cos(a) * 30, GROUND + 1.3, Math.sin(a) * 30, .16, .24, 2.6, 'stoneDark', { seg: 6 });
+    ball(parts, Math.cos(a) * 30, GROUND + 2.8, Math.sin(a) * 30, .28, 'glassWarm', { seg: 6 });
+  }
+
   // Roads out of the stage square to every district.
   for (const [x, z, w, d] of [[-58, 2, 90, 5], [64, 6, 78, 5], [0, 44, 5, 62], [-8, -56, 5, 60]]) {
     box(parts, x, GROUND + .04, z, w, .09, d, 'road');
@@ -179,10 +215,16 @@ function buildDbz() {
   // West City: glass towers and shop fronts.
   for (let i = 0; i < 7; i++) {
     const x = -74 - (i % 3) * 16, z = -26 + i * 13;
-    building(parts, x, z, { w: 11 + (i % 2) * 4, d: 10, h: 12 + (i % 4) * 7, base: GROUND, mat: 'building', roof: 'roofBlue', win: 'glassBlue', winRows: 4 });
+    const h = 12 + (i % 4) * 7;
+    building(parts, x, z, { w: 11 + (i % 2) * 4, d: 10, h, base: GROUND, mat: 'building', roof: 'roofBlue', win: 'glassBlue', winRows: 4 });
+    // Shop signage and a roof plant: the towers were plain slabs from street level.
+    box(parts, x, GROUND + 4.6, z + 5.2, 6.4, 1.3, .25, i % 2 ? 'bannerBlue' : 'glassBlue');
+    box(parts, x, GROUND + 3.1, z + 5.2, 8.4, .2, 1.6, 'wood', { ry: 0 });
+    box(parts, x + 2.4, GROUND + h + 1.4, z - 1.4, 2.2, 1.8, 2.2, 'metal');
   }
   for (let i = 0; i < 4; i++) {
     stall(parts, -66, 34 - i * 7, GROUND, i * .4);
+    for (const c of [-1, 1]) box(parts, -66 + c * 2.1, GROUND + 1.5, 34 - i * 7, .5, .9, 1.4, 'crate');
   }
   // East City: low market blocks and food stalls.
   for (let i = 0; i < 5; i++) {
@@ -207,6 +249,21 @@ function buildDbz() {
   box(parts, 0, GROUND + 4.6, 68, 26, 8, 2, 'wood', solid({ bottom: GROUND }));
   for (const x of [-9, -3, 3, 9]) box(parts, x, GROUND + 2.4, 62, .7, 4.4, .7, 'wood');
   cone(parts, 0, GROUND + 10, 65, 16, 5.5, 'roof', { seg: 4, ry: Math.PI / 4 });
+  // Dojo detail: door frame, paper lanterns, training dummies and a flag pole.
+  box(parts, 0, GROUND + 2.2, 71, 6, 4.2, .3, 'stoneDark');
+  box(parts, 0, GROUND + 4.5, 71.2, 7.4, .5, .5, 'roof');
+  for (const x of [-6.4, 6.4]) {
+    cyl(parts, x, GROUND + 3.6, 72.2, .3, .3, .9, 'banner', { seg: 8 });
+    ball(parts, x, GROUND + 4.3, 72.2, .3, 'flame', { seg: 8 });
+  }
+  for (let i = 0; i < 4; i++) {
+    const x = -14 + i * 5;
+    box(parts, x, GROUND + 1.1, 50, .35, 1.6, .35, 'wood', solid({ bottom: GROUND }));
+    ball(parts, x, GROUND + 2.1, 50, .55, 'wood', { seg: 8 });
+    box(parts, x, GROUND + 1.5, 50, 1.6, .35, .35, 'wood');
+  }
+  box(parts, 13, GROUND + 3.4, 54, .22, 6.8, .22, 'dark');
+  banner(parts, 14.6, GROUND + 5.6, 54, 3.2, 4.4, 'banner');
 
   // Training grounds: pads, posts, boulders and a sparring ring.
   cyl(parts, 58, GROUND + .1, -58, 15, 15, .4, 'sand', { seg: 20 });
@@ -215,7 +272,8 @@ function buildDbz() {
     box(parts, 58 + Math.cos(a) * 9, GROUND + 1.4, -58 + Math.sin(a) * 9, .45, 2.8, .45, 'wood');
     ball(parts, 58 + Math.cos(a) * 9, GROUND + 3, -58 + Math.sin(a) * 9, .5, 'wood', { seg: 6 });
   }
-  for (let i = 0; i < 5; i++) rock(parts, 44 + i * 7, -72 + (i % 2) * 8, 1.2 + rng() * 1.4, GROUND, rng);
+  // Boulders ring the training pad without sitting on either spawn point.
+  for (let i = 0; i < 5; i++) rock(parts, 38 + i * 10, -80 + (i % 2) * 5, 1.2 + rng() * 1.4, GROUND, rng);
 
   // Ring Out Cliffs: broken rim rock, the edge of the island.
   for (let i = 0; i < 22; i++) {
@@ -263,7 +321,19 @@ function buildAsgard() {
   // Floating realm: a great stone disc with a marble plaza and gold inlay.
   cyl(parts, 0, -7, 0, 116, 128, 15, 'rock', solid({ seg: 30, bottom: -20 }));
   cyl(parts, 0, .1, 0, 112, 114, .8, 'marble', solid({ seg: 30, bottom: -.4 }));
-  cyl(parts, 0, .55, 0, 58, 58, .12, 'gold', { seg: 40 });
+  // Marble inlay disc with a gold rim, not a 116 m sheet of gold: the old solid gold disc
+  // tinted the whole plaza warm and hid the marble underneath it.
+  cyl(parts, 0, .45, 0, 58, 58, .1, 'marble', { seg: 40 });
+  torus(parts, 0, .52, 0, 58, .55, 'gold', { rx: Math.PI / 2 });
+  // Dark inlay rings and radial bands give the plaza a pattern: without them the warm marble
+  // read as one continuous gold field from the court camera.
+  for (const r of [22, 34, 48, 62, 78, 94]) {
+    torus(parts, 0, GROUND + .08, 0, r, .38, 'stoneDark', { rx: Math.PI / 2 });
+  }
+  for (let i = 0; i < 24; i++) {
+    const a = i * TAU / 24;
+    box(parts, Math.cos(a) * 62, GROUND + .07, Math.sin(a) * 62, 2.2, .06, 58, 'stoneDark', { ry: -a });
+  }
   for (let i = 0; i < 12; i++) {
     const a = i * TAU / 12;
     box(parts, Math.cos(a) * 72, GROUND + .06, Math.sin(a) * 72, 30, .08, .7, 'gold', { ry: -a });
@@ -291,6 +361,39 @@ function buildAsgard() {
   for (let i = 0; i < 6; i++) {
     cyl(parts, -30 + i * 12, GROUND + 4, pz + 27, .8, .9, 8, 'marble', { seg: 8 });
     ball(parts, -30 + i * 12, GROUND + 8.6, pz + 27, .7, 'crystal');
+  }
+  // Colonnade across the palace front, with lit windows and gold trim on every tier. The
+  // ziggurat tiers were solid gold masses; the column line and the window bands give the
+  // facade a scale reference and a readable silhouette from the court below.
+  for (let i = 0; i < 9; i++) {
+    const x = -36 + i * 9;
+    cyl(parts, x, GROUND + 7.2, pz + 25, 1.5, 1.7, 13.4, 'marble', solid({ bottom: GROUND, seg: 12 }));
+    box(parts, x, GROUND + 13.8, pz + 25, 3.6, .9, 3.6, 'gold');
+    box(parts, x, GROUND + 1.4, pz + 25, 3.8, 2.8, 3.8, 'goldLight');
+  }
+  box(parts, 0, GROUND + 14.6, pz + 25, 82, 1.1, 4.6, 'gold');
+  box(parts, 0, GROUND + 15.5, pz + 25, 82, .5, 5.4, 'goldLight');
+  for (let tier = 0; tier < 4; tier++) {
+    const w = 90 - tier * 15, y = GROUND + 3 + tier * 5.5, zf = pz + 24 - tier * .8;
+    for (let i = -Math.floor(w / 7); i <= Math.floor(w / 7); i++) {
+      box(parts, i * 7, y, zf, 2.1, 3.4, .16, 'glassWarm');
+      box(parts, i * 7, y + 2, zf + .05, 2.5, .3, .22, 'gold');
+    }
+  }
+  // Guardian statues at the stair foot and braziers along the avenue.
+  for (const side of [-1, 1]) {
+    const x = side * 17;
+    box(parts, x, GROUND + 1, pz + 34, 4, 2, 4, 'marble', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 4.2, pz + 34, 2.4, 4.6, 2.4, 'marble', solid({ bottom: GROUND }));
+    ball(parts, x, GROUND + 7, pz + 34, 1.1, 'marble', { seg: 10 });
+    box(parts, x, GROUND + 8.6, pz + 34, .5, 2.2, 2.6, 'gold');
+  }
+  for (let i = 0; i < 8; i++) {
+    const z = pz + 40 + i * 6;
+    for (const side of [-1, 1]) {
+      cyl(parts, side * 21, GROUND + 1.6, z, .3, .5, 2.6, 'gold', { seg: 8 });
+      ball(parts, side * 21, GROUND + 3.2, z, .42, 'flame', { seg: 8 });
+    }
   }
 
   // City: gold-and-stone houses along the avenue, with banners and braziers.
@@ -336,6 +439,21 @@ function buildAsgard() {
     box(parts, 66 + (i % 3) * 2, GROUND + .35, 2 + i * 8, 1.1, .7, 1.1, 'wood');
   }
   arch(parts, 76, 44, { w: 12, h: 8, d: 2, base: GROUND, mat: 'stone' });
+  // Marketplace detail: a central fountain, lanterns and produce stacks.
+  cyl(parts, 66, GROUND + .4, 22, 5, 5.6, 1, 'marble', solid({ bottom: GROUND, seg: 18 }));
+  cyl(parts, 66, GROUND + 1.1, 22, 4.2, 4.2, .24, 'water');
+  cyl(parts, 66, GROUND + 2.2, 22, .6, 1, 2.4, 'marble', { seg: 10 });
+  ball(parts, 66, GROUND + 3.8, 22, 1.1, 'crystal');
+  for (let i = 0; i < 10; i++) {
+    const a = i * TAU / 10;
+    cyl(parts, 66 + Math.cos(a) * 13, GROUND + 2.4, 22 + Math.sin(a) * 13, .18, .26, 5, 'gold', { seg: 6 });
+    ball(parts, 66 + Math.cos(a) * 13, GROUND + 5.1, 22 + Math.sin(a) * 13, .3, 'flame', { seg: 6 });
+  }
+  for (let i = 0; i < 12; i++) {
+    const x = 52 + (i % 4) * 7, z = 2 + Math.floor(i / 4) * 6;
+    box(parts, x, GROUND + .45, z, 1.2, .9, 1.2, i % 3 ? 'crate' : 'cloth');
+    box(parts, x, GROUND + .95, z, 1.3, .18, 1.3, 'wood');
+  }
 
   // Rainbow Bridge: a long glowing span with arches, running from the plaza to the Bifrost.
   const bridgeZ0 = 30, bridgeZ1 = 138;
@@ -352,6 +470,14 @@ function buildAsgard() {
     const z = bridgeZ0 + 12 + i * 24;
     const support = cyl(parts, 0, GROUND - 6, z, 3.4, 4.6, 14, 'marble', { seg: 10 });
     void support;
+    // Arches over each support, rune bands and flame braziers on the parapet.
+    for (const side of [-1, 1]) {
+      box(parts, side * 6.4, GROUND + 2.1, z, .7, 2.4, 1.6, 'gold');
+      torus(parts, side * 6.4, GROUND + .6, z, 1.3, .22, 'goldLight', { rx: 0 });
+      cyl(parts, side * 7.9, GROUND + 2.2, z, .28, .42, 2.6, 'gold', { seg: 8 });
+      ball(parts, side * 7.9, GROUND + 3.8, z, .38, 'flame', { seg: 8 });
+    }
+    box(parts, 0, GROUND + .95, z, 9, .06, .5, 'crystalGlow');
   }
 
   // Bifrost: dome of light at the bridge's end.
@@ -362,6 +488,21 @@ function buildAsgard() {
     cyl(parts, Math.cos(a) * 20, GROUND + 3, 148 + Math.sin(a) * 11, .6, .8, 6, 'gold', { seg: 8 });
   }
   torus(parts, 0, GROUND + 1.3, 148, 17, .4, 'crystalGlow', { rx: Math.PI / 2 });
+  // Bifrost detail: concentric rings, a raised dais and shards hanging in the dome.
+  for (let i = 0; i < 3; i++) {
+    torus(parts, 0, GROUND + 2.4 + i * 5.2, 148, 13 - i * 3.4, .26, 'crystalGlow', { rx: Math.PI / 2 });
+  }
+  cyl(parts, 0, GROUND + 1.5, 148, 7.6, 8.4, 1.4, 'gold', solid({ bottom: GROUND, seg: 20 }));
+  cyl(parts, 0, GROUND + 2.3, 148, 5.4, 5.8, .3, 'crystal', { seg: 18 });
+  for (let i = 0; i < 12; i++) {
+    const a = i * TAU / 12, r = 9 + (i % 3) * 3.2;
+    const shard = ball(parts, Math.cos(a) * r, GROUND + 10 + (i % 4) * 4, 148 + Math.sin(a) * r, .7 + (i % 3) * .4, 'crystalGlow', { seg: 6 });
+    void shard;
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = i * TAU / 10;
+    box(parts, Math.cos(a) * 24, GROUND + .9, 148 + Math.sin(a) * 13, 3.4, .16, 1.4, 'goldLight', { ry: -a });
+  }
 
   // Outer floating islands for exploration.
   for (const [x, y, z, r] of [[136, 16, -54, 26], [-140, 24, 66, 22], [118, 30, 96, 18]]) {
@@ -391,8 +532,10 @@ function buildDeathStar() {
     }
     box(parts, x, GROUND + h * .78, z + d / 2 + .05, w * .9, .18, .05, 'glowBlue');
   };
+  // Ceilings are collision volumes so the camera cannot climb over a roof into the void and
+  // look down through it; they sit far above any reachable jump.
   const ceiling = (x, y, z, w, d) => {
-    box(parts, x, y, z, w, .5, d, 'metalDark');
+    box(parts, x, y, z, w, .5, d, 'metalDark', solid({ bottom: y - .25 }));
     for (let i = -w / 2 + 3; i < w / 2; i += 6) box(parts, x + i, y - .35, z, 1.4, .12, d * .8, 'glowBlue');
   };
   const consoleBank = (x, z, w, ry = 0) => {
@@ -509,6 +652,41 @@ function buildDeathStar() {
     box(parts, x, GROUND + .15, z, 4, .3, 4, 'glowBlue');
   }
 
+  // Hangar detail: blast doors, overhead crane rails, floodlights, a control booth and
+  // hazard markings. The bay was a lit floor with crates; these give it an Imperial scale.
+  for (const side of [-1, 1]) {
+    box(parts, side * 27, GROUND + 10, hz + 38, 44, 20, 1.4, 'metalDark', solid({ bottom: GROUND }));
+    for (let i = 0; i < 6; i++) box(parts, side * 27, GROUND + 3 + i * 3.2, hz + 37, 42, .3, .9, 'steel');
+    box(parts, side * 27, GROUND + 10, hz + 37.6, 42, .5, .3, 'glowBlue');
+  }
+  box(parts, 0, GROUND + 19, hz + 38, 10, 3, 1.2, 'panel');
+  for (let i = 0; i < 4; i++) box(parts, 0, GROUND + 8 + i * 3.4, hz + 38, 11, .35, 1.6, 'steel');
+  for (const x of [-40, -14, 14, 40]) {
+    box(parts, x, GROUND + 20.4, hz - 22, 7, .8, 3, 'steel');
+    box(parts, x, GROUND + 19.4, hz - 22, 6, .5, 2.4, 'glowBlue');
+  }
+  for (const side of [-1, 1]) {
+    box(parts, side * 3.4, GROUND + 21, hz, 1.2, 1.2, 70, 'steel');
+    box(parts, side * 3.4, GROUND + 20.3, hz, 1.8, .5, 70, 'metalDark');
+  }
+  box(parts, 0, GROUND + 17, hz + 6, 5, 1.4, 5, 'steel');
+  box(parts, 0, GROUND + 12.4, hz + 6, .4, 9, .4, 'steel');
+  box(parts, 44, GROUND + 12, hz + 34, 12, 8, 7, 'panel', solid({ bottom: GROUND }));
+  box(parts, 44, GROUND + 12.6, hz + 30.4, 10.5, 5, .3, 'glass');
+  box(parts, 44, GROUND + 14.4, hz + 30.2, 11, .3, .4, 'glowBlue');
+  for (let i = 0; i < 7; i++) {
+    for (const side of [-1, 1]) {
+      box(parts, side * 40, GROUND + .06, hz - 30 + i * 10, 12, .05, 1.1, 'floorStripe', { ry: 0 });
+    }
+  }
+  for (let i = 0; i < 5; i++) {
+    const z = hz - 28 + i * 14;
+    for (const side of [-1, 1]) {
+      cyl(parts, side * 47, GROUND + 5, z, .55, .7, 10, 'metalDark', { seg: 8 });
+      box(parts, side * 45.4, GROUND + 6.4, z, .5, 2.6, 1.6, 'glowRed');
+    }
+  }
+
   // Reactor core -----------------------------------------------------------
   const rz = -152;
   cyl(parts, 0, GROUND - .3, rz, 34, 36, .6, 'floor', solid({ bottom: -1, seg: 28 }));
@@ -534,6 +712,26 @@ function buildDeathStar() {
     box(parts, side * 44, GROUND + 6, rz, 8, 12, 26, 'metal', solid({ bottom: GROUND }));
     box(parts, side * 40, GROUND + 8, rz, .4, 6, 18, 'glowGreen');
   }
+  // Reactor detail: emitter rings climbing the shaft, feed conduits and hazard plating.
+  for (let i = 0; i < 5; i++) {
+    torus(parts, 0, GROUND + 3.6 + i * 5.4, rz, 12.4 - i * 1.1, .34, 'steel', { rx: Math.PI / 2 });
+    torus(parts, 0, GROUND + 4.6 + i * 5.4, rz, 12.4 - i * 1.1, .16, 'glowGreen', { rx: Math.PI / 2 });
+  }
+  for (let i = 0; i < 12; i++) {
+    const a = i * TAU / 12, r = 27;
+    box(parts, Math.cos(a) * r, GROUND + 9, rz + Math.sin(a) * r, 1.1, 18, 1.1, 'steel', { ry: -a });
+    box(parts, Math.cos(a) * (r - .7), GROUND + 9, rz + Math.sin(a) * (r - .7), .3, 17, .3, 'glowRed', { ry: -a });
+  }
+  for (let i = 0; i < 16; i++) {
+    const a = i * TAU / 16, r = 31;
+    box(parts, Math.cos(a) * r, GROUND + .06, rz + Math.sin(a) * r, 6, .04, 1.2, 'floorStripe', { ry: -a });
+  }
+  for (const side of [-1, 1]) {
+    cyl(parts, side * 20, GROUND + 12, rz - 34, 1.2, 1.2, 24, 'metalDark', { seg: 10 });
+    cyl(parts, side * 20, GROUND + 12, rz + 34, 1.2, 1.2, 24, 'metalDark', { seg: 10 });
+  }
+  box(parts, 0, GROUND + 22, rz, 14, 1.2, 14, 'steel');
+  box(parts, 0, GROUND + 21.2, rz, 10, .6, 10, 'glowGreen');
 
   // Superlaser control -----------------------------------------------------
   const sx = 80, sz = -152;
@@ -595,6 +793,20 @@ function buildHogwarts() {
     box(parts, side * 45, GROUND + 11, cz + 42, 42, 22, 3, 'stone', solid({ bottom: GROUND }));
   }
   box(parts, 0, GROUND + 16, cz + 42, 24, 6, 3, 'stoneDark');
+  // Battlements, buttresses and tall window rows. The curtain walls were smooth slabs; the
+  // crenellations and piers give the castle the jagged skyline of the reference.
+  for (let x = -64; x <= 64; x += 4) box(parts, x, GROUND + 22.8, cz - 42, 2.1, 1.7, 3.5, 'stoneDark');
+  for (const side of [-1, 1]) {
+    for (let z = cz - 38; z <= cz + 38; z += 7) box(parts, side * 66, GROUND + 22.8, z, 3.5, 1.7, 2.6, 'stoneDark');
+    for (let z = cz - 34; z <= cz + 34; z += 11) box(parts, side * 68, GROUND + 9, z, 1.4, 17, 3.2, 'stoneDark');
+    for (let z = cz - 30; z <= cz + 30; z += 11) {
+      box(parts, side * 65.9, GROUND + 13.5, z, .3, 4.2, 1.8, 'glassWarm');
+      box(parts, side * 65.7, GROUND + 15.9, z, .4, .4, 2.4, 'stoneLight');
+    }
+    for (let i = 0; i < 5; i++) {
+      tower(parts, side * (44 + (i % 2) * 8), cz - 44 + i * 20, { r: 3.4, h: 22 + (i % 3) * 5, base: GROUND, mat: 'stone', roof: 'roofCastle' });
+    }
+  }
   for (let i = 0; i < 7; i++) {
     const x = -54 + i * 18;
     // Skip the middle of the south range: that is the gate between the Great Hall and the courtyard.
@@ -607,6 +819,18 @@ function buildHogwarts() {
   // Central keep sits north of the hall, and the clock tower stands beside the courtyard.
   box(parts, 0, GROUND + 22, cz - 36, 40, 44, 18, 'stone', solid({ bottom: GROUND }));
   cone(parts, 0, GROUND + 48, cz - 36, 22, 16, 'roofCastle', { seg: 4, ry: Math.PI / 4 });
+  // Keep detail: corner turrets, gable dormers, a lit window band and chimneys.
+  for (const side of [-1, 1]) {
+    for (const zs of [-1, 1]) {
+      tower(parts, side * 20, cz - 36 + zs * 9, { r: 3.2, h: 46, base: GROUND, mat: 'stone', roof: 'roofCastle' });
+    }
+    box(parts, side * 10, GROUND + 44, cz - 45, 9, 5, 3.4, 'roofHall');
+    box(parts, side * 10, GROUND + 41.4, cz - 46.6, 5.4, 3.2, .2, 'glassWarm');
+    cyl(parts, side * 15, GROUND + 47, cz - 30, 1.1, 1.3, 7, 'brick', { seg: 8 });
+  }
+  for (let row = 0; row < 3; row++) {
+    for (let i = -3; i <= 3; i++) box(parts, i * 5, GROUND + 14 + row * 6.5, cz - 26.8, 1.4, 3.4, .18, 'glassWarm');
+  }
   cyl(parts, -46, GROUND + 40, cz + 52, 7, 8, 64, 'stone', solid({ bottom: GROUND, seg: 10 }));
   cone(parts, -46, GROUND + 76, cz + 52, 9.5, 12, 'roofCastle', { seg: 10 });
   ball(parts, -46, GROUND + 61, cz + 52, 4.6, 'clock');
@@ -625,6 +849,12 @@ function buildHogwarts() {
   for (let i = 0; i < 5; i++) {
     const z = -14 + i * 12;
     box(parts, 0, GROUND - 4, z, 3, 10, 2.4, 'stoneDark');
+    // Arches springing between the piers, and lamps along the parapet.
+    for (const side of [-1, 1]) {
+      torus(parts, side * 3.6, GROUND - 1.4, z + 6, 1.5, .3, 'stoneLight', { ry: Math.PI / 2 });
+      cyl(parts, side * 5.8, GROUND + 1.9, z + 6, .2, .3, 2, 'dark', { seg: 6 });
+      ball(parts, side * 5.8, GROUND + 3.1, z + 6, .26, 'flame', { seg: 6 });
+    }
   }
 
   // Courtyard between castle and viaduct.
@@ -636,6 +866,19 @@ function buildHogwarts() {
     const x = -24 + i * 9.6;
     box(parts, x, GROUND + 1.1, -38, 2.2, 2.2, 2.2, 'stoneLight', solid({ bottom: GROUND }));
     ball(parts, x, GROUND + 2.5, -38, .8, 'crystal');
+  }
+  // Courtyard arcade on the west side, plus the greenhouse against the east range.
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, -30, GROUND + 2.6, -62 + i * 6, .55, .7, 5.2, 'stoneLight', solid({ bottom: GROUND, seg: 8 }));
+    torus(parts, -30, GROUND + 5.2, -62 + i * 6, 2.2, .22, 'stoneLight', { ry: Math.PI / 2 });
+  }
+  box(parts, -30, GROUND + 5.8, -47, 4, .6, 44, 'stoneDark');
+  for (const [x, z, w, d] of [[34, -46, 16, 12], [34, -58, 12, 10]]) {
+    box(parts, x, GROUND + 1.8, z, w, 3.6, d, 'glassCool', { transparent: true });
+    box(parts, x, GROUND + .25, z, w, .5, d, 'stone', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 3.7, z, w + 1, .4, d + 1, 'stoneDark');
+    for (let i = -1; i <= 1; i++) box(parts, x + i * w * .3, GROUND + 2, z, .2, 3.2, d, 'stoneLight');
+    for (let i = 0; i < 3; i++) box(parts, x - w * .3 + i * w * .3, GROUND + .6, z + d * .3, w * .24, .5, 2.4, 'leaf');
   }
 
   // Great Hall interior (its own roof and walls, entered from the courtyard side).
@@ -650,12 +893,31 @@ function buildHogwarts() {
     }
   }
   box(parts, 0, GROUND + 9, hallZ - 36, 42, 18, 1.8, 'stoneDark', solid({ bottom: GROUND }));
-  box(parts, 0, GROUND + 18.4, hallZ, 44, .6, 74, 'roofHall');
-  box(parts, 0, GROUND + 17.6, hallZ, 36, .5, 68, 'ceiling');
+  box(parts, 0, GROUND + 18.4, hallZ, 44, .6, 74, 'roofHall', solid({ bottom: GROUND + 18.1 }));
+  box(parts, 0, GROUND + 17.6, hallZ, 36, .5, 68, 'ceiling', solid({ bottom: GROUND + 17.35 }));
+  // Ribbed vault and clerestory: the hall had a flat ceiling slab, so the room read as a
+  // warehouse rather than the Great Hall.
+  for (let i = 0; i < 9; i++) {
+    const z = hallZ - 34 + i * 8.5;
+    box(parts, 0, GROUND + 16.6, z, 38, .7, 1.1, 'stoneDark');
+    for (const side of [-1, 1]) {
+      box(parts, side * 17.5, GROUND + 15.4, z, .9, 2.6, 1.1, 'stone');
+      // Curved ribs read as hanging pipes from inside the hall, so the vault is carried by
+      // the cross beams and the clerestory instead.
+      box(parts, side * 9, GROUND + 16.2, z, .45, .45, 1.6, 'stoneDark');
+    }
+  }
+  for (let i = 0; i < 8; i++) {
+    for (const side of [-1, 1]) {
+      box(parts, side * 20.4, GROUND + 13.4, hallZ - 30 + i * 8.6, .3, 5.4, 4.6, 'glassCool');
+      box(parts, side * 20.2, GROUND + 16.2, hallZ - 30 + i * 8.6, .4, .4, 5.2, 'stoneLight');
+    }
+  }
   // Four long house tables and benches (solid enough to jump onto).
   for (const x of [-12, -4, 4, 12]) {
     box(parts, x, floorY + 1.05, hallZ, 3.1, .5, 58, 'wood', solid({ bottom: floorY }));
-    box(parts, x, floorY + 1.36, hallZ, 3.5, .14, 58.4, 'gold');
+    box(parts, x, floorY + 1.36, hallZ, 3.5, .14, 58.4, 'wood');
+    box(parts, x, floorY + 1.44, hallZ, 1.1, .05, 58.2, 'gold');
     for (const side of [-1, 1]) box(parts, x + side * 2.6, floorY + .45, hallZ, .9, .8, 56, 'wood', solid({ bottom: floorY }));
     for (let z = hallZ - 26; z <= hallZ + 26; z += 7) {
       for (const side of [-1, 1]) cyl(parts, x + side * .7, floorY + 1.46, z, .16, .16, .05, 'gold', { seg: 10 });
@@ -682,6 +944,16 @@ function buildHogwarts() {
   cone(parts, -96, GROUND + 6.4, 6, 7.8, 4.6, 'thatch', { seg: 14 });
   box(parts, -96, GROUND + 1.4, 12.6, 1.6, 2.6, .3, 'wood');
   for (let i = 0; i < 4; i++) rock(parts, -88 + i * 4, 14, .7, GROUND, rng);
+  // Pumpkin patch and a fence around Hagrid's garden.
+  for (let i = 0; i < 9; i++) {
+    const x = -108 + (i % 3) * 5.4, z = 16 + Math.floor(i / 3) * 5;
+    ball(parts, x, GROUND + .5, z, .55 + (i % 3) * .12, 'flame', { sy: .8, seg: 8 });
+    cyl(parts, x, GROUND + .9, z, .06, .09, .6, 'trunk', { seg: 5 });
+  }
+  for (let i = 0; i < 10; i++) {
+    box(parts, -110 + i * 3.2, GROUND + .7, 28, .16, 1.4, .16, 'wood');
+  }
+  box(parts, -110, GROUND + 1.3, 28, 30, .12, .12, 'wood');
 
   // Hogsmeade: pitched cottages, a street and lanterns.
   for (let i = 0; i < 7; i++) {
@@ -708,6 +980,20 @@ function buildHogwarts() {
   for (const side of [-1, 1]) {
     for (let i = 0; i < 5; i++) {
       box(parts, qx + side * (48 + i * 2), GROUND + 1.6, qz - 30 + i * 15, 4, 3, 12, 'wood');
+    }
+  }
+  // Spectator stands: three stepped tiers on each long side, with a barrier fence.
+  for (const side of [-1, 1]) {
+    for (let tier = 0; tier < 3; tier++) {
+      const z = qz + side * (44 + tier * 4);
+      box(parts, qx, GROUND + .5 + tier * 1.1, z, 86, 1.1, 4, tier % 2 ? 'wood' : 'stoneDark', solid({ bottom: GROUND }));
+      for (let i = -40; i <= 40; i += 2.6) {
+        box(parts, qx + i, GROUND + 1.5 + tier * 1.1, z, .3, .7, .3, ['bannerRed', 'bannerGold', 'bannerBlue', 'bannerGreen'][(Math.round(i) + tier) % 4 < 0 ? 0 : (Math.abs(Math.round(i)) + tier) % 4]);
+      }
+    }
+    for (let i = 0; i < 5; i++) {
+      cyl(parts, qx - 36 + i * 18, GROUND + 4.4, qz + side * 47, .3, .4, 6, 'gold', { seg: 6 });
+      ball(parts, qx - 36 + i * 18, GROUND + 7.6, qz + side * 47, .4, 'flame', { seg: 6 });
     }
   }
   // Boathouse and dock on the lake.
@@ -743,14 +1029,16 @@ export const PALETTES = {
     building: '#b9b3a0', buildingWarm: '#b2936f', buildingBlue: '#7fa6b4', roof: '#b5563f',
     roofBlue: '#4f7f9c', wood: '#7a5433', water: '#2f7ba8', cloud: '#eef5f9',
     leaf: '#3f7a44', trunk: '#5a4230', glassWarm: '#ffd79a', glassBlue: '#8fdcff',
-    banner: '#d8452f', bannerBlue: '#2f6fd0', skin: '#d9a982', cloth: '#3f6f8c', cloth2: '#c7b26a'
+    banner: '#d8452f', bannerBlue: '#2f6fd0', skin: '#d9a982', cloth: '#3f6f8c', cloth2: '#c7b26a',
+    metal: '#8d9099', crate: '#8a6a44', flame: '#ffd9a0', dark: '#2a2a2e'
   },
   asgard: {
-    rock: '#4d4a52', marble: '#a49b88', gold: '#d7aa42', goldLight: '#f3d77d',
-    stone: '#8b8578', stoneDark: '#5f5c56', roofGold: '#a8792c', sand: '#c2b48e',
+    rock: '#4d4a52', marble: '#b4b1a8', gold: '#d7aa42', goldLight: '#f3d77d',
+    stone: '#918e86', stoneDark: '#5f5c56', roofGold: '#a8792c', sand: '#c2b48e',
     wood: '#6b4b30', water: '#54d6ff', crystal: '#7fe8ff', crystalGlow: '#5fd0ff', grass: '#4c7a4a',
     leaf: '#4c7a4a', trunk: '#4a3527', glassWarm: '#ffe6b0', roof: '#6f6a62',
-    bannerBlue: '#2f6fd0', cloth: '#c9b26a', cloth2: '#3f6f8c', skin: '#d9a982', cloud: '#f2f7ff'
+    bannerBlue: '#2f6fd0', cloth: '#c9b26a', cloth2: '#3f6f8c', skin: '#d9a982', cloud: '#f2f7ff',
+    flame: '#ffe6b0', crate: '#7c5c3e', metal: '#9aa0a8', panel: '#7d8188'
   },
   deathstar: {
     metal: '#5b6572', metalDark: '#333a45', floor: '#4a525d', floorCommand: '#414956',
@@ -763,7 +1051,7 @@ export const PALETTES = {
     stone: '#6f6c66', stoneDark: '#4a4844', stoneLight: '#a29c90', brick: '#5a4a42',
     roofCastle: '#3a4450', roofHall: '#2f3742', ceiling: '#1d2430', wood: '#5a4030',
     gold: '#b49a60', glassWarm: '#ffd79a', glassCool: '#8ab6d4', grass: '#4d6a3f',
-    leaf: '#2f4d33', trunk: '#3a2c22', water: '#20323c', cobble: '#4c4a45',
+    leaf: '#2f4d33', trunk: '#3a2c22', water: '#20323c', cobble: '#6b6a63',
     floorHall: '#7d766a', pitch: '#6f8d4a', flame: '#ffe6a6', clock: '#e8d79a',
     bannerRed: '#9e1f2e', bannerBlue: '#1d426d', bannerGold: '#c2a438', bannerGreen: '#2b623d',
     rock: '#59554c', moss: '#4e5a44', thatch: '#5c4a33', crystal: '#9fd7ff',
@@ -773,7 +1061,7 @@ export const PALETTES = {
 
 const THEMES = {
   dbz: { sky: 0x2f6ea8, fog: 0xbcd6d8, floor: 0x2f7ba8, platform: 0x8a8064, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff2d2, sun: 0xffe3b0, density: .0022, skyPreset: 'tournament' },
-  asgard: { sky: 0x28477e, fog: 0xffe2a6, floor: 0x4a4a52, platform: 0x8b8578, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xffe2b3, sun: 0xffd6a1, density: .0022, skyPreset: 'asgard' },
+  asgard: { sky: 0x28477e, fog: 0xffe2a6, floor: 0x4a4a52, platform: 0x8b8578, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff2e0, sun: 0xffd6a1, density: .0022, skyPreset: 'asgard' },
   deathstar: { sky: 0x070b14, fog: 0x202b3a, floor: 0x424954, platform: 0x262d38, ringA: 0x78cfff, ringB: 0xff453b, light: 0xc8d9ff, sun: 0x8799bb, density: .004, skyPreset: 'deathstar', interior: true },
   hogwarts: { sky: 0x171a2d, fog: 0x41414b, floor: 0x3c3e43, platform: 0x292b31, ringA: 0xe3c477, ringB: 0x9f252e, light: 0xffd59b, sun: 0xd5c4a1, density: .0045, skyPreset: 'hogwarts', interior: true }
 };
@@ -835,6 +1123,32 @@ export const WORLDS = {
       loc('hogwarts_boathouse', 'Black Lake Boathouse', 'dock', [54, 101, 70, 115], [58, 105, 0.6, 66, 111, 0.6], { ground: 0.6 }),
       loc('hogwarts_hogsmeade', 'Hogsmeade Village', 'village', [-122, 32, -48, 92], [-96, 50, 0.3, -56, 70, 0.3])
     ]
+  }
+};
+
+// Per-world lighting. One shared key/rim/hemisphere rig lit all four worlds with the same
+// numbers, so Hogwarts read as grey haze and the Death Star as a lit warehouse. These keep
+// sun direction constant per world (so shadows land the same way every match) but separate
+// exposure, fill, rim tint and fog.
+export const STAGE_LIGHTING = {
+  dbz: {
+    exterior: { sun: 1.05, shadow: true, rim: .34, rimColor: 0x8fc4ff, hemi: .5, hemiSky: 0x9ecfff, hemiGround: 0x2b3326, exposure: .94, fogScale: 1, sunPos: [34, 46, -52], rimPos: [-18, 26, 30] },
+    interior: { sun: .9, shadow: false, rim: .3, rimColor: 0x8fc4ff, hemi: .5, hemiSky: 0x9ecfff, hemiGround: 0x2b3326, exposure: .94, fogScale: 1, sunPos: [34, 46, -52], rimPos: [-18, 26, 30] }
+  },
+  asgard: {
+    exterior: { sun: 1.15, shadow: true, rim: .44, rimColor: 0xffd9a0, hemi: .58, hemiSky: 0xbcd8ff, hemiGround: 0x2f2a33, exposure: 1.0, fogScale: .9, sunPos: [30, 40, -54], rimPos: [-20, 22, 26] },
+    interior: { sun: 1.0, shadow: false, rim: .4, rimColor: 0xffd9a0, hemi: .55, hemiSky: 0xbcd8ff, hemiGround: 0x2f2a33, exposure: 1.0, fogScale: .9, sunPos: [30, 40, -54], rimPos: [-20, 22, 26] }
+  },
+  deathstar: {
+    // Interiors only: a cold key from above, strong blue rim off the panelling, and heavy fog
+    // scaled back so the far end of the hangar still reads instead of fading to black.
+    exterior: { sun: 2.2, shadow: false, rim: 1.0, rimColor: 0x4d7dff, hemi: 1.35, hemiSky: 0xa8c0dc, hemiGround: 0x1b2430, exposure: 1.28, fogScale: .62, sunPos: [8, 40, -14], rimPos: [-16, 24, 28] },
+    interior: { sun: 2.2, shadow: false, rim: 1.0, rimColor: 0x4d7dff, hemi: 1.35, hemiSky: 0xa8c0dc, hemiGround: 0x1b2430, exposure: 1.28, fogScale: .62, sunPos: [8, 40, -14], rimPos: [-16, 24, 28] }
+  },
+  hogwarts: {
+    exterior: { sun: 1.4, shadow: true, rim: .5, rimColor: 0x9db8d8, hemi: .62, hemiSky: 0xa8bdd6, hemiGround: 0x2b2f26, exposure: .98, fogScale: .7, sunPos: [30, 42, -44], rimPos: [-18, 22, 30] },
+    // The hall is lit by candles and windows: a low shadowless key, warm fill, cool rim.
+    interior: { sun: 1.5, shadow: false, rim: .75, rimColor: 0x8aa4d6, hemi: .8, hemiSky: 0x8f8a78, hemiGround: 0x241f18, exposure: 1.04, fogScale: .5, sunPos: [12, 38, -18], rimPos: [-14, 20, 26] }
   }
 };
 

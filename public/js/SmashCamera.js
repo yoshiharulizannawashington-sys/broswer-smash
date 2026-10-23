@@ -26,6 +26,72 @@ export default class SmashCamera {
     // back further. Small arenas keep the original close overhead framing.
     this.stageTilt = 0;
     this.stageScale = 1;
+    // Solid volumes the camera must stay out of on large world stages (see setStageBounds).
+    this.collisionBlocks = null;
+    this.collisionReach = Infinity;
+  }
+
+  /**
+   * Give the camera the stage's solid geometry so it cannot end up inside a wall, under a
+   * floor slab or above an interior ceiling. Only blocks near the battle area are kept, and
+   * only blocks tall enough to be in the camera's line are kept at all.
+   */
+  setStageBounds(bounds, blocks) {
+    this.collisionReach = Infinity;
+    if (!bounds || !Array.isArray(blocks) || !blocks.length) { this.collisionBlocks = null; return; }
+    const pad = 55;
+    this.collisionBlocks = blocks.filter(block => {
+      if (!(block.top > 1.6)) return false;
+      if (block.r != null) {
+        return block.x > bounds.x0 - pad && block.x < bounds.x1 + pad
+          && block.z > bounds.z0 - pad && block.z < bounds.z1 + pad;
+      }
+      return block.x1 > bounds.x0 - pad && block.x0 < bounds.x1 + pad
+        && block.z1 > bounds.z0 - pad && block.z0 < bounds.z1 + pad;
+    });
+  }
+
+  /**
+   * Distance along a ray to the nearest solid volume, or null when the line is clear.
+   * `ignoreBelow` is the fighters' standing height: the slab they are fighting on is not an
+   * obstruction, even though the shot's look point sits slightly under their feet.
+   */
+  obstruction(ox, oy, oz, dx, dy, dz, maxT, ignoreBelow = -Infinity) {
+    let best = null;
+    for (const block of this.collisionBlocks) {
+      if (block.top <= ignoreBelow + .15) continue;
+      let enter, exit;
+      if (block.r != null) {
+        // Vertical cylinder: solve the xz quadratic, then reject outside its height range.
+        const ex = ox - block.x, ez = oz - block.z;
+        const a = dx * dx + dz * dz;
+        if (a < 1e-6) continue;
+        const b = 2 * (ex * dx + ez * dz);
+        const c = ex * ex + ez * ez - block.r * block.r;
+        const disc = b * b - 4 * a * c;
+        if (disc <= 0) continue;
+        const root = Math.sqrt(disc);
+        enter = (-b - root) / (2 * a);
+        exit = (-b + root) / (2 * a);
+      } else {
+        enter = 0; exit = maxT;
+        for (const [min, max, o, d] of [[block.x0, block.x1, ox, dx], [block.bottom, block.top, oy, dy], [block.z0, block.z1, oz, dz]]) {
+          if (Math.abs(d) < 1e-6) { if (o < min || o > max) { enter = Infinity; break; } continue; }
+          let t0 = (min - o) / d, t1 = (max - o) / d;
+          if (t0 > t1) { const swap = t0; t0 = t1; t1 = swap; }
+          if (t0 > enter) enter = t0;
+          if (t1 < exit) exit = t1;
+          if (enter > exit) { enter = Infinity; break; }
+        }
+      }
+      if (!Number.isFinite(enter) || enter <= 0 || enter > maxT) continue;
+      if (block.r != null) {
+        const hitY = oy + dy * enter;
+        if (hitY < block.bottom || hitY > block.top) continue;
+      }
+      if (best == null || enter < best) best = enter;
+    }
+    return best;
   }
 
   /** 0 = close overhead duel framing; ~.18 = pulled-back view for a large arena. */
@@ -75,7 +141,10 @@ export default class SmashCamera {
     const fovRad = THREE.MathUtils.degToRad(this.camera.fov || 46);
     const halfHorizontal = Math.tan(fovRad / 2) * (this.camera.aspect || 1.6);
     const requiredReach = (separation * .5 + 1.8) / Math.max(.3, halfHorizontal * .92);
-    const reach = THREE.MathUtils.clamp(Math.max(baseReach, requiredReach * this.stageScale), 6.2, 42) * this.zoom;
+    // On a large world stage a close duel still has to show the place it is happening in, so
+    // the minimum distance grows with the stage instead of collapsing onto the pair.
+    const stageFloor = 6.2 + (this.stageScale - 1) * 12;
+    const reach = THREE.MathUtils.clamp(Math.max(baseReach, requiredReach * this.stageScale, stageFloor), stageFloor, 42) * this.zoom;
     // Look down steeply enough to read as an overhead fighting camera, but not so steeply
     // that a standing fighter is foreshortened into a stub - and lower still on world stages.
     const elevation = THREE.MathUtils.clamp(.8 - spread * .1 - this.stageTilt, .5, .8);
@@ -118,6 +187,29 @@ export default class SmashCamera {
         forward ? Math.max(1.35, a.position.y * .35) : Math.max(1.2, altitude * .78),
         forward ? a.position.z * .72 + b.position.z * .28 - .5 : midZ - 2.4
       );
+    }
+
+    // Keep the shot out of the scenery: shorten it to the first solid volume between the
+    // fighters and the camera. Shortening is immediate so a wall never fills the frame;
+    // lengthening eases back so the camera does not pump when passing a pillar.
+    if (this.collisionBlocks && this.collisionBlocks.length) {
+      const ox = this.lookTarget.x, oy = this.lookTarget.y, oz = this.lookTarget.z;
+      const vx = this.positionTarget.x - ox, vy = this.positionTarget.y - oy, vz = this.positionTarget.z - oz;
+      const length = Math.hypot(vx, vy, vz);
+      if (length > .01) {
+        const feet = Math.min(a.position.y || 0, b.position.y || 0);
+        const hit = this.obstruction(ox, oy, oz, vx / length, vy / length, vz / length, length, feet);
+        const allowed = hit == null ? length : Math.max(4.6, hit - .9);
+        // Shorten instantly, and also snap when the shot has clearly opened up again (a
+        // teleport, a spawn onto a raised deck); only gentle changes ease out.
+        this.collisionReach = allowed < this.collisionReach || allowed > this.collisionReach * 1.8
+          ? allowed
+          : THREE.MathUtils.damp(this.collisionReach, allowed, 4, dt);
+        const use = Math.min(length, this.collisionReach);
+        if (use < length) {
+          this.positionTarget.set(ox + vx / length * use, oy + vy / length * use, oz + vz / length * use);
+        }
+      }
     }
 
     if (Math.abs(this.orbitYaw) > .001 || Math.abs(this.orbitPitch) > .001) {

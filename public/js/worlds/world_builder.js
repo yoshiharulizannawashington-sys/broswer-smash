@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { PALETTES, WORLDS, WORLD_MATERIAL_SPECS, worldParts } from './world_catalog.js';
+import { BUMPY, SURFACES, surfaceTexture } from './world_textures.js';
 
 const materialCache = new Map();
 
@@ -34,9 +35,48 @@ export function materialFor(paletteKey, matKey) {
     envMapIntensity: spec.emissive ? .35 : .28,
     side: matKey === 'water' || matKey === 'glass' ? THREE.DoubleSide : THREE.FrontSide
   });
+  // Tiling surface detail. The palette stays in charge of colour, so one stone texture serves
+  // DBZ sandstone, Asgard marble-grey and Hogwarts granite without extra assets.
+  const surface = SURFACES[matKey];
+  if (surface && !spec.emissive && !spec.transparent) {
+    const [kind, tile] = surface;
+    const map = surfaceTexture(kind, tile);
+    if (map) {
+      material.map = map;
+      if (BUMPY.has(kind)) {
+        material.bumpMap = map;
+        material.bumpScale = kind === 'panel' ? .22 : .32;
+      }
+    }
+  }
   material.name = `${paletteKey}-${matKey}`;
   materialCache.set(cacheKey, material);
   return material;
+}
+
+/**
+ * World geometry is merged per material, so per-object UV tiling is impossible: instead every
+ * vertex gets its UV from its own world position, projected onto the plane facing its normal.
+ * UVs are therefore in metres and a 20 m wall tiles exactly 5x at 4 m per tile, while a 1 m
+ * crate still tiles once.
+ */
+function projectUVs(geometry) {
+  const position = geometry.getAttribute('position');
+  const normal = geometry.getAttribute('normal');
+  if (!position || !normal) return;
+  const uv = new Float32Array(position.count * 2);
+  for (let i = 0; i < position.count; i++) {
+    const nx = Math.abs(normal.getX(i));
+    const ny = Math.abs(normal.getY(i));
+    const nz = Math.abs(normal.getZ(i));
+    let u, v;
+    if (ny >= nx && ny >= nz) { u = position.getX(i); v = position.getZ(i); }
+    else if (nx >= nz) { u = position.getZ(i); v = position.getY(i); }
+    else { u = position.getX(i); v = position.getY(i); }
+    uv[i * 2] = u;
+    uv[i * 2 + 1] = v;
+  }
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
 }
 
 function geometryFor(part) {
@@ -66,6 +106,7 @@ function geometryFor(part) {
     new THREE.Vector3(part.sx || 1, part.sy || 1, part.sz || 1)
   );
   geometry.applyMatrix4(matrix);
+  projectUVs(geometry);
   return geometry;
 }
 

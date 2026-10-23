@@ -194,6 +194,62 @@ try {
   check('attacks connect inside the world', hit.percent > damage.start, `${damage.start} -> ${hit.percent}`);
   await page.evaluate(() => { window.__browserSmashTrainingDummy = false; });
 
+  // ---- Ring-outs ----------------------------------------------------------
+  // A designated ring-out stage has no playable clamp: a fighter thrown past the edge falls
+  // and loses the round. The same throw on a normal stage has to be clamped instead.
+  await page.evaluate(() => window.__browserSmashSelect.chooseArena('dbz_cliffs'));
+  await page.waitForFunction(() => window.__browserSmashWorld?.location === 'dbz_cliffs', null, { timeout: 60_000 });
+  await page.evaluate(() => window.__browserSmashSpawnFighters());
+  await step(0.1);
+  const beforeFall = await page.evaluate(() => window.__browserSmashMatch());
+  await page.evaluate(() => {
+    const fighter = window.fighters[0];
+    const bounds = window.__browserSmashWorld.bounds;
+    fighter.position.set(bounds.x1 + 26, 3.2, (bounds.z0 + bounds.z1) / 2);
+    fighter.velocity.set(0, -14, 0);
+    fighter.isGrounded = false;
+  });
+  await step(0.25);
+  const afterFall = await page.evaluate(() => window.__browserSmashMatch());
+  check('a ring-out ends the round for the fighter who went over the edge',
+    afterFall.wins[1] === beforeFall.wins[1] + 1,
+    `${beforeFall.wins.join('-')} -> ${afterFall.wins.join('-')} (${afterFall.status})`);
+
+  await page.evaluate(() => window.__browserSmashSelect.chooseArena('dbz_grand_prize'));
+  await page.waitForFunction(() => window.__browserSmashWorld?.location === 'dbz_grand_prize', null, { timeout: 60_000 });
+  // Practice mode is behind the (closed) setup screen here, so dispatch the button's own
+  // click handler instead of requiring it to be visible.
+  await page.evaluate(() => document.querySelector('#practice').click());
+  await page.evaluate(() => {
+    const fighter = window.fighters[0];
+    const bounds = window.__browserSmashWorld.bounds;
+    fighter.position.set(bounds.x1 + 26, 4.2, (bounds.z0 + bounds.z1) / 2);
+    fighter.velocity.set(0, -14, 0);
+    fighter.isGrounded = false;
+  });
+  await step(0.35);
+  const clamped = await page.evaluate(() => ({
+    position: window.fighters[0].position.toArray(),
+    ground: window.fighters[0].groundLevel,
+    bounds: window.__browserSmashWorld.bounds,
+    match: window.__browserSmashMatch()
+  }));
+  check('a normal stage still clamps a thrown fighter inside the arena',
+    clamped.position[0] <= clamped.bounds.x1 + 0.7 && clamped.position[0] >= clamped.bounds.x0 - 0.7,
+    `x ${clamped.position[0].toFixed(1)} vs ${clamped.bounds.x0}..${clamped.bounds.x1}`);
+  check('a clamped fighter lands on the stage floor',
+    Math.abs(clamped.position[1] - clamped.ground) < 0.6, `y ${clamped.position[1].toFixed(2)} ground ${clamped.ground?.toFixed(2)}`);
+  check('a clamped fighter does not lose the round', clamped.match.wins[1] === 0, clamped.match.wins.join('-'));
+
+  // The camera must not sit inside the world's solid geometry once the stage has walls.
+  const camera = await page.evaluate(() => {
+    const cam = window.__browserSmashScene.children.find(child => child.isCamera) || null;
+    const liveCamera = window.__browserSmashCamera || cam;
+    const blocks = window.__browserSmashWorld.blocks || 0;
+    return { hasCamera: Boolean(liveCamera), blocks, collides: Boolean(window.smashCamera?.collisionBlocks?.length) };
+  });
+  check('the camera is given the stage geometry to avoid', camera.collides, `${camera.blocks} blocks registered`);
+
   // ---- Switching worlds and back ------------------------------------------
   await page.evaluate(() => window.__browserSmashSelect.chooseArena('asgard_bifrost'));
   await page.waitForFunction(() => window.__browserSmashWorld?.location === 'asgard_bifrost', null, { timeout: 60_000 });
