@@ -1,4 +1,4 @@
-// Browser test for the five large reference worlds.
+// Browser test for the six large reference worlds.
 //
 // It loads the real game, selects every battle location through the real selection API,
 // and asserts on live scene/simulation state: the world geometry is present as one merged
@@ -91,9 +91,9 @@ try {
     return { cards, tabs };
   });
   const worldCards = catalog.cards.filter(card => card.world);
-  check('the selection screen lists five worlds', catalog.tabs.filter(tab => tab.id !== 'classic').length === 5,
+  check('the selection screen lists six worlds', catalog.tabs.filter(tab => tab.id !== 'classic').length === 6,
     catalog.tabs.map(tab => tab.id).join(','));
-  check('every world exposes at least five battle locations', ['dbz', 'asgard', 'deathstar', 'hogwarts', 'konoha'].every(id =>
+  check('every world exposes at least five battle locations', ['dbz', 'asgard', 'deathstar', 'hogwarts', 'konoha', 'nyc'].every(id =>
     worldCards.filter(card => card.world === id).length >= 5), `${worldCards.length} world stages`);
   check('battle locations are kept out of the classic arena filter', catalog.cards.filter(card => !card.world).length >= 6);
 

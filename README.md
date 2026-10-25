@@ -288,9 +288,9 @@ fighter, so a mounted-but-broken rig fails the audit instead of passing on a nod
 
 ## Worlds, stages and travel
 
-The five reference worlds now hold 49 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
-Hogwarts 9, Konoha 12). Each world is one built environment; the locations inside it are rectangles
-over that same geometry, so switching stages within a world does not rebuild the map.
+The six reference worlds now hold 58 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
+Hogwarts 9, Konoha 12, New York 9). Each world is one built environment; the locations inside it are
+rectangles over that same geometry, so switching stages within a world does not rebuild the map.
 
 Stages are joined by marked doorways: a lit ring and light column at the edge of a stage that
 leads to a neighbouring stage. Walking into one moves the match there (callout, then the new
@@ -312,6 +312,13 @@ three-step throne dais under a great window, side-chamber alcoves with lit arche
 gallery reached by stairs at both corners, tall windows above the gallery, braziers, banners and a
 red processional carpet. The court's doorway sits at the palace gate (the ziggurat itself is still
 facade), so the hall is entered the same way as every other stage transition.
+
+New York stages: Stark Tower Plaza, Fifth Avenue, Times Square, Midtown Rooftops, the Stark
+observation deck (80 m), the Stark crown (120 m), the Brooklyn Bridge deck, the East River docks
+and Central Park. Stark Tower is three real tiers rather than a facade: the deck is the roof of the
+middle tier and the helipad stage is the roof of the top one, so both are fought on, not looked at.
+Streets are a grid of avenues and cross-streets with kerbs, crosswalks, lamps, traffic lights and
+parked cars; the bridge span is a 16 m deck over the East River with stone towers and cables.
 
 Konoha stages: Hokage Rock, Hokage Administration, Main Street, Ichiraku Ramen, Ninja Academy,
 Konoha Hospital, Residential District, Uchiha District, Hyuga Compound, Training Grounds, Village
@@ -343,7 +350,7 @@ no continuous walk from one end of a world to the other.
 
 ## Large world materials
 
-`public/js/worlds/world_textures.js` draws the tileable surface maps the five reference worlds
+`public/js/worlds/world_textures.js` draws the tileable surface maps the six reference worlds
 are built from: stone courses, riveted metal panels, timber planks, grass, marble veining, roof
 tiles and shingles. Each world part is merged per material, so per-object tiling is impossible;
 instead `world_builder.js` projects every vertex's UV from its own world position, and the texture

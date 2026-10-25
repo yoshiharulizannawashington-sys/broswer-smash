@@ -20,7 +20,7 @@ function ok(condition, message) {
 const near = (a, b, tolerance) => Math.abs(a - b) <= tolerance;
 
 // ---- worlds register -------------------------------------------------------
-ok(WORLD_ORDER.length === 5, `expected five worlds, got ${WORLD_ORDER.length}`);
+ok(WORLD_ORDER.length === 6, `expected six worlds, got ${WORLD_ORDER.length}`);
 for (const id of WORLD_ORDER) {
   const world = WORLDS[id];
   ok(Boolean(world), `world ${id} exists`);
@@ -29,12 +29,12 @@ for (const id of WORLD_ORDER) {
   ok(Boolean(PALETTES[world.paletteKey]), `${id} has a palette`);
 }
 
-// Several dozen distinct landmark stages across the five worlds.
+// Several dozen distinct landmark stages across the six worlds.
 ok(WORLD_LOCATIONS.length >= 20, `expected 20+ battle locations, got ${WORLD_LOCATIONS.length}`);
 const ids = new Set(WORLD_LOCATIONS.map(location => location.id));
 ok(ids.size === WORLD_LOCATIONS.length, 'battle location ids are unique');
 const groups = worldGroups();
-ok(groups.length === 5 && groups.every(group => group.locations.length >= 5), 'every world exposes its locations to the menu');
+ok(groups.length === 6 && groups.every(group => group.locations.length >= 5), 'every world exposes its locations to the menu');
 ok(groups.flatMap(group => group.locations).length === WORLD_LOCATIONS.length, 'menu lists every battle location');
 
 // ---- geometry plans --------------------------------------------------------
@@ -193,6 +193,7 @@ for (const location of WORLD_LOCATIONS) {
 // ---- world lookup ----------------------------------------------------------
 ok(worldLocation('dbz_grand_prize')?.world === 'dbz', 'world lookup resolves a DBZ stage');
 ok(worldLocation('konoha_main_street')?.world === 'konoha', 'world lookup resolves a Konoha stage');
+ok(worldLocation('nyc_stark_roof')?.world === 'nyc', 'world lookup resolves a New York stage');
 ok(worldLocation('deathstar_hangar')?.world === 'deathstar', 'world lookup resolves a Death Star stage');
 ok(worldLocation('nope') === null, 'unknown locations return null');
 
@@ -208,6 +209,8 @@ ok(has('hogwarts', 'water') && has('hogwarts', 'leaf'), 'Hogwarts has the Black 
 ok(has('konoha', 'cliff') && has('konoha', 'mountain') && has('konoha', 'glassWarm'), 'Konoha has the Hokage cliff, mountain horizon and lit windows');
 ok(has('konoha', 'roof') && has('konoha', 'roofBlue') && has('konoha', 'stoneDark'), 'Konoha has tiled roofs and compound walls');
 ok(has('konoha', 'water') && has('konoha', 'leaf') && has('konoha', 'banner'), 'Konoha has the river, forest and banners');
+ok(has('nyc', 'glassBlue') && has('nyc', 'glowBlue') && has('nyc', 'marble'), 'New York has curtain wall, reactor glow and plaza marble');
+ok(has('nyc', 'building') && has('nyc', 'steel') && has('nyc', 'water'), 'New York has towers, steelwork and the river');
 
 // ---- world travel: exits between stages --------------------------------------
 // Every exit must point at a real stage in the same world, sit inside the stage it leaves
