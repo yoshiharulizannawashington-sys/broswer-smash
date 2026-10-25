@@ -1,6 +1,6 @@
 // World and battle-location catalog for Browser Bros.
 //
-// Each of the five reference worlds is ONE large environment containing its landmarks, with
+// Each of the six reference worlds is ONE large environment containing its landmarks, with
 // several named battle locations inside it. A battle location is a playable rectangle with
 // its own spawn points (where the fight starts) inside the same world geometry, so switching
 // stages inside a world does not rebuild or reload anything.
@@ -212,6 +212,105 @@ function buildDbz() {
     const a = i * TAU / 14;
     cyl(parts, Math.cos(a) * 30, GROUND + 1.3, Math.sin(a) * 30, .16, .24, 2.6, 'stoneDark', { seg: 6 });
     ball(parts, Math.cos(a) * 30, GROUND + 2.8, Math.sin(a) * 30, .28, 'glassWarm', { seg: 6 });
+  }
+
+  // Crowd, ring-side dressing and market street -------------------------------
+  // The stands were empty stone terraces. Packed rows of spectators, vendor carts, string
+  // lights and crate stacks now surround the ring, and the approach roads carry market stalls.
+  const fanMats = ['cloth', 'cloth2', 'banner', 'bannerBlue', 'gold', 'buildingWarm', 'skin'];
+  const fan = (fx, fy, fz) => {
+    box(parts, fx, fy + .42, fz, .62, .84, .46, fanMats[Math.floor(rng() * 6)]);
+    ball(parts, fx, fy + 1.02, fz, .21, 'skin', { seg: 5 });
+  };
+  for (const side of [-1, 1]) {
+    for (let tier = 0; tier < 3; tier++) {
+      const y = GROUND + .55 + tier * .95;
+      const zr = 25.5 + tier * 3.1;
+      const half = (70 - tier * 6) / 2 - 4;
+      for (let x = -half + 1; x < half; x += 2.4) {
+        if (Math.abs(x) < 6) continue;                       // gate gap onto the stage
+        fan(x, y + .47, side * zr);
+        fan(side * zr, y + .47, x);
+      }
+    }
+  }
+  // Ring-side vendor carts, crate stacks and a scoreboard.
+  for (const [vx, vz] of [[-27, 34], [27, 34], [-31, -32], [31, -32]]) {
+    box(parts, vx, GROUND + .55, vz, 3.2, 1.1, 2, 'wood', solid({ bottom: GROUND }));
+    box(parts, vx, GROUND + 1.9, vz, 3.8, .2, 2.6, 'banner');
+    for (const s of [-1, 1]) cyl(parts, vx + s * 1.6, GROUND + 1.1, vz + .9, .1, .1, 1.6, 'wood', { seg: 5 });
+    for (let i = 0; i < 3; i++) {
+      cyl(parts, vx - .9 + i * .9, GROUND + 1.35, vz, .26, .22, .5, 'crate', { seg: 7 });
+      ball(parts, vx - .9 + i * .9, GROUND + 1.62, vz, .2, i % 2 ? 'banner' : 'gold', { seg: 5 });
+    }
+  }
+  for (let i = 0; i < 12; i++) {
+    const a = i * TAU / 12 + .25;
+    const cr = 29 + (i % 2) * 2;
+    box(parts, Math.cos(a) * cr, GROUND + .5, Math.sin(a) * cr, 1.3, 1, 1.3, 'crate', solid({ bottom: GROUND }));
+    box(parts, Math.cos(a) * cr, GROUND + 1.2, Math.sin(a) * cr, 1.4, .2, 1.4, 'metal');
+  }
+  // Strings of festival lights between the plaza lamps.
+  for (let i = 0; i < 14; i++) {
+    const a = i * TAU / 14, b = (i + 1) * TAU / 14;
+    const x1 = Math.cos(a) * 30, z1 = Math.sin(a) * 30, x2 = Math.cos(b) * 30, z2 = Math.sin(b) * 30;
+    for (let t = 1; t < 5; t++) {
+      const f = t / 5;
+      const px = x1 + (x2 - x1) * f, pz = z1 + (z2 - z1) * f;
+      const py = GROUND + 2.55 - Math.sin(f * Math.PI) * .35;
+      ball(parts, px, py, pz, .16, i % 2 ? 'glassWarm' : 'flame', { seg: 5 });
+      box(parts, px, py + .2, pz, .3, .05, .05, 'dark');
+    }
+  }
+  // Market street on the approach road: stalls, awnings, produce and hanging boards.
+  for (let i = 0; i < 4; i++) {
+    const mz = 32 + i * 5;
+    for (const s of [-1, 1]) {
+      stall(parts, s * 7.5, mz, GROUND, s * .6);
+      box(parts, s * 7.5, GROUND + 3.2, mz, 3.5, .6, .2, i % 2 ? 'bannerBlue' : 'banner');
+      for (let j = 0; j < 3; j++) {
+        ball(parts, s * 7.5 - 1 + j, GROUND + 1.5, mz + .3, .26, j % 2 ? 'gold' : 'banner', { seg: 6 });
+      }
+    }
+  }
+  for (let i = 0; i < 6; i++) {
+    const mz = 30 + i * 3.6;
+    cyl(parts, i % 2 ? 4.6 : -4.6, GROUND + 1.6, mz, .1, .12, 3.2, 'stoneDark', { seg: 5 });
+    ball(parts, i % 2 ? 4.6 : -4.6, GROUND + 3.3, mz, .34, 'glassWarm', { seg: 6 });
+  }
+  // East City: awnings, shop signs, lantern strings and produce outside the market blocks.
+  for (let i = 0; i < 5; i++) {
+    const ex = 72 + (i % 2) * 18, ez = -8 + i * 14;
+    box(parts, ex, GROUND + 3.4, ez + 5.2, 8.6, .22, 1.8, i % 2 ? 'bannerBlue' : 'banner', { rx: .22 });
+    box(parts, ex + (i % 2 ? 2.6 : -2.6), GROUND + 4.9, ez + 5.3, 3.4, 1.1, .22, 'glassWarm');
+    for (let j = 0; j < 4; j++) cyl(parts, ex - 3.6 + j * 2.4, GROUND + 2.2, ez + 5.7, .14, .18, 2, 'wood', { seg: 5 });
+    box(parts, ex - 1, GROUND + .85, ez + 5.6, 1.4, .7, .9, 'crate', solid({ bottom: GROUND }));
+  }
+  for (let i = 0; i < 7; i++) {
+    const lx = 62 + i * 5.5;
+    cyl(parts, lx, GROUND + 1.4, 46, .09, .11, 2.8, 'stoneDark', { seg: 5 });
+    ball(parts, lx, GROUND + 2.9, 46, .3, 'flame', { seg: 6 });
+    if (i < 6) for (let t = 1; t < 4; t++) {
+      ball(parts, lx + t * 1.4, GROUND + 2.65 - Math.sin(t / 4 * Math.PI) * .3, 46, .14, 'glassWarm', { seg: 5 });
+    }
+  }
+  // Training grounds: tyre stacks, a heavy bag and a supply crate.
+  for (let i = 0; i < 5; i++) {
+    const txp = 46 + i * 5;
+    for (let j = 0; j < 3 - (i % 2); j++) {
+      cyl(parts, txp, GROUND + .35 + j * .42, -80, .85, .85, .4, 'dark', { seg: 10, solid: true, bottom: GROUND });
+    }
+  }
+  cyl(parts, 86, GROUND + 1.6, -64, .5, .5, 2.8, 'banner', { seg: 8, solid: true, bottom: GROUND });
+  box(parts, 86, GROUND + 3.4, -64, .2, .3, .2, 'metal');
+  for (let i = 0; i < 3; i++) box(parts, 34 + i * 2.2, GROUND + .6, -60, 1.8, 1.2, 1.8, 'crate', solid({ bottom: GROUND }));
+  // Cliff lookout: a railed viewing deck over the ring-out edge.
+  box(parts, 96, GROUND + .6, 6, 18, .9, 12, 'stoneDark', solid({ bottom: GROUND }));
+  railing(parts, 96, GROUND + 1.05, 12, 18, 'x', 'gold');
+  railing(parts, 88, GROUND + 1.05, 6, 11.5, 'z', 'gold');
+  for (let i = 0; i < 4; i++) {
+    cyl(parts, 90 + i * 4, GROUND + 1.6, 1.2, .16, .2, 2.2, 'gold', { seg: 6 });
+    ball(parts, 90 + i * 4, GROUND + 2.8, 1.2, .28, 'flame', { seg: 6 });
   }
 
   // Roads out of the stage square to every district.
@@ -732,6 +831,95 @@ function buildAsgard() {
     box(parts, Math.cos(a) * 24, GROUND + .9, 148 + Math.sin(a) * 13, 3.4, .16, 1.4, 'goldLight', { ry: -a });
   }
 
+  // ---- golden city: walled ring, terraces and royal approach ---------------
+  // The palace was a courtyard with a market beside it. These additions make the rest of the
+  // realm a city: a defended ring wall with gate towers, two residential terraces of
+  // gold-roofed houses, a processional stair up to the palace and market detail at street level.
+  const asgardHouse = (hx, hz, w, d, h, base) => {
+    box(parts, hx, base + h / 2, hz, w, h, d, 'stone', solid({ bottom: base }));
+    box(parts, hx, base + h + .5, hz, w + 1, .9, d + 1, 'gold');
+    cone(parts, hx, base + h + 2.6, hz, Math.max(w, d) * .74, 3.6, 'roofGold', { seg: 4, ry: Math.PI / 4 });
+    box(parts, hx, base + h * .62, hz + d / 2 + .06, w * .5, h * .3, .12, 'glassWarm');
+    for (const sgn of [-1, 1]) box(parts, hx + sgn * (w / 2 + .3), base + h * .58, hz, .5, h * .34, d * .7, 'goldLight');
+    box(parts, hx, base + h * .42, hz + d / 2 + .5, w * .8, .22, 1, 'gold');
+    banner(parts, hx + w * .3, base + h * .7, hz + d / 2 + .1, 1.6, 3.2, 'banner');
+  };
+  // The ring wall, with crenellations and towers, open along the Rainbow Bridge axis.
+  for (let i = 0; i < 48; i++) {
+    const a = i * TAU / 48;
+    if (Math.abs(a - Math.PI / 2) < .16) continue;          // bridge gate
+    if (Math.abs(a - Math.PI * 1.5) < .1) continue;         // rear gate toward the throne spur
+    const wx = Math.cos(a) * 106, wz = Math.sin(a) * 106;
+    box(parts, wx, GROUND + 4.5, wz, 14, 9, 4, 'stone', solid({ bottom: GROUND }), );
+    box(parts, wx, GROUND + 9.4, wz, 14.4, .8, 4.4, 'gold');
+    for (let c = -1; c <= 1; c++) box(parts, wx + c * 4.4, GROUND + 10.2, wz, 1.6, 1.6, 3.2, 'stone');
+    if (i % 6 === 0) {
+      cyl(parts, wx, GROUND + 7, wz, 3.4, 4, 14, 'stoneDark', solid({ seg: 10, bottom: GROUND }));
+      cone(parts, wx, GROUND + 16, wz, 3.8, 4.6, 'roofGold', { seg: 10 });
+      banner(parts, wx, GROUND + 11.5, wz + 3.4, 2.4, 5, 'bannerBlue');
+    }
+  }
+  // Gatehouses where the bridge and rear roads cross the wall.
+  for (const gz of [106, -106]) {
+    for (const sgn of [-1, 1]) {
+      cyl(parts, sgn * 11, GROUND + 8, gz, 4, 4.6, 16, 'stone', solid({ seg: 12, bottom: GROUND }));
+      cone(parts, sgn * 11, GROUND + 18.4, gz, 4.4, 5, 'gold', { seg: 12 });
+    }
+    box(parts, 0, GROUND + 13, gz, 22, 3, 4, 'gold');
+    banner(parts, 0, GROUND + 10, gz + (gz > 0 ? 2.1 : -2.1), 8, 4, 'banner');
+  }
+  // Residential terraces: stepped marble platforms with rows of houses, lanterns and gardens.
+  for (const [tx, tz, tw, td, ty] of [[42, 74, 36, 28, 1.8], [-62, -32, 32, 44, 2.2]]) {
+    box(parts, tx, ty / 2, tz, tw, ty, td, 'marble', solid({ bottom: 0 }));
+    for (let i = 0; i < 3; i++) box(parts, tx, ty - i * .5, tz + td / 2 + i * .7, tw, .45, 1.4, 'stone', solid({ bottom: 0 }));
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 2; j++) {
+        asgardHouse(tx - tw * .3 + i * tw * .2, tz - td * .22 + j * td * .44, 7, 9, 7 + (i + j) % 3, ty);
+      }
+    }
+    for (let i = 0; i < 6; i++) {
+      const lx = tx - tw * .42 + i * tw * .17;
+      cyl(parts, lx, ty + 2.2, tz + td * .44, .18, .24, 4.4, 'gold', { seg: 6 });
+      ball(parts, lx, ty + 4.6, tz + td * .44, .42, 'flame', { seg: 6 });
+    }
+    for (let i = 0; i < 5; i++) tree(parts, tx - tw * .35 + i * tw * .18, tz + td * .34, .7 + (i % 2) * .2, ty, rng);
+  }
+  // Processional approach: broad stairs, statue plinths and gold rails up to the palace court.
+  for (let i = 0; i < 8; i++) {
+    box(parts, 0, GROUND + .3 + i * .34, -12 - i * 2.2, 30 - i * 1.2, .5, 2.4, 'marble', solid({ bottom: GROUND }));
+    box(parts, 0, GROUND + .58 + i * .34, -12 - i * 2.2, 30 - i * 1.2, .06, .3, 'gold');
+  }
+  for (const sgn of [-1, 1]) {
+    for (const [sx, sz, sh] of [[sgn * 20, -14, 8], [sgn * 20, -30, 9]]) {
+      box(parts, sx, GROUND + sh / 2, sz, 4.2, sh, 4.2, 'stone', solid({ bottom: GROUND }));
+      ball(parts, sx, GROUND + sh + 1.4, sz, 1.5, 'gold', { seg: 10 });
+      for (let i = 0; i < 4; i++) box(parts, sx + (i - 1.5) * .8, GROUND + sh + .4, sz + 2.2, .5, 1, .3, 'goldLight');
+      cyl(parts, sx, GROUND + sh + 3.4, sz, .1, .14, 2.4, 'gold', { seg: 5 });
+    }
+    for (let i = 0; i < 6; i++) {
+      cyl(parts, sgn * 15, GROUND + 1.6, -14 - i * 3.4, .14, .18, 3.2, 'goldLight', { seg: 5 });
+      ball(parts, sgn * 15, GROUND + 3.3, -14 - i * 3.4, .34, 'flame', { seg: 6 });
+    }
+  }
+  // Market detail: awnings, crates, lantern strings and a colonnade to the court.
+  for (let i = 0; i < 9; i++) {
+    const mx = 34 + (i % 3) * 18, mz = 4 + Math.floor(i / 3) * 15;
+    box(parts, mx, GROUND + 1.2, mz, 5, .35, 3, 'wood', solid({ bottom: GROUND }));
+    box(parts, mx, GROUND + 2.4, mz, 5.4, .2, 3.4, ['banner', 'bannerBlue', 'cloth'][i % 3]);
+    for (const sgn of [-1, 1]) box(parts, mx + sgn * 2.4, GROUND + 1.8, mz + 1.5, .16, 3.2, .16, 'gold');
+    box(parts, mx, GROUND + .4, mz + 2.2, 1.4, .8, 1, 'crate');
+  }
+  for (let i = 0; i < 5; i++) box(parts, 32, GROUND + 5.4, 2 + i * 10, 1.4, 8, 1.4, 'gold', solid({ bottom: GROUND }));
+  for (let i = 0; i < 5; i++) ball(parts, 32.9, GROUND + 6.6, 2 + i * 10, .4, 'flame', { seg: 6 });
+  // Distant city towers beyond the wall, so the realm reads as continuing past the playable ring.
+  for (let i = 0; i < 18; i++) {
+    const a = rng() * TAU, r = 120 + rng() * 40;
+    const dx = Math.cos(a) * r, dz = Math.sin(a) * r;
+    const h = 18 + rng() * 26;
+    cyl(parts, dx, GROUND + h / 2, dz, 4 + rng() * 3, 5 + rng() * 3, h, 'stone', { seg: 8 });
+    cone(parts, dx, GROUND + h + 4, dz, 6 + rng() * 3, 8, 'gold', { seg: 8 });
+  }
+
   // Outer floating islands for exploration.
   for (const [x, y, z, r] of [[136, 16, -54, 26], [-140, 24, 66, 22], [118, 30, 96, 18]]) {
     cyl(parts, x, y - 8, z, r, r * 1.2, 16, 'rock', solid({ seg: 14, bottom: y - 16 }));
@@ -1106,6 +1294,112 @@ function buildDeathStar() {
   }
   for (let i = 0; i < 16; i++) box(parts, fx - 24 + i * 3.2, GROUND + .05, fz - 20.6, 2.2, .06, .5, 'floorStripe');
 
+  // Hangar mezzanine, turbolift and command gallery ---------------------------
+  // The hangar was one tall box with two catwalks bolted to the walls. A full-width mezzanine
+  // along the north wall now carries a control booth, fuel drums, a parked turbolift and the
+  // floodlight rig; a stair at each end and a lift shaft connect it to the hangar floor.
+  const mezzY = GROUND + 10.4, mezzZ0 = 14, mezzZ1 = 22;
+  box(parts, 0, mezzY, (mezzZ0 + mezzZ1) / 2, 88, .6, mezzZ1 - mezzZ0, 'metal', solid({ bottom: mezzY - .3 }));
+  for (let x = -42; x <= 42; x += 3) box(parts, x, mezzY + .4, mezzZ1 - .2, 2.4, .9, .25, 'steel');
+  railing(parts, 0, mezzY + .3, mezzZ1 - .3, 88, 'x');
+  for (let x = -36; x <= 36; x += 8) {
+    // Off the corridor doorway at x = 0: the walk through from the corridor must stay clear.
+    box(parts, x, mezzY - 5, mezzZ1 - 1.4, .8, 10, .8, 'metalDark', solid({ bottom: GROUND }));
+    box(parts, x, mezzY + .1, mezzZ1 - 1.4, .9, .2, 1.4, 'glowBlue');
+  }
+  // Stairs at both ends of the mezzanine.
+  for (const sx of [-46, 46]) {
+    stairs(parts, sx, mezzZ1 + 2, { steps: 14, width: 5, rise: .74, run: 1, base: GROUND, mat: 'metal', dir: 'z' });
+    railing(parts, sx - 2.6, GROUND, mezzZ1 + 9, 13, 'z', 'steel');
+    railing(parts, sx + 2.6, GROUND, mezzZ1 + 9, 13, 'z', 'steel');
+    box(parts, sx, mezzY + 1.4, mezzZ1 + 1, 3.4, 2.4, .3, 'glowBlue');
+  }
+  // Control booth: a glazed cabin looking down the hangar floor.
+  box(parts, 0, mezzY + 2.2, 16, 18, 4.4, 7, 'panel', solid({ bottom: mezzY }));
+  box(parts, 0, mezzY + 2.6, 19.6, 16, 2.6, .2, 'glassWarm');
+  box(parts, 0, mezzY + 4.5, 16, 19, .6, 8, 'metalDark');
+  for (let i = 0; i < 3; i++) {
+    const bx = -5 + i * 5;
+    box(parts, bx, mezzY + .9, 13.2, 3.4, 1.8, 1.2, 'panel', solid({ bottom: mezzY }));
+    box(parts, bx, mezzY + 1.9, 13.2, 3.1, .18, 1, 'steel');
+    box(parts, bx, mezzY + 2, 13.1, 2.6, .06, .7, 'glowBlue');
+  }
+  // Fuel drums, missile racks and cable reels along the mezzanine.
+  for (let i = 0; i < 10; i++) {
+    const dx = -34 + i * 7.6;
+    cyl(parts, dx, mezzY + 1.8, 18, 1.5, 1.5, 2.8, 'crate', { seg: 10, solid: true, bottom: mezzY });
+    torus(parts, dx, mezzY + 2.1, 18, 1.55, .12, 'steel', { rx: Math.PI / 2 });
+    torus(parts, dx, mezzY + 2.9, 18, 1.55, .12, 'steel', { rx: Math.PI / 2 });
+  }
+  for (let i = 0; i < 4; i++) {
+    box(parts, -30 + i * 20, mezzY + 1.2, 15, 6, 2.4, 2.6, 'metalDark', solid({ bottom: mezzY }));
+    for (let j = 0; j < 4; j++) ball(parts, -31.8 + i * 20 + j * 1.2, mezzY + 1.9, 15, .28, 'glowRed', { seg: 5 });
+  }
+  // Floodlight rig clamped to the mezzanine edge, aimed at the floor.
+  for (let i = 0; i < 6; i++) {
+    const lx = -35 + i * 14;
+    cyl(parts, lx, mezzY + 3.2, mezzZ1 - 1, .2, .26, 3.4, 'steel', { seg: 6 });
+    box(parts, lx, mezzY + 4.9, mezzZ1 - 1.6, 2.2, .8, 1.4, 'metalDark', { rx: .5 });
+    ball(parts, lx, mezzY + 4.5, mezzZ1 - 2.3, .6, 'glowWarm', { seg: 8 });
+  }
+  // Turbolift: a shaft in the hangar's west corner with the car parked at mezzanine level,
+  // doors open both ways, and a ladder down the back for when the lift is elsewhere.
+  const lx0 = -50;
+  box(parts, lx0, GROUND + 11, 8, 6, 22, 6, 'metalDark', solid({ bottom: GROUND }));
+  box(parts, lx0, mezzY + 1.6, 8, 4.4, 3.2, 4.4, 'panel', solid({ bottom: mezzY }));
+  box(parts, lx0, mezzY + .6, 8, 4.2, .2, 4.2, 'glowBlue');
+  box(parts, lx0, mezzY + 3.3, 8, 4.6, .3, 4.6, 'glowBlue');
+  box(parts, lx0, mezzY + 1.6, 11.2, 3.6, 3, .2, 'glowBlue');
+  for (let r = 0; r < 14; r++) box(parts, lx0 + 2, GROUND + 1 + r * .7, 10.6, 1.2, .1, .12, 'steel');
+  for (const s2 of [-1, 1]) box(parts, lx0 + 2 + s2 * .55, GROUND + 5.4, 10.6, .1, 10, .1, 'steel');
+  // Command deck gallery: walkways along both side walls joining the existing catwalk, with
+  // console rows above the floor and doors back into the corridor.
+  for (const side of [-1, 1]) {
+    const gx = side * 29;
+    box(parts, gx, GROUND + 8, deckZ, 5, .5, 40, 'metal', solid({ bottom: GROUND + 7.7 }));
+    railing(parts, gx - side * 2.4, GROUND + 8, deckZ, 40, 'z');
+    for (let i = 0; i < 5; i++) {
+      box(parts, gx, GROUND + 8.6, deckZ - 16 + i * 8, 2.6, 1.2, 1.2, 'panel', solid({ bottom: GROUND + 8 }));
+      box(parts, gx, GROUND + 9.3, deckZ - 16 + i * 8, 2.2, .12, .9, 'glowBlue');
+      ball(parts, gx + side * 1.2, GROUND + 9, deckZ - 15 + i * 8, .14, 'glowRed', { seg: 5 });
+    }
+    // Bridge across to the central catwalk at the north end of the deck.
+    box(parts, side * 25.2, GROUND + 7.2, deckZ - 18, 9.6, .5, 3.4, 'metal', solid({ bottom: GROUND + 6.9 }));
+    railing(parts, side * 25.2, GROUND + 7.2, deckZ - 19.4, 9.6, 'x');
+    stairs(parts, side * 22, deckZ - 8, { steps: 11, width: 4, rise: .72, run: 1, base: GROUND, mat: 'metal', dir: 'z' });
+  }
+  // Droid factory: gantry crane, hanging shells, welding arms and a supervisor booth.
+  const craneY = GROUND + 15;
+  for (const side of [-1, 1]) box(parts, fx + side * 20, craneY, fz, 1.2, .8, 42, 'steel');
+  box(parts, fx, craneY + .7, fz, 41, .9, 1.6, 'steel');
+  box(parts, fx + 4, craneY + 1.4, fz, 3.4, 1.4, 2.6, 'metalDark');
+  cyl(parts, fx + 4, craneY - 1.6, fz, .16, .16, 5.4, 'steel', { seg: 6 });
+  for (let i = 0; i < 3; i++) box(parts, fx + 4, craneY - 4.2 - i * .5, fz, 1.8 - i * .4, .5, 1.2, 'metal');
+  for (let i = 0; i < 5; i++) {
+    const dx = fx - 18 + i * 9;
+    // A half-built shell hanging from its carrier, welders sparking at the seams.
+    cyl(parts, dx, GROUND + 9.4, fz - 6, .9, 1.1, 3.2, 'metal', { seg: 10 });
+    ball(parts, dx, GROUND + 11.4, fz - 6, 1.2, 'metal', { seg: 10, sy: .8 });
+    for (const s3 of [-1, 1]) box(parts, dx + s3 * 1.4, GROUND + 9.6, fz - 6, .5, 2.6, 1.6, 'metalDark');
+    box(parts, dx, GROUND + 12.6, fz - 6, .5, 2.6, .5, 'steel');
+    ball(parts, dx + .9, GROUND + 8.6, fz - 6, .16, 'glowGreen', { seg: 5 });
+    ball(parts, dx - .9, GROUND + 10, fz - 6, .12, 'glowWarm', { seg: 5 });
+  }
+  for (let i = 0; i < 6; i++) {
+    const ax = fx - 20 + i * 8;
+    box(parts, ax, GROUND + 2.4, fz + 15, 1, 4.8, 1, 'steel', solid({ bottom: GROUND }));
+    box(parts, ax, GROUND + 4.6, fz + 13.6, .7, .7, 3, 'steel');
+    box(parts, ax, GROUND + 4.2, fz + 12.2, .9, .9, .9, 'glowRed');
+  }
+  box(parts, fx + 18, GROUND + 5, fz + 14, 10, 10, 9, 'panel', solid({ bottom: GROUND }));
+  box(parts, fx + 18, GROUND + 7, fz + 9.4, 8, 3, .2, 'glassWarm');
+  box(parts, fx + 18, GROUND + 10.4, fz + 14, 11, .6, 10, 'metalDark');
+  stairs(parts, fx + 18, fz + 2, { steps: 6, width: 3, rise: .8, run: 1, base: GROUND, mat: 'steel', dir: 'z' });
+  for (let i = 0; i < 6; i++) {
+    cyl(parts, fx - 22 + i * 8.8, GROUND + .9, fz - 20, .5, .5, 1.8, 'crate', { seg: 8, solid: true, bottom: GROUND });
+    box(parts, fx - 22 + i * 8.8, GROUND + 2, fz - 20, 1.6, .3, 1.6, 'steel');
+  }
+
   // Imperial City (Habitat) --------------------------------------------------
   // A lit street between habitation blocks, with a raised gallery and a transit spine.
   const ix = 0, iz = 236;
@@ -1415,6 +1709,88 @@ function buildHogwarts() {
     rock(parts, x, 34, 1.6 + rng() * 1.6, GROUND, rng, 'moss');
   }
   for (let i = 0; i < 10; i++) tree(parts, -40 + rng() * 90, 10 + rng() * 20, .8 + rng(), GROUND, rng);
+
+  // Castle corridors, wall walk and cliff paths ------------------------------
+  // The castle was a curtain wall with two interiors behind it and no way round. Two arcaded
+  // cloisters now connect the courtyard to the east and west ranges, a stair tower climbs to
+  // the battlement wall-walk, and a plank path follows the western rim down to the shore.
+  for (const dir of [-1, 1]) {
+    // The cloister starts outside the courtyard stage (x = 30) so the fight rectangle stays
+    // clear, and runs to the curtain wall.
+    const cx = dir * 49;
+    box(parts, cx, GROUND + .12, -58, 34, .6, 9, 'cobble', solid({ bottom: GROUND }));
+    box(parts, cx, GROUND + 7.6, -58, 34, .7, 9.4, 'stoneDark', solid({ bottom: GROUND + 7.2 }));
+    for (let i = 0; i < 6; i++) {
+      const px = dir * (34 + i * 6);
+      // Courtyard-side piers with arches between them.
+      cyl(parts, px, GROUND + 3.6, -53.6, .55, .72, 7.2, 'stone', solid({ bottom: GROUND, seg: 8 }));
+      if (i < 5) torus(parts, px + dir * 3, GROUND + 6.4, -53.6, 2.6, .24, 'stone', { ry: Math.PI / 2 });
+      // Outer wall against the curtain wall, with a tall lancet window.
+      box(parts, px, GROUND + 4, -62.4, 6.2, 7.6, 1, 'stone', solid({ bottom: GROUND }));
+      box(parts, px, GROUND + 4.2, -61.9, 1.6, 3.8, .16, 'glassWarm');
+    }
+    for (let i = 0; i < 4; i++) {
+      ball(parts, dir * (37 + i * 8), GROUND + 6.6, -58, .34, 'flame', { seg: 6 });
+      box(parts, dir * (37 + i * 8), GROUND + 6.9, -58, .1, .9, .1, 'dark');
+    }
+    railing(parts, cx, GROUND + .4, -58, 34, 'x', 'stoneLight');
+  }
+  // Switchback stair tower in the courtyard's east side, up to the battlement walk.
+  const stx = 39, stz = -63;
+  box(parts, stx, (GROUND + 23) / 2, stz, 9, 23, 9, 'stone', solid({ bottom: GROUND }));
+  for (let flight = 0; flight < 4; flight++) {
+    const alongX = flight % 2 === 0 ? 1 : -1;
+    for (let i = 0; i < 13; i++) {
+      const stepY = GROUND + .35 + flight * 5.6 + i * .4;
+      box(parts, stx + (alongX * (i - 6)) * .58, stepY, stz + (flight % 2 ? -2 : 2),
+        0.62, .4, 3.4, 'stoneDark', solid({ bottom: GROUND }));
+    }
+  }
+  // The wall-walk along the south curtain wall, with crenellations and a doorway down into
+  // the courtyard. This is the roof route: it links the stair tower to both ranges.
+  box(parts, 0, GROUND + 22.1, -65.4, 128, .8, 3.6, 'stoneDark', solid({ bottom: GROUND + 21.7 }));
+  for (let x = -62; x <= 62; x += 3.4) {
+    box(parts, x, GROUND + 23.1, -63.9, 1.9, 1.2, .3, 'stoneLight');
+    box(parts, x, GROUND + 23.4, -66.9, 1.9, 1.8, .3, 'stoneDark');
+  }
+  for (let x = -50; x <= 50; x += 10) {
+    cyl(parts, x, GROUND + 23.1, -66.6, .16, .22, 1.6, 'dark', { seg: 6 });
+    ball(parts, x, GROUND + 24, -66.6, .3, 'flame', { seg: 6 });
+  }
+  // Stair-head door on the walk, with a lamp either side.
+  box(parts, stx, GROUND + 24, -65.4, 3, 3.4, .4, 'wood');
+  for (const s of [-1, 1]) ball(parts, stx + s * 2.4, GROUND + 24, -64.4, .3, 'flame', { seg: 6 });
+  // Two tower decks at wall-walk level, so the route ends in fighting platforms.
+  for (const tx of [-52, 52]) {
+    cyl(parts, tx, GROUND + 22.4, -69.6, 7, 7, .6, 'wood', solid({ bottom: GROUND + 22, seg: 12 }));
+    railing(parts, tx - 6.4, GROUND + 23, -69.6, 12, 'x', 'stoneDark');
+    railing(parts, tx, GROUND + 23, -75.2, 11, 'z', 'stoneDark');
+    for (const s of [-1, 1]) {
+      box(parts, tx + s * 5, GROUND + 25.4, -70.4, 1.4, .3, .3, 'wood');
+      cyl(parts, tx + s * 5, GROUND + 25.2, -70.4, .08, .1, 2.6, 'stoneDark', { seg: 5 });
+    }
+    // An owl perch and a hanging lantern give the deck a reason to exist.
+    cyl(parts, tx + 2, GROUND + 23.4, -66.2, .18, .24, 2.6, 'wood', { seg: 6 });
+    ball(parts, tx + 2, GROUND + 24.9, -66.2, .3, 'flame', { seg: 6 });
+  }
+  // Cliff paths: plank walkways on the western rim, with lookouts and a stair down to a shore
+  // ledge. Narrow and railed, so falling off is a real risk but the route is walkable.
+  for (let i = 0; i < 6; i++) {
+    const px = -134 + i * 6.4, pz = 44 + i * 7;
+    box(parts, px, GROUND + 1.2 + i * .5, pz, 7.2, .4, 7.6, 'wood', solid({ bottom: GROUND + i * .5 }));
+    for (const s of [-1, 1]) {
+      cyl(parts, px + s * 3.2, GROUND + .2 + i * .5, pz + 3.4, .3, .38, 2.4 + i * .5, 'trunk', { seg: 6, solid: true, bottom: 0 });
+      railing(parts, px, GROUND + 1.4 + i * .5, pz + 3.6, 7, 'x', 'stoneDark');
+    }
+  }
+  box(parts, -96, GROUND + 4.6, 92, 16, .6, 14, 'stone', solid({ bottom: GROUND + 4 }));
+  for (let i = 0; i < 8; i++) box(parts, -104 + i * 2.2, GROUND + 5, 98.6, 2.2, 1.1, .4, 'stoneDark');
+  railing(parts, -96, GROUND + 5, 85.4, 15, 'x', 'stoneLight');
+  cyl(parts, -90, GROUND + 7, 90, .2, .28, 4, 'wood', { seg: 6 });
+  ball(parts, -90, GROUND + 9, 90, .36, 'flame', { seg: 6 });
+  for (let i = 0; i < 5; i++) rock(parts, -120 + i * 5, 100 + (i % 2) * 6, 2 + rng() * 1.6, GROUND - 2, rng, 'cliff');
+  for (let i = 0; i < 5; i++) rock(parts, -138 + i * 4, 40 + i * 2, 1.6 + rng(), GROUND, rng, 'cliff');
+  for (let i = 0; i < 8; i++) tree(parts, -126 + rng() * 30, 60 + rng() * 40, .9 + rng() * .6, GROUND, rng);
 
   // Dungeons ---------------------------------------------------------------
   // A tall undercroft inside the castle's west range: cells, columns, a water channel and a
@@ -1781,6 +2157,140 @@ function buildKonoha() {
   }
   for (let i = 0; i < 10; i++) rock(parts, -54 + rng() * 108, 156 + rng() * 48, 1 + rng() * .4, GROUND, rng);
   box(parts, 40, .64, 178, 8, .06, 60, 'water');
+
+  // ---- rooftop route -------------------------------------------------------
+  // The east side of the boulevard was a row of separate roofs. Timber decks, plank bridges
+  // and a street stair now chain them into a rooftop route over the main street.
+  const eastRoofs = [[-42, 9], [-30, 8], [6, 8], [18, 9], [30, 7]];
+  for (const [rz, rh] of eastRoofs) {
+    const deckY = rh + .55;
+    box(parts, 24, deckY, rz, 10, .5, 7, 'wood', solid({ bottom: rh }));
+    railing(parts, 19.4, deckY, rz, 7, 'z', 'wood');
+    box(parts, 26.5, deckY + 1.2, rz + 1.6, 2.2, 2.4, 2.2, 'wood', solid({ bottom: deckY }));
+    box(parts, 26.5, deckY + 2.5, rz + 1.6, 2.5, .3, 2.5, 'roof');
+    box(parts, 21, deckY + .8, rz - 2, 1.4, 1.6, 1.4, 'stoneLight', solid({ bottom: deckY }));
+    for (let i = 0; i < 3; i++) cyl(parts, 20 + i * 3.6, deckY + .5, rz - 3, .09, .12, 2.2, 'wood', { seg: 5 });
+  }
+  // Street stair at the block's south end, plus the junctions between decks.
+  stairs(parts, 32, 22, { steps: 14, width: 3, rise: .52, run: .9, base: GROUND, mat: 'wood', dir: 'z' });
+  railing(parts, 33.6, GROUND, 28, 12, 'z', 'wood');
+  box(parts, 31, 7.9, 34, 4, .4, 4, 'wood', solid({ bottom: 7.6 }));
+  for (const [z0, z1, y0, y1] of [[-42, -30, 9.55, 8.55], [6, 18, 8.55, 9.55], [18, 30, 9.55, 7.55]]) {
+    const top = Math.max(y0, y1);
+    box(parts, 24, top, (z0 + z1) / 2, 3.2, .4, Math.abs(z1 - z0) - 7, 'wood', solid({ bottom: top - .35 }));
+    railing(parts, 22.6, top, (z0 + z1) / 2, Math.abs(z1 - z0) - 7, 'z', 'wood');
+    railing(parts, 25.4, top, (z0 + z1) / 2, Math.abs(z1 - z0) - 7, 'z', 'wood');
+    if (Math.abs(y0 - y1) > .4) {
+      for (let st = 0; st < 2; st++) {
+        box(parts, 24, y1 + .3 + st * .45, z0 + (z0 < z1 ? 1 : -1) * (st + 1),
+          3.2, .4, 1.2, 'wood', solid({ bottom: y1 + .1 + st * .45 }));
+      }
+    }
+  }
+  // Cross-boulevard plank bridge from the east roof at z 18 to the west row.
+  box(parts, 0, 9.55, 18, 40, .4, 2.6, 'wood', solid({ bottom: 9.3 }));
+  for (const side of [-1, 1]) railing(parts, 0, 9.6, 18 + side * 1.2, 40, 'x', 'wood');
+  for (let i = 0; i < 4; i++) {
+    const bx = -14 + i * 9.4;
+    box(parts, bx, 9.05, 18, .5, 1.4, 2.8, 'wood');
+    banner(parts, bx, 11.2, 18, 1.6, 2.6, i % 2 ? 'banner' : 'bannerBlue');
+  }
+  box(parts, -24, 8.05, 18, 10, .5, 7, 'wood', solid({ bottom: 7.5 }));
+  railing(parts, -28.6, 8.05, 18, 7, 'z', 'wood');
+  railing(parts, -24, 8.05, 14.6, 10, 'x', 'wood');
+  railing(parts, -24, 8.05, 21.4, 10, 'x', 'wood');
+  for (let st = 0; st < 4; st++) {
+    box(parts, -18.4, 8.75 + st * .42, 18, 1.4, .4, 3, 'wood', solid({ bottom: 8.5 + st * .42 }));
+  }
+
+  // ---- Valley of the End ---------------------------------------------------
+  // A real destination beyond the forest: a canyon cut south of the village, with the river
+  // running between two colossal statues, a waterfall into the gorge and stone crossings.
+  const vg = .8;
+  box(parts, 0, vg - .3, 280, 240, .6, 132, 'grass', solid({ bottom: -.5 }));
+  // Canyon walls, stepped so they read as rock rather than two extruded slabs.
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 22; i++) {
+      const z = 218 + i * 5.6;
+      const h = 26 + Math.sin(i * .7) * 6;
+      box(parts, side * (46 + (i % 3) * 2.4), vg + h / 2, z, 14, h, 6, 'cliff', solid({ bottom: vg }));
+      box(parts, side * (35 + (i % 2) * 1.6), vg + 4.5, z, 5, 9, 5.4, 'rock', solid({ bottom: vg }));
+      if (i % 3 === 0) tree(parts, side * (52 + (i % 2) * 5), z, 1.2, vg + 22, rng);
+    }
+  }
+  // River bed, banks and the central pool under the falls.
+  box(parts, 0, vg + .04, 290, 44, .1, 100, 'water');
+  for (const side of [-1, 1]) {
+    box(parts, side * 27, vg + .15, 290, 14, .5, 104, 'cobble', solid({ bottom: vg - .4 }));
+    // Wet stone at the waterline, grass and moss where the bank meets the cliff, then boulders
+    // piled against the wall so the canyon does not read as two straight slabs.
+    box(parts, side * 21.4, vg + .3, 290, 3, .3, 104, 'moss', solid({ bottom: vg - .2 }));
+    box(parts, side * 32.6, vg + .4, 290, 5.4, .5, 104, 'grass', solid({ bottom: vg - .2 }));
+    for (let i = 0; i < 11; i++) rock(parts, side * (23 + rng() * 6), 238 + i * 9, .8 + rng() * 1.2, vg, rng, 'rock');
+    for (let i = 0; i < 16; i++) {
+      const bz = 226 + i * 7 + rng() * 3;
+      rock(parts, side * (36 + rng() * 4), bz, 1.6 + rng() * 2.4, vg + 1, rng, 'cliff');
+      if (i % 2 === 0) rock(parts, side * (30 + rng() * 5), bz + 2, 1.2 + rng(), vg, rng, 'rock');
+    }
+  }
+  // Waterfall cliff at the valley's far end, with spray.
+  box(parts, 0, vg + 17, 346, 118, 34, 8, 'cliff', solid({ bottom: vg }));
+  box(parts, 0, vg + 12, 341, 40, 24, .6, 'water');
+  for (let i = 0; i < 10; i++) ball(parts, -16 + i * 3.6, vg + 1.4 + (i % 3) * .8, 338 - (i % 2) * 2, 1.4 + rng() * 1.2, 'cloud', { sy: .5, seg: 6 });
+  // Two colossal guardian statues facing each other across the gorge.
+  const statue = (sx, sz, dir) => {
+    // 34 m of carved stone: the cliffs are 26-32 m, so the guardians still dominate the gorge.
+    box(parts, sx, vg + 2, sz, 26, 4, 22, 'rock', solid({ bottom: vg }));
+    box(parts, sx, vg + 4.6, sz, 22, 1.6, 18, 'stoneLight');
+    box(parts, sx, vg + 15, sz, 15, 20, 12, 'rock', solid({ bottom: vg + 5.4 }));
+    box(parts, sx, vg + 26.6, sz, 17, 3.4, 14, 'stoneDark');
+    // Head, brow, hair spikes and the hands folded across the chest.
+    ball(parts, sx, vg + 31.6, sz, 5, 'rock', { seg: 12, sy: 1.1 });
+    box(parts, sx, vg + 29.6, sz + dir * 4.4, 7.6, 1.4, 1.4, 'stoneDark');
+    for (let i = 0; i < 5; i++) {
+      cone(parts, sx - 6 + i * 3, vg + 35.6, sz - dir * .8, 1.6, 4.8, 'rock', { seg: 6, rz: (i - 2) * .18 });
+    }
+    for (const s of [-1, 1]) {
+      box(parts, sx + s * 9, vg + 15.6, sz, 5, 18, 7, 'rock', solid({ bottom: vg + 5.4 }));
+      box(parts, sx + s * 9, vg + 6.6, sz, 5.2, 3.6, 7.4, 'stoneDark');
+    }
+    box(parts, sx, vg + 20, sz + dir * 6.2, 11, 2.4, 2.2, 'stoneLight');
+    box(parts, sx, vg + 14.6, sz + dir * 5.9, 4, 6, 1.6, 'stoneLight');
+    // A giant stone blade resting point-down beside the right hand.
+    cyl(parts, sx + dir * 2.4, vg + 12, sz + dir * 8.6, .9, .5, 20, 'stoneDark', { seg: 6, solid: true, bottom: vg });
+    for (let i = 0; i < 3; i++) box(parts, sx - 6 + i * 6, vg + 22, sz + dir * 6.6, 2.4, 3.2, .5, 'moss');
+  };
+  statue(-25, 298, 1);
+  statue(25, 298, -1);
+  // Stone crossings: one at the stage centre, one ruined span further south.
+  box(parts, 0, vg + .35, 274, 14, .9, 64, 'stone', solid({ bottom: vg - .2 }));
+  for (let i = 0; i < 9; i++) box(parts, 0, vg + .9, 246 + i * 7.4, 13, .3, .5, 'stoneDark');
+  for (const side of [-1, 1]) {
+    railing(parts, side * 6.4, vg + .8, 274, 62, 'z', 'stoneLight');
+    for (let i = 0; i < 4; i++) {
+      box(parts, side * 5, vg + .95, 250 + i * 16, 1.2, 1.6, 1.2, 'stoneDark', solid({ bottom: vg }));
+      ball(parts, side * 5, vg + 2.2, 250 + i * 16, .6, 'moss', { seg: 6 });
+    }
+  }
+  // Ruined footbridge: broken pillars and a gap to jump, not a walk-through.
+  for (let i = 0; i < 6; i++) {
+    box(parts, -20 + i * 8, vg + .6, 320, 5, .8, 6, 'stoneDark', solid({ bottom: vg - .2 }));
+    if (i !== 2) box(parts, -20 + i * 8, vg + 2.6, 320, 1.2, 4, 1.2, 'stoneLight', solid({ bottom: vg }));
+  }
+  // Banks, boulders and forest that tie the valley back to the village.
+  for (let i = 0; i < 14; i++) {
+    rock(parts, -40 + rng() * 12, 240 + i * 8, 1.6 + rng() * 2, vg, rng, 'cliff');
+    rock(parts, 30 + rng() * 10, 240 + i * 8, 1.6 + rng() * 2, vg, rng, 'cliff');
+  }
+  for (let i = 0; i < 18; i++) tree(parts, -48 + (i % 2) * 96 + rng() * 10, 220 + Math.floor(i / 2) * 12, 1.1 + rng() * .6, vg, rng);
+  for (let i = 0; i < 6; i++) tree(parts, -8 + i * 3.4, 228, 1, vg, rng);
+  // Trail from the Forest of Death into the valley, and a wind-worn signpost.
+  plane(parts, 0, vg + .03, 220, 7, 20, 'road');
+  cyl(parts, 4, vg + 1.6, 216, .14, .18, 3.2, 'wood', { seg: 6, solid: true, bottom: vg });
+  box(parts, 4.9, vg + 2.8, 216, 2.2, .8, .2, 'wood', { ry: .4 });
+  box(parts, 4.9, vg + 2.8, 216, 2.4, .1, .3, 'dark');
+  banner(parts, -4, vg + 3.2, 216, 3, 4.6, 'banner');
+  box(parts, -4, vg + 5.6, 216, .18, 5.6, .18, 'wood', solid({ bottom: vg }));
 
   // ---- distant rooftops and sky -------------------------------------------
   for (let i = 0; i < 18; i++) {
@@ -2337,9 +2847,9 @@ export const PALETTES = {
     flame: '#ffe6b0', crate: '#7c5c3e', metal: '#9aa0a8', panel: '#7d8188', steel: '#a3a8b0', moss: '#4f7140'
   },
   deathstar: {
-    metal: '#5b6572', metalDark: '#333a45', floor: '#4a525d', floorCommand: '#414956',
-    floorHangar: '#4d5563', floorCorridor: '#3d4450', floorStripe: '#c9d6e4',
-    panel: '#6d7a88', steel: '#93a4b6', dark: '#22272f', crate: '#6b6250',
+    metal: '#4e5763', metalDark: '#2c323c', floor: '#3e454f', floorCommand: '#373e49',
+    floorHangar: '#414855', floorCorridor: '#333944', floorStripe: '#c2cfdd',
+    panel: '#5e6a77', steel: '#8b9cae', dark: '#22272f', crate: '#6b6250',
     glowBlue: '#79dfff', glowRed: '#ff4b3a', glowGreen: '#7dff9c', glass: '#101826',
     star: '#dfe9ff', core: '#a8ffb6', glowWarm: '#ffe3b0', glassWarm: '#ffd79a'
   },
@@ -2577,7 +3087,11 @@ export const WORLDS = {
         { x: 0, z: 132, to: 'konoha_forest_death', label: 'Forest of Death' }
       ] }),
       loc('konoha_forest_death', 'Forest of Death', 'forest', [-60, 152, 60, 212], [-24, 168, 0.6, 24, 190, 0.6], { camera: { tilt: .2, scale: 1.5 }, exits: [
-        { x: 0, z: 156, to: 'konoha_gates', label: 'Village Gates' }
+        { x: 0, z: 156, to: 'konoha_gates', label: 'Village Gates' },
+        { x: 0, z: 208, to: 'konoha_valley', label: 'Valley of the End' }
+      ] }),
+      loc('konoha_valley', 'Valley of the End', 'valley', [-30, 244, 30, 322], [0, 262, 1.6, 0, 290, 1.6], { ground: 1.6, camera: { tilt: .3, scale: 1.9 }, exits: [
+        { x: 0, z: 248, to: 'konoha_forest_death', label: 'Forest of Death' }
       ] })
     ]
   },
@@ -2648,8 +3162,8 @@ export const STAGE_LIGHTING = {
   deathstar: {
     // Interiors only: a cold key from above, strong blue rim off the panelling, and heavy fog
     // scaled back so the far end of the hangar still reads instead of fading to black.
-    exterior: { sun: 2.2, shadow: false, rim: 1.0, rimColor: 0x4d7dff, hemi: 1.35, hemiSky: 0xa8c0dc, hemiGround: 0x1b2430, exposure: 1.28, fogScale: .62, sunPos: [8, 40, -14], rimPos: [-16, 24, 28] },
-    interior: { sun: 2.2, shadow: false, rim: 1.0, rimColor: 0x4d7dff, hemi: 1.35, hemiSky: 0xa8c0dc, hemiGround: 0x1b2430, exposure: 1.28, fogScale: .62, sunPos: [8, 40, -14], rimPos: [-16, 24, 28] }
+    exterior: { sun: 1.7, shadow: false, rim: .8, rimColor: 0x6f92c8, hemi: .98, hemiSky: 0x9db2c8, hemiGround: 0x161d27, exposure: 1.14, fogScale: .62, sunPos: [8, 40, -14], rimPos: [-16, 24, 28] },
+    interior: { sun: 1.7, shadow: false, rim: .8, rimColor: 0x6f92c8, hemi: .98, hemiSky: 0x9db2c8, hemiGround: 0x161d27, exposure: 1.14, fogScale: .62, sunPos: [8, 40, -14], rimPos: [-16, 24, 28] }
   },
   hogwarts: {
     exterior: { sun: 1.4, shadow: true, rim: .5, rimColor: 0x9db8d8, hemi: .62, hemiSky: 0xa8bdd6, hemiGround: 0x2b2f26, exposure: .98, fogScale: .7, sunPos: [30, 42, -44], rimPos: [-18, 22, 30] },

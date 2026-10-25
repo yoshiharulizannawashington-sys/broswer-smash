@@ -288,8 +288,8 @@ fighter, so a mounted-but-broken rig fails the audit instead of passing on a nod
 
 ## Worlds, stages and travel
 
-The six reference worlds now hold 59 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
-Hogwarts 9, Konoha 12, New York 10). Each world is one built environment; the locations inside it are
+The six reference worlds now hold 60 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
+Hogwarts 9, Konoha 13, New York 10). Each world is one built environment; the locations inside it are
 rectangles over that same geometry, so switching stages within a world does not rebuild the map.
 
 Stages are joined by marked doorways: a lit ring and light column at the edge of a stage that
@@ -431,6 +431,7 @@ same geometry, so switching stages inside a world does not rebuild anything.
 | Asgard — Home of the Æsir | Royal Palace Court, Throne Hall, Marketplace Plaza, Rainbow Bridge, Bifrost Realm, Outer Floating Isle |
 | Death Star — Imperial Battle Station | Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control, Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hull |
 | Hogwarts — Castle and Grounds | Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest, Black Lake Boathouse, Hogsmeade Village, The Dungeons, Hagrid's Hut |
+| Hidden Leaf Village — Land of Fire | Hokage Rock, Hokage Administration, Main Street, Ichiraku Ramen, Ninja Academy, Konoha Hospital, Residential District, Uchiha District, Hyuga Compound, Training Grounds, Village Gates, Forest of Death, Valley of the End |
 
 - `public/js/worlds/world_catalog.js` holds the worlds as deterministic geometry plans plus
   palettes, themes, battle-location bounds and spawn points. It is plain data with no Three.js
