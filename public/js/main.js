@@ -1,25 +1,25 @@
 // Actual root-site entrypoint loads this scene. Cinematic arena, powers and visible impacts.
 import * as THREE from 'three';
-import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v37-20261023';
-import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v37-20261023';
-import InputManager from './InputManager.js?v=browser-smash-gameplay-v37-20261023';
-import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v37-20261023';
-import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v37-20261023';
-import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v37-20261023';
-import { validateFighterRig, isEquippedWeapon } from './rig_validation.js?v=browser-smash-gameplay-v37-20261023';
-import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v37-20261023';
-import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v37-20261023';
-import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v37-20261023';
-import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v37-20261023';
-import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v37-20261023';
-import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v37-20261023';
-import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v37-20261023';
-import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v37-20261023';
-import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v37-20261023';
-import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v37-20261023';
-import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v37-20261023';
-import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v37-20261023';
-import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v37-20261023';
+import { createSmashRenderPipeline, createWetStoneMaterial } from './smash_render_pipeline.js?v=browser-smash-gameplay-v38-20261025';
+import SmashCamera from './SmashCamera.js?v=browser-smash-gameplay-v38-20261025';
+import InputManager from './InputManager.js?v=browser-smash-gameplay-v38-20261025';
+import Fighter3D from './fighter3D.js?v=browser-smash-gameplay-v38-20261025';
+import { createCombatItems } from './combat_items.js?v=browser-smash-gameplay-v38-20261025';
+import { makeProceduralCharacter, upgradeCharacterWithBlenderModel } from './models.js?v=browser-smash-gameplay-v38-20261025';
+import { validateFighterRig, isEquippedWeapon } from './rig_validation.js?v=browser-smash-gameplay-v38-20261025';
+import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-gameplay-v38-20261025';
+import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-gameplay-v38-20261025';
+import { upgradeFighterModel, animateHumanFighter } from './human_fighter.js?v=browser-smash-gameplay-v38-20261025';
+import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-gameplay-v38-20261025';
+import { bootstrapAnimationPacks } from './anim/animation_loader.js?v=browser-smash-gameplay-v38-20261025';
+import { addCinematicEnvironment } from './cinematic_environment.js?v=browser-smash-gameplay-v38-20261025';
+import { skyEnvironment } from './sky_environment.js?v=browser-smash-gameplay-v38-20261025';
+import createCombatVFX from './combat_vfx.js?v=browser-smash-gameplay-v38-20261025';
+import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-gameplay-v38-20261025';
+import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds } from './world/arena_layouts.js?v=browser-smash-gameplay-v38-20261025';
+import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-gameplay-v38-20261025';
+import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-gameplay-v38-20261025';
+import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-gameplay-v38-20261025';
 const $=s=>document.querySelector(s);
 window.__browserSmashAssets=window.__browserSmashAssets||{};
 window.__browserSmashAssets.app={status:'initializing',frames:0};
@@ -526,7 +526,9 @@ function detonateGrenade(projectile){
  }
  window.showCombatCallout?.('PLASMA GRENADE DETONATION','#b8ffc5');
 }
-window.camState={shake:0,targetZoom:19};let cameraMode=(()=>{const saved=localStorage.getItem('browserSmashCameraMode_v2');return ['overhead','over-p1','forward','classic'].includes(saved)?saved:'overhead';})();localStorage.setItem('browserSmashCameraMode_v2',cameraMode);const cameraModeSelect=$('#cameraMode');if(cameraModeSelect){cameraModeSelect.value=cameraMode;cameraModeSelect.addEventListener('change',()=>{cameraMode=cameraModeSelect.value;localStorage.setItem('browserSmashCameraMode_v2',cameraMode);});}const cameraZoom=$('#cameraZoom');if(cameraZoom){const savedZoom=Number(localStorage.getItem('browserSmashCameraZoom_v6'));if(Number.isFinite(savedZoom)&&savedZoom>=smashCamera.minZoom&&savedZoom<=smashCamera.maxZoom)smashCamera.setZoom(Math.max(0.9,savedZoom));cameraZoom.value=String(smashCamera.zoom);cameraZoom.addEventListener('input',()=>{smashCamera.setZoom(Number(cameraZoom.value));localStorage.setItem('browserSmashCameraZoom_v6',String(smashCamera.zoom));});}canvas.addEventListener('wheel',e=>{e.preventDefault();smashCamera.setZoom(smashCamera.zoom*(e.deltaY>0?1.12:1/1.12));if(cameraZoom)cameraZoom.value=String(smashCamera.zoom);localStorage.setItem('browserSmashCameraZoom_v6',String(smashCamera.zoom));},{passive:false});let lookingAround=false,lastPointerX=0,lastPointerY=0;canvas.addEventListener('contextmenu',e=>e.preventDefault());canvas.addEventListener('pointerdown',e=>{if(e.button!==2)return;lookingAround=true;lastPointerX=e.clientX;lastPointerY=e.clientY;canvas.setPointerCapture?.(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!lookingAround)return;const dx=e.clientX-lastPointerX,dy=e.clientY-lastPointerY;lastPointerX=e.clientX;lastPointerY=e.clientY;smashCamera.orbit(-dx*.006,dy*.004);});const stopLooking=()=>{lookingAround=false;};canvas.addEventListener('pointerup',stopLooking);canvas.addEventListener('pointercancel',stopLooking);canvas.addEventListener('lostpointercapture',stopLooking);const $status=$('#status');
+window.camState={shake:0,targetZoom:19};let cameraMode=(()=>{const saved=localStorage.getItem('browserSmashCameraMode_v2');return ['overhead','over-p1','forward','classic'].includes(saved)?saved:'overhead';})();localStorage.setItem('browserSmashCameraMode_v2',cameraMode);const cameraModeSelect=$('#cameraMode');if(cameraModeSelect){cameraModeSelect.value=cameraMode;cameraModeSelect.addEventListener('change',()=>{cameraMode=cameraModeSelect.value;localStorage.setItem('browserSmashCameraMode_v2',cameraMode);});}const cameraZoom=$('#cameraZoom');if(cameraZoom){const savedZoom=Number(localStorage.getItem('browserSmashCameraZoom_v6'));if(Number.isFinite(savedZoom)&&savedZoom>=smashCamera.minZoom&&savedZoom<=smashCamera.maxZoom)smashCamera.setZoom(Math.max(0.9,savedZoom));cameraZoom.value=String(smashCamera.zoom);cameraZoom.addEventListener('input',()=>{smashCamera.setZoom(Number(cameraZoom.value));localStorage.setItem('browserSmashCameraZoom_v6',String(smashCamera.zoom));});}canvas.addEventListener('wheel',e=>{e.preventDefault();smashCamera.setZoom(smashCamera.zoom*(e.deltaY>0?1.12:1/1.12));if(cameraZoom)cameraZoom.value=String(smashCamera.zoom);localStorage.setItem('browserSmashCameraZoom_v6',String(smashCamera.zoom));},{passive:false});// Mouse look belongs to free roam only: a match keeps its authored duel camera, so a drag
+// there can never swing the shot off the fighters. Inside a world it is how you turn around.
+let lookingAround=false,lastPointerX=0,lastPointerY=0;canvas.addEventListener('contextmenu',e=>e.preventDefault());const stopLooking=()=>{lookingAround=false;if(exploration)canvas.style.cursor='grab';};canvas.addEventListener('pointerdown',e=>{if(!exploration||(e.button!==0&&e.button!==2))return;lookingAround=true;lastPointerX=e.clientX;lastPointerY=e.clientY;canvas.style.cursor='grabbing';canvas.setPointerCapture?.(e.pointerId);});canvas.addEventListener('pointermove',e=>{if(!lookingAround||!exploration)return;const dx=e.clientX-lastPointerX,dy=e.clientY-lastPointerY;lastPointerX=e.clientX;lastPointerY=e.clientY;smashCamera.orbit(-dx*.006,dy*.004);});canvas.addEventListener('pointerup',stopLooking);canvas.addEventListener('pointercancel',stopLooking);canvas.addEventListener('lostpointercapture',stopLooking);const $status=$('#status');
 const characterSelects={p1:$('#p1Character'),cpu:$('#cpuCharacter')};
 for(const [key,select] of Object.entries(characterSelects)){if(select){populateRoster(select,key==='p1'?playerType:cpuType);select.value=key==='p1'?playerType:cpuType;select.addEventListener('change',()=>{if(key==='p1')playerType=select.value;else cpuType=select.value;localStorage.setItem(key==='p1'?'browserSmashP1':'browserSmashCPU',select.value);const fighter=key==='p1'?player:cpu;const archetype=fighterArchetype(select.value);const previous=fighter.model;scene.remove(previous);const fresh=makeProceduralCharacter(archetype,select.value);fresh.position.copy(fighter.position);scene.add(fresh);fighter.model=fresh;fighter.position=fresh.position;fighter.archetype=archetype;fighter.identity=select.value;fighter.identityKey=String(select.value||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');fighter.combatProfile=COMBAT_PROFILES[fighter.identityKey]||{damage:1,knockback:1,weight:1,launch:1};fighter.specialProfile=SPECIAL_MOVES[fighter.identityKey]||{label:'SIGNATURE STRIKE',type:'orb',color:0x62caff,damage:14,speed:22,cooldown:.82,stun:.42,knockback:4.5};fighter.weight=(key==='p1'?88:82)*fighter.combatProfile.weight;fighter.name=fighterDisplay(select.value);fighter.canFly=canCharacterFly(select.value);fighter.canWebSwing=select.value==='Spider-Man';fighter.flightMode=false;fighter.webSwinging=false;window.endWebSwing?.(fighter,false);fighter.characterModelLoaded=false;fighter.animationController?.dispose();fighter.animationController=null;upgradeFighterVisual(fighter);attachFighterAnimation(fighter);applyMap(mapSelect?.value||'valley');fighterTypeRefresh();});}} function fighterTypeRefresh(){const labels=document.querySelectorAll('.fighter .name');if(labels[0])labels[0].textContent='P1 · '+fighterDisplay(playerType).toUpperCase();if(labels[1])labels[1].textContent=fighterDisplay(cpuType).toUpperCase()+(twoPlayer?' · P2':' · CPU');const specialLabel=$('#specialLabel');if(specialLabel)specialLabel.textContent=player.specialProfile?.label||'SIGNATURE MOVE';}
 fighterTypeRefresh();
@@ -604,7 +606,7 @@ function applyWorldStage(key){
  // Interior stages are lit from above; open worlds get a low sun for long shadows.
  sun.position.set(...lamp.sunPos);
  rim.position.set(...lamp.rimPos);
- window.__browserSmashWorld={world:location.world,worldLabel:location.worldLabel,location:key,label:location.label,ground:location.layout.ground,bounds:location.layout.bounds,spawns:location.layout.spawns,exits:location.exits||[],blocks:location.layout.blocks.length,parts:activeWorldGroup?.userData.parts||0,drawCalls:activeWorldGroup?.userData.drawCalls||0};
+ window.__browserSmashWorld={world:location.world,worldLabel:location.worldLabel,location:key,label:location.label,ground:location.layout.ground,bounds:location.layout.bounds,roamBounds:location.layout.roamBounds,roamFloor:location.layout.roamFloor,spawns:location.layout.spawns,exits:location.exits||[],blocks:location.layout.blocks.length,parts:activeWorldGroup?.userData.parts||0,drawCalls:activeWorldGroup?.userData.drawCalls||0};
 }
 const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;
 const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
@@ -1035,7 +1037,11 @@ function applyArenaLayout(){
  const layout=effectiveLayout();
  // Ring-out stages deliberately have no fence: a fighter thrown past the edge has to be
  // able to fall. Every other location fences the fighter inside its own stage rectangle.
- for(const f of (window.fighters||[])){f.bounds=layout.ringOut?null:layout.bounds;}
+ // Free roam is the exception: there the fence is the whole world (every battle location in
+ // it plus a margin), so walking out of one stage into the next is just walking.
+ for(const f of (window.fighters||[])){
+  f.bounds=exploration?(layout.roamBounds||null):(layout.ringOut?null:layout.bounds);
+ }
  return {layout,spawns:spawnPoints(layout)};
 }
 function resolveArenaCollision(fighter){
@@ -1048,7 +1054,7 @@ function resolveArenaCollision(fighter){
  if(fighter.position.y<ground){fighter.position.y=ground;if(fighter.velocity.y<0)fighter.velocity.y=0;fighter.isGrounded=true;}
  else if(fighter.position.y<=ground+.02)fighter.isGrounded=true;
 }
-if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&savedMap!=='valley')?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[mapSelect.value].label;if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)$status.textContent='FREE ROAM · '+mapThemes[menuMapSelect.value].label;});}applyMap(mapSelect.value);}
+if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&savedMap!=='valley')?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>{applyMap(mapSelect.value);if(exploration)startExploration();if(menuMapSelect)menuMapSelect.value=mapSelect.value;});if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>{mapSelect.value=menuMapSelect.value;applyMap(menuMapSelect.value);if(exploration)startExploration();});}applyMap(mapSelect.value);}
 const selectScreen=initCharacterSelect({roster,specials:SPECIAL_MOVES,themes:mapThemes,worlds:worldGroups(),arenas:Object.keys(ARENA_LAYOUTS).map(key=>[key,ARENA_LAYOUTS[key]]).filter(([key])=>document.querySelector('#menuMapSelect option[value="'+key+'"]')||document.querySelector('#mapSelect option[value="'+key+'"]')),onFighter:(side,name)=>{const select=side==='p1'?characterSelects.p1:characterSelects.cpu;if(!select)return;select.value=name;select.dispatchEvent(new Event('change'));},onArena:(key)=>{if(!mapSelect)return;mapSelect.value=key;mapSelect.dispatchEvent(new Event('change'));},onMode:(mode)=>{twoPlayer=mode==='2p';fighterTypeRefresh();updateHud();}});
 window.__browserSmashSelect=selectScreen;
 // Test hook: the same structural gate the roster swap applies to a prefab, so audit:roster
@@ -1106,9 +1112,88 @@ function resolveRoundEnd(){
    roundPause=1.8;
  }
 }
-function reset(isPractice=false){exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);window.endWebSwing?.(cpu,false);player.attackBuffer=0;cpu.attackBuffer=0;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';if($('#energyHUD'))$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';player.roamMode=true;cpu.roamMode=true;const {spawns}=applyArenaLayout();placeFightersAtSpawns(spawns);resetMatch(matchState);hitStop=0;roundPause=0;remaining=matchState.timer;started=true;practice=isPractice;document.body.classList.remove('in-menu');$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
-$('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',()=>{exploration=true;practice=true;started=true;player.roamMode=true;player.bounds=null;cpu.bounds=null;const roamKey=mapSelect?.value||'valley';const roamStart=({valley:[0,0],finalvalley:[0,-24],starktower:[0,-24],deathstar:[0,-22],asgard:[0,-20],hogwarts:[0,-26],tournament:[0,-12]})[roamKey]||[0,0];player.position.set(roamStart[0],0,roamStart[1]);player.velocity.set(0,0,0);cpu.model.visible=false;applyFloorFootprint();platform.visible=false;remaining=0;document.body.classList.remove('in-menu');$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');$('#timer').style.display='none';if($('#energyHUD'))$('#energyHUD').style.opacity='0';$('#exploreHint').style.display='block';$('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');});addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration){exploration=false;player.roamMode=false;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;document.body.classList.add('in-menu');$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';}});
-function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=true;hitStop=0;roundPause=0;applyFloorFootprint();platform.scale.set(1,1,1);document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;document.body.classList.add('in-menu');$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';$('#result').textContent=text;$('#play').textContent='REMATCH';selectScreen?.show?.();}
+function reset(isPractice=false){exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);window.endWebSwing?.(cpu,false);player.attackBuffer=0;cpu.attackBuffer=0;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';if($('#energyHUD'))$('#energyHUD').style.opacity='1';$('#exploreHint').style.display='none';exitMarkers.visible=true;canvas.style.cursor='';lookingAround=false;smashCamera.resetOrbit?.();player.roamMode=true;cpu.roamMode=true;const {spawns}=applyArenaLayout();placeFightersAtSpawns(spawns);resetMatch(matchState);hitStop=0;roundPause=0;remaining=matchState.timer;started=true;practice=isPractice;document.body.classList.remove('in-menu');$('#menu').classList.add('hidden');$('#cameraSettings').style.display='block';$('#result').textContent='';$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
+$('#play').addEventListener('click',()=>reset(false));$('#practice').addEventListener('click',()=>reset(true));const exploreButton=$('#explore');if(exploreButton)exploreButton.addEventListener('click',startExploration);
+/**
+ * Free roam: no round, no opponent, no stage fence. The fighter is dropped on the chosen
+ * stage's own spawn and can then walk the whole built world - every street, terrace and
+ * rooftop between the battle locations - because the fence is the world's roam rectangle and
+ * doorway travel is disabled (see nearbyWorldExit). The camera drops to a third-person
+ * walk-around rig, and dragging the mouse looks around.
+ */
+let exploreSpawn=null;
+function startExploration(){
+ exploration=true;practice=true;started=true;
+ const {layout,spawns}=applyArenaLayout();
+ const spawn=spawns[0]||{x:0,z:0,y:layout.ground};
+ exploreSpawn={x:spawn.x,y:spawn.y??layout.ground??0,z:spawn.z};
+ player.roamMode=true;
+ player.position.set(spawn.x,spawn.y??layout.ground??0,spawn.z);
+ player.velocity.set(0,0,0);
+ player.facing=1;
+ player.isGrounded=true;
+ player.flightMode=false;
+ player.hitstun=0;
+ window.endWebSwing?.(player,false);
+ // The camera has to see buildings and rooftops now, not a duel: give it the world's solid
+ // volumes so it cannot end up inside a wall on the far side of the map.
+ smashCamera.setStageBounds?.(layout.roamBounds,layout.blocks);
+ smashCamera.resetOrbit?.();
+ smashCamera.setStageTilt?.(0,1);
+ smashCamera.setStageYaw?.(0);
+ cpu.model.visible=false;
+ // Doorway rings are matches' travel affordance; in free roam they would only invite the
+ // location change this mode exists to remove.
+ exitMarkers.visible=false;
+ canvas.style.cursor='grab';
+ applyFloorFootprint();
+ platform.visible=false;
+ remaining=0;
+ document.body.classList.remove('in-menu');
+ $('#menu').classList.add('hidden');
+ $('#cameraSettings').style.display='block';
+ document.querySelectorAll('.fighter').forEach(n=>n.style.display='none');
+ $('#timer').style.display='none';
+ if($('#energyHUD'))$('#energyHUD').style.opacity='0';
+ $('#exploreHint').style.display='block';
+ $('#status').textContent='FREE ROAM · '+(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES');
+ window.__browserSmashExploreState=()=>({exploring:exploration,location:window.__browserSmashWorld?.location,bounds:player.bounds?{...player.bounds}:null,spawn:exploreSpawn?{...exploreSpawn}:null,exitsVisible:exitMarkers.visible,position:{x:player.position.x,y:player.position.y,z:player.position.z},cameraMode:exploration?'explore':cameraMode,cameraPosition:{x:camera.position.x,y:camera.position.y,z:camera.position.z},orbitYaw:smashCamera.orbitYaw,orbitPitch:smashCamera.orbitPitch});
+}
+window.__browserSmashExplore=()=>{startExploration();return window.__browserSmashExploreState();};
+window.__browserSmashLeaveExplore=()=>leaveExploration();
+/**
+ * Leave free roam and return to the menu, restoring everything the mode hid: the opponent,
+ * the travel rings, the default cursor and the stage's own camera bounds.
+ */
+function leaveExploration(){
+ if(!exploration)return false;
+ exploration=false;player.roamMode=false;player.bounds=null;cpu.model.visible=true;
+ exitMarkers.visible=true;canvas.style.cursor='';lookingAround=false;
+ applyFloorFootprint();platform.scale.set(1,1,1);
+ document.querySelectorAll('.fighter').forEach(n=>n.style.display='');
+ $('#timer').style.display='';$('#exploreHint').style.display='none';
+ started=false;smashCamera.resetOrbit?.();
+ const back=worldLocation(mapSelect?.value||'valley');
+ if(back)smashCamera.setStageBounds?.(back.layout.bounds,back.layout.blocks);else smashCamera.setStageBounds?.(null,null);
+ document.body.classList.add('in-menu');$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';
+ return true;
+}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&exploration)leaveExploration();});
+/**
+ * Walking off the island edge, out of the Death Star hull or off a Konoha roof would drop an
+ * explorer forever. Put them back on the seat they started from instead.
+ */
+function respawnExplorer(){
+ const seat=exploreSpawn||{x:0,y:effectiveLayout().ground??0,z:0};
+ player.position.set(seat.x,seat.y,seat.z);
+ player.velocity.set(0,0,0);
+ player.hitstun=0;
+ player.isGrounded=true;
+ player.flightMode=false;
+ window.endWebSwing?.(player,false);
+ window.showCombatCallout?.('RETURNED TO SOLID GROUND','#bfe9ff');
+}
+function finish(text){exploration=false;player.roamMode=false;cpu.model.visible=true;hitStop=0;roundPause=0;applyFloorFootprint();platform.scale.set(1,1,1);exitMarkers.visible=true;canvas.style.cursor='';lookingAround=false;document.querySelectorAll('.fighter').forEach(n=>n.style.display='');$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;document.body.classList.add('in-menu');$('#menu').classList.remove('hidden');$('#cameraSettings').style.display='none';$('#result').textContent=text;$('#play').textContent='REMATCH';selectScreen?.show?.();}
 function updateHud(){const p1damage=$('#p1damage'),p2damage=$('#p2damage'),p1name=$('#p1name'),p2name=$('#p2name'),p1special=$('#p1special'),p2special=$('#p2special');if(p1damage)p1damage.textContent=Math.floor(player.percent)+'%';if(p2damage)p2damage.textContent=Math.floor(cpu.percent)+'%';if(p1name)p1name.textContent='P1 · '+fighterDisplay(playerType).toUpperCase();if(p2name)p2name.textContent=fighterDisplay(cpuType).toUpperCase()+(twoPlayer?' · P2':' · CPU');const p1profile=player.specialProfile||SPECIAL_MOVES[player.identityKey]||{label:'SIGNATURE STRIKE'},p2profile=cpu.specialProfile||SPECIAL_MOVES[cpu.identityKey]||{label:'SIGNATURE STRIKE'};if(p1special)p1special.textContent=(player.specialCooldown<=0?'READY · ':'RECHARGING · ')+p1profile.label;if(p2special)p2special.textContent=(cpu.specialCooldown<=0?'CPU READY · ':'CPU RECHARGING · ')+p2profile.label;$('#p1bar').style.width=Math.max(0,100-player.percent*.72)+'%';$('#p2bar').style.width=Math.max(0,100-cpu.percent*.72)+'%';const seconds=Math.ceil(remaining);$('#timer').textContent=Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');const energy=Math.max(0,Math.min(100,(1-player.specialCooldown/.82)*100));const ef=$('#energyFill'),eh=$('#energyHUD');if(ef)ef.style.width=energy+'%';if(eh){eh.classList.toggle('ready',player.specialCooldown<=0);eh.style.opacity=exploration?'0':'1';}const combo=$('#comboNotice');if(combo){const show=player.comboHitCount>=2&&player.comboWindow>0;if(show){combo.textContent=player.comboStep===3?'AIR / GROUND FINISHER · '+player.comboHitCount+' HITS':player.comboHitCount+' HIT COMBO';combo.classList.add('show');}else combo.classList.remove('show');}}
 const groundedState=new WeakMap();
 const clock=new THREE.Clock();
@@ -1164,6 +1249,7 @@ function simulationStep(dt){
     updateWorldTravel(dt);
     window.updateSignatureMoves?.(dt);
     resolveArenaCollision(player);
+    if(exploration&&player.position.y<(effectiveLayout().roamFloor??-40))respawnExplorer();
     if(!exploration)resolveArenaCollision(cpu);
   }
   if(!practice&&!exploration){
@@ -1179,7 +1265,7 @@ window.__browserSmashStep=(seconds=1)=>{
   // Advance the camera on the same fixed step: it damps toward its target inside the render
   // loop, so an automated probe that only advanced the simulation used to judge a shot that
   // was still in flight (much more so on a software renderer running at a few fps).
-  for(let i=0;i<steps;i++){input.update();simulationStep(1/60);smashCamera.update(player,exploration?player:cpu,1/60,exploration?'over-p1':cameraMode);}
+  for(let i=0;i<steps;i++){input.update();simulationStep(1/60);smashCamera.update(player,exploration?player:cpu,1/60,exploration?'explore':cameraMode);}
   return window.__browserSmashMatch();
 };
 
@@ -1203,7 +1289,7 @@ for(let i=impactRings.length-1;i>=0;i--){
  ring.mesh.scale.setScalar(.35+(ring.max-.35)*p);ring.mesh.material.opacity=.92*(1-p);
  if(p>=1){scene.remove(ring.mesh);ring.mesh.geometry.dispose();ring.mesh.material.dispose();impactRings.splice(i,1);}
 }
-combatVFX.update(elapsed);smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'over-p1':cameraMode);composer.render();const assetDiagnostics=window.__browserSmashAssets;if(assetDiagnostics){assetDiagnostics.app=assetDiagnostics.app||{};assetDiagnostics.app.status='running';assetDiagnostics.app.frames=(assetDiagnostics.app.frames||0)+1;}}
+combatVFX.update(elapsed);smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'explore':cameraMode);composer.render();const assetDiagnostics=window.__browserSmashAssets;if(assetDiagnostics){assetDiagnostics.app=assetDiagnostics.app||{};assetDiagnostics.app.status='running';assetDiagnostics.app.frames=(assetDiagnostics.app.frames||0)+1;}}
 addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.65));composer.setSize(innerWidth,innerHeight);});
 const loadingLabel=$('#loading');let loadingNoticeIssued=false;
 function checkAssetLoadingStatus(){

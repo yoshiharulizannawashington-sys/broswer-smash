@@ -300,6 +300,30 @@ exit for a real destination, same-world containment, distance from spawns, solid
 and a reciprocal return exit, and the browser test drives a fighter into a doorway and asserts the
 match moved, the fighters landed on the new spawns and only one world group stayed mounted.
 
+### Free roam (explore mode)
+
+Explore mode is the exception to the doorway rule: it is one continuous walk. Press **EXPLORE**
+on the setup screen and the fighter is seated on the chosen stage's spawn with no round, no
+opponent and **no stage fence** - `applyArenaLayout` gives a roaming fighter the world's own
+`roamBounds` (the union of every battle location in that world plus a margin, from
+`roamBoundsFor`) instead of the stage rectangle, so you can walk out of the stage you started on
+and keep going through the streets to the next one. Doorway rings are hidden and doorway travel
+is disabled while exploring (`nearbyWorldExit` returns null), so a location change is never
+forced on you; changing the arena in the settings re-seats you at the new location's spawn.
+
+Free roam also owns the mouse: drag with either mouse button to look around and scroll to zoom.
+The mouse never turns the camera in a match - the drag handler is gated on `exploration`, and
+starting a match clears any rotation left over from exploring. The camera switches to a low
+third-person walk-around rig (`SmashCamera` mode `explore`) that is still collision-aware, and
+the camera-relative steering in `fighter3D.js` turns the walk with the view.
+
+If a walk leaves the world entirely (off the island edge, out of a hull, off a castle roof) the
+explorer is put back on the seat they started from at `roamFloor` (lowest stage ground minus
+40 m) rather than falling forever. `npm run test:explore` drives the real game: it walks out of
+a stage in both directions, stands on a doorway ring without travelling, checks the world fence
+in all six worlds, recovers from a fall, and asserts that a mouse drag turns the camera in
+explore mode but not in a match.
+
 Death Star stages: Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control,
 Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hull. The hangar
 spine, the east/west spur and the Trench Run-to-city corridor are built as geometry, so the rooms

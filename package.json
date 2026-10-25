@@ -12,6 +12,7 @@
     "test:combat": "node scripts/test-combat.mjs",
     "test:worlds": "node scripts/test-worlds.mjs",
     "test:worlds:browser": "node scripts/test-worlds-browser.mjs",
+    "test:explore": "node scripts/test-explore.mjs",
     "test:feel": "node scripts/test-stage-feel.mjs",
     "test:gameplay": "node scripts/test-gameplay.mjs",
     "test:smoke": "node scripts/browser-smoke.mjs",

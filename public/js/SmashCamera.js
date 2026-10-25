@@ -188,6 +188,14 @@ export default class SmashCamera {
       const shot = this.overheadFraming(a, b);
       this.positionTarget.set(shot.x, shot.y, shot.z);
       this.lookTarget.set(shot.lookX, shot.lookY, shot.lookZ);
+    } else if (mode === 'explore') {
+      // Free roam is not a duel: sit behind the fighter's shoulders, low enough to read the
+      // street and see a skyline, and let the orbit offset turn it into a mouse look.
+      const zoom = Math.min(this.zoom, 1.8);
+      const trailing = 4.4 * zoom + 1.4;
+      const height = 2.0 * zoom + 1.1;
+      this.positionTarget.set(a.position.x, a.position.y + height, a.position.z + trailing);
+      this.lookTarget.set(a.position.x, a.position.y + 1.45, a.position.z);
     } else {
       const height = THREE.MathUtils.clamp(this.baseHeight + spread * 7 + altitudeLift, this.minHeight, this.maxHeight) * this.zoom;
       const trailing = (this.baseTrailing + spread * 9) * this.zoom;
@@ -234,10 +242,12 @@ export default class SmashCamera {
     }
 
     if (Math.abs(this.orbitYaw) > .001 || Math.abs(this.orbitPitch) > .001) {
+      const anchored = mode === 'overhead' || mode === 'over-p1' || mode === 'explore';
       const anchor = new THREE.Vector3(
-        mode === 'overhead' ? midX : (mode === 'over-p1' ? a.position.x : midX),
-        mode === 'overhead' ? Math.max(0, (a.position.y + b.position.y) * .5) : (mode === 'over-p1' ? a.position.y : 0),
-        mode === 'overhead' ? midZ : (mode === 'over-p1' ? a.position.z : midZ)
+        anchored ? (mode === 'overhead' ? midX : a.position.x) : midX,
+        mode === 'overhead' ? Math.max(0, (a.position.y + b.position.y) * .5)
+          : (mode === 'explore' ? a.position.y + 1.45 : (mode === 'over-p1' ? a.position.y : 0)),
+        anchored ? (mode === 'overhead' ? midZ : a.position.z) : midZ
       );
       const offset = this.positionTarget.clone().sub(anchor);
       const length = Math.max(1, offset.length());

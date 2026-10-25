@@ -121,6 +121,38 @@ for (const location of WORLD_LOCATIONS) {
   }
 }
 
+// ---- free roam -------------------------------------------------------------
+// Explore mode is one continuous walk over the whole world, so every location in a world
+// shares one roam rectangle that contains all of their stage fences. These checks pin that
+// contract down in node; scripts/test-explore.mjs proves the walking in a real browser.
+for (const id of WORLD_ORDER) {
+  const locations = WORLD_LOCATIONS.filter(location => location.world === id);
+  const roam = locations[0].layout.roamBounds;
+  ok(Boolean(roam), `${id} exposes a free-roam rectangle`);
+  for (const location of locations) {
+    const b = location.bounds;
+    const own = location.layout.roamBounds;
+    ok(own && own.x0 === roam.x0 && own.x1 === roam.x1 && own.z0 === roam.z0 && own.z1 === roam.z1,
+      `${location.id} shares its world's roam rectangle`);
+    ok(roam.x0 < b.x0 && roam.x1 > b.x1 && roam.z0 < b.z0 && roam.z1 > b.z1,
+      `${location.id} roam rectangle contains its stage fence`);
+    ok(location.layout.roamFloor < location.layout.ground - 5,
+      `${location.id} has a recovery floor below its standing height`);
+  }
+  const widest = Math.max(...locations.map(location =>
+    Math.max(location.bounds.x1 - location.bounds.x0, location.bounds.z1 - location.bounds.z0)));
+  const spanX = roam.x1 - roam.x0, spanZ = roam.z1 - roam.z0;
+  ok(spanX > widest && spanZ > widest,
+    `${id} roam area is wider than any single stage (${spanX.toFixed(0)}×${spanZ.toFixed(0)} m vs ${widest.toFixed(0)} m stage)`);
+  // Every stage centre has to be inside the roam rectangle, or a walk could not reach it.
+  for (const location of locations) {
+    const cx = (location.bounds.x0 + location.bounds.x1) / 2;
+    const cz = (location.bounds.z0 + location.bounds.z1) / 2;
+    ok(cx > roam.x0 && cx < roam.x1 && cz > roam.z0 && cz < roam.z1,
+      `${location.id} centre is inside the roam rectangle`);
+  }
+}
+
 // ---- collision behaviour ---------------------------------------------------
 {
   // A building in West City blocks movement.

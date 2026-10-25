@@ -2433,6 +2433,36 @@ export function blocksFromParts(parts) {
   return blocks;
 }
 
+/**
+ * The rectangle a free-roam walk is fenced by: every battle location in the world, plus a
+ * margin, so you can walk from one stage into the next through the streets between them
+ * instead of being pinned to the stage fence. Derived from the locations themselves, so it
+ * cannot drift away from the world it describes.
+ */
+export function roamBoundsFor(worldId, margin = 6) {
+  const locations = WORLDS[worldId]?.locations || [];
+  if (!locations.length) return null;
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (const location of locations) {
+    const { x0: ax, z0: az, x1: bx, z1: bz } = location.bounds;
+    x0 = Math.min(x0, ax); x1 = Math.max(x1, bx);
+    z0 = Math.min(z0, az); z1 = Math.max(z1, bz);
+  }
+  return { x0: x0 - margin, x1: x1 + margin, z0: z0 - margin, z1: z1 + margin };
+}
+
+/**
+ * The height below which a free-roam walk has left the world entirely (off the island edge,
+ * out of a hull, off a castle roof). It is a recovery line, not a cliff: the game puts the
+ * explorer back on their starting seat instead of letting them drop off the map.
+ */
+export function roamFloorFor(worldId) {
+  const world = WORLDS[worldId];
+  if (!world) return -40;
+  const grounds = world.locations.map(location => location.ground ?? world.ground ?? 0);
+  return Math.min(...grounds) - 40;
+}
+
 export const WORLD_LOCATIONS = WORLD_ORDER.flatMap(worldId => {
   const world = WORLDS[worldId];
   return world.locations.map(location => {
@@ -2456,6 +2486,9 @@ export const WORLD_LOCATIONS = WORLD_ORDER.flatMap(worldId => {
         spawns: location.spawns,
         ringOut: Boolean(location.ringOut),
         fallBelow: location.fallBelow,
+        // Free roam walks the whole world; a stage fence only applies to a match.
+        roamBounds: roamBoundsFor(worldId),
+        roamFloor: roamFloorFor(worldId),
         blocks: blocksFromParts(worldParts(worldId))
       }
     };
