@@ -288,9 +288,9 @@ fighter, so a mounted-but-broken rig fails the audit instead of passing on a nod
 
 ## Worlds, stages and travel
 
-The four reference worlds now hold 37 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
-Hogwarts 9). Each world is one built environment; the locations inside it are rectangles over that
-same geometry, so switching stages within a world does not rebuild the map.
+The five reference worlds now hold 49 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
+Hogwarts 9, Konoha 12). Each world is one built environment; the locations inside it are rectangles
+over that same geometry, so switching stages within a world does not rebuild the map.
 
 Stages are joined by marked doorways: a lit ring and light column at the edge of a stage that
 leads to a neighbouring stage. Walking into one moves the match there (callout, then the new
@@ -313,6 +313,15 @@ gallery reached by stairs at both corners, tall windows above the gallery, brazi
 red processional carpet. The court's doorway sits at the palace gate (the ziggurat itself is still
 facade), so the hall is entered the same way as every other stage transition.
 
+Konoha stages: Hokage Rock, Hokage Administration, Main Street, Ichiraku Ramen, Ninja Academy,
+Konoha Hospital, Residential District, Uchiha District, Hyuga Compound, Training Grounds, Village
+Gates and the Forest of Death. The village sits in one bowl of land: the carved Hokage cliff closes
+the north end, Main Street runs south from the administration tower to the gates through a street
+of shophouses, and the districts and clan compounds branch off it. Hokage Rock is a real 24 m
+elevated stage on the cliff top, reached through the administration building rather than climbed.
+The Forest of Death is outside the gates past a 6 m split trunk, and Ichiraku Ramen and the
+administration building are interiors with counter seating and a stepped dais respectively.
+
 Dragon Ball Z stages: Grand Prize Stage, Main Entrance, West City Streets, West City Backstreets,
 Capsule Corporation, Capsule Research Lab, Martial Arts Dojo, Rocky Training Grounds, Training
 Grounds, Ring Out Cliffs and King Kai's Planet. Three of those are new geography rather than
@@ -334,12 +343,12 @@ no continuous walk from one end of a world to the other.
 
 ## Large world materials
 
-`public/js/worlds/world_textures.js` draws the tileable surface maps the four reference worlds
-are built from: stone courses, riveted metal panels, timber planks, grass, marble veining and
-shingles. Each world part is merged per material, so per-object tiling is impossible; instead
-`world_builder.js` projects every vertex's UV from its own world position, and the texture repeat
-turns those metre-space UVs into a fixed tile size per surface family (3-8 m). One 256px canvas
-per family is shared by every material that asks for the same tile size, so the four worlds still
+`public/js/worlds/world_textures.js` draws the tileable surface maps the five reference worlds
+are built from: stone courses, riveted metal panels, timber planks, grass, marble veining, roof
+tiles and shingles. Each world part is merged per material, so per-object tiling is impossible;
+instead `world_builder.js` projects every vertex's UV from its own world position, and the texture
+repeat turns those metre-space UVs into a fixed tile size per surface family (3-8 m). One 256px
+canvas per family is shared by every material that asks for the same tile size, so the worlds still
 render in roughly 17-31 draw calls each and no external texture assets are required. Palette
 colours stay authoritative, which is how the same stone map reads as DBZ sandstone, Asgard marble
 and Hogwarts granite. `STAGE_LIGHTING` in `world_catalog.js` gives each world its own key strength,

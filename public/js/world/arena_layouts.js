@@ -150,7 +150,7 @@ const LEGACY_LAYOUTS = {
   }
 };
 
-// The four reference worlds contribute one layout per battle location. Their collision
+// The five reference worlds contribute one layout per battle location. Their collision
 // volumes come from the world geometry itself (see worlds/world_catalog.js), so a stage
 // inside a world shares the same walls, terraces and catwalks as the rest of the map.
 const WORLD_LAYOUTS = Object.fromEntries(WORLD_LOCATIONS.map(location => [location.id, location.layout]));

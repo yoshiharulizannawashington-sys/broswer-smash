@@ -17,6 +17,7 @@ export const SKY_PRESETS = {
   asgard: { top: '#28477e', horizon: '#ffe2a6', ground: '#4a4a52', sun: '#fff4cd', sunHeight: .5, sunSize: .11 },
   hogwarts: { top: '#2b3f63', horizon: '#c8c6c0', ground: '#3c3a33', sun: '#f4ecd6', sunHeight: .6, sunSize: .09 },
   deathstar: { top: '#1b2230', horizon: '#5b6b82', ground: '#1a2029', sun: '#cfe0ff', sunHeight: .72, sunSize: .07 },
+  konoha: { top: '#2e6fb4', horizon: '#e4ecec', ground: '#45583a', sun: '#fff6dd', sunHeight: .62, sunSize: .085 },
   volcano: { top: '#321c22', horizon: '#d8642c', ground: '#241a18', sun: '#ffb070', sunHeight: .38, sunSize: .12 },
   ice: { top: '#3a5f85', horizon: '#dcecf7', ground: '#54697a', sun: '#eaf6ff', sunHeight: .56, sunSize: .1 },
   neon: { top: '#140f2c', horizon: '#7d3fd0', ground: '#1a1428', sun: '#ff6fd2', sunHeight: .46, sunSize: .12 }

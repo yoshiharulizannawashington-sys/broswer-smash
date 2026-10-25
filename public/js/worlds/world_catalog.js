@@ -1,6 +1,6 @@
 // World and battle-location catalog for Browser Bros.
 //
-// Each of the four reference worlds is ONE large environment containing its landmarks, with
+// Each of the five reference worlds is ONE large environment containing its landmarks, with
 // several named battle locations inside it. A battle location is a playable rectangle with
 // its own spawn points (where the fight starts) inside the same world geometry, so switching
 // stages inside a world does not rebuild or reload anything.
@@ -1455,6 +1455,348 @@ function buildHogwarts() {
   return parts;
 }
 
+// ---- world: Konoha (Hidden Leaf Village) ------------------------------------
+// North is -Z. Hokage Rock closes the valley, the village steps south from it, the gates open
+// onto the Land of Fire and the Forest of Death lies beyond them. Everything here is one
+// village: a battle location is a rectangle inside it, so moving between districts rebuilds
+// nothing and the districts stay physically where the map says they are.
+function buildKonoha() {
+  const rng = mulberry32(20261025);
+  const parts = [];
+  const GROUND = 0.6;
+
+  /** Tiled Japanese roof: wide eave, a pyramid of tiles above it, gold ridge finial. */
+  function house(x, z, { w = 10, d = 8, h = 5, base = GROUND, mat = 'building', roof = 'roof', door = true } = {}) {
+    box(parts, x, base + h / 2, z, w, h, d, mat, solid({ bottom: base }));
+    box(parts, x, base + h + .18, z, w + 1.8, .36, d + 1.8, roof);
+    cone(parts, x, base + h + 2.1, z, Math.min(w, d) * .95, 3.1, roof, { seg: 4, ry: Math.PI / 4 });
+    box(parts, x, base + h + 3.8, z, Math.min(w, d) * .28, .3, .3, 'gold');
+    if (door) {
+      box(parts, x, base + 1.1, z + d / 2 + .05, 1.6, 2.2, .08, 'wood');
+      for (const dx of [-w * .3, w * .3]) box(parts, x + dx, base + Math.max(2.2, h - .7), z + d / 2 + .05, 1.7, 1.2, .08, 'glassWarm');
+    }
+  }
+  function lantern(x, y, z) {
+    cyl(parts, x, y + .7, z, .1, .13, 1.4, 'wood', { seg: 6 });
+    ball(parts, x, y + 1.62, z, .32, 'glassWarm', { seg: 8 });
+  }
+  function parkTree(x, z, scale, base = GROUND) { tree(parts, x, z, scale, base, rng); }
+  /**
+   * Forest-of-Death giant: a 26-40 m trunk whose crown starts about 18 m up, above the
+   * overhead camera. The old 5-8 m conifers put their canopy exactly at camera height, so the
+   * fight was either hidden behind leaves or (after clearing them) played on bare lawn.
+   */
+  function giantTree(x, z, scale = 1, base = GROUND) {
+    const h = (26 + rng() * 12) * scale;
+    cyl(parts, x, base + h * .3, z, 1.05 * scale, 1.7 * scale, h * .6, 'trunk', solid({ bottom: base, seg: 7 }));
+    for (let i = 0; i < 3; i++) {
+      cone(parts, x, base + h * .6 + i * h * .12, z, (7.6 - i * 1.9) * scale, h * .24, 'leaf', { seg: 9 });
+    }
+    // Buttress roots where the trunk meets the floor, and moss on the north side.
+    for (let i = 0; i < 4; i++) {
+      const a = i * TAU / 4 + .55;
+      box(parts, x + Math.cos(a) * 2.3 * scale, base + .8 * scale, z + Math.sin(a) * 2.3 * scale,
+        2.6 * scale, 1.6 * scale, 2.6 * scale, 'trunk', solid({ bottom: base }));
+    }
+    ball(parts, x, base + h * .34, z, 1.4 * scale, 'moss', { sx: 1.4, sy: .6, sz: 1.4, seg: 7 });
+  }
+
+  // ---- valley, plateau and horizon -----------------------------------------
+  plane(parts, 0, -9, -20, 1100, 980, 'grassDark');
+  for (let i = 0; i < 26; i++) {
+    const a = i * TAU / 26 + .21;
+    const r = 300 + rng() * 96;
+    const h = 46 + rng() * 58;
+    cone(parts, Math.cos(a) * r, -8 + h / 2, Math.sin(a) * r - 10, 42 + rng() * 28, h, i % 3 ? 'mountain' : 'cliff', { seg: 6 });
+  }
+  // One walkable plateau under every district, long enough to carry the Forest of Death: the
+  // old 336 m slab stopped ten metres short of the forest's south edge, so its last trees and
+  // the far end of its floor sat over the valley drop.
+  box(parts, 0, -1.6, 41, 384, 4.4, 358, 'grass', solid({ bottom: -9 }));
+  for (const [x, z, w, d] of [[0, -142, 384, 18], [-198, 41, 18, 358], [198, 41, 18, 358], [0, 226, 384, 18]]) {
+    box(parts, x, -6, z, w, 14, d, 'cliff');
+  }
+
+  // ---- Hokage Rock ---------------------------------------------------------
+  // Three stacked cliff masses. The summit terrace is the front shelf at y = 24, which is a
+  // playable vantage point over the whole village.
+  box(parts, 0, 12.3, -132, 210, 23.4, 56, 'cliff', solid({ bottom: GROUND }));
+  box(parts, 0, 31, -150, 188, 14, 30, 'cliff', solid({ bottom: 24 }));
+  box(parts, 0, 42.5, -158, 118, 9, 16, 'cliff', solid({ bottom: 38 }));
+  // Rock striations and vegetation ledges so the face is not a flat wall.
+  for (let i = 0; i < 9; i++) {
+    const y = 2.5 + i * 2.3;
+    box(parts, -74 + (i % 3) * 46, y, -105.4, 34 + (i % 4) * 9, .5, 1.6, 'rock');
+  }
+  // Vegetation hugs the ridge at the back of the terrace, clear of the fighting shelf.
+  for (let i = 0; i < 13; i++) {
+    const x = -96 + i * 16;
+    ball(parts, x, 24.5, -134.4 + (i % 3) * 1.6, 1.15, 'moss', { sx: 1.5, sy: .55, sz: 1.3, seg: 7 });
+  }
+  // The four carved Hokage faces on the south face of the cliff.
+  const FACE_Z = -103.5;
+  for (const fx of [-45, -15, 15, 45]) {
+    box(parts, fx, 14.6, FACE_Z, 22, 15, 1.4, 'stoneLight');
+    box(parts, fx, 16.6, FACE_Z + .95, 13.5, 2.6, .8, 'stoneDark');
+    box(parts, fx - 6.6, 15.2, FACE_Z + 1.05, 3.2, 2.2, .7, 'stoneDark');
+    box(parts, fx + 6.6, 15.2, FACE_Z + 1.05, 3.2, 2.2, .7, 'stoneDark');
+    box(parts, fx, 13.3, FACE_Z + 1.15, 3.4, 4.6, .9, 'stoneDark');
+    box(parts, fx, 10.3, FACE_Z + 1.05, 7.4, 1.3, .8, 'stoneDark');
+    box(parts, fx, 19.9, FACE_Z + .7, 17.5, 1.6, .7, 'rock');
+  }
+  railing(parts, 0, 24, -108.6, 62, 'x', 'wood');
+  stairs(parts, -70, -100, { steps: 22, width: 8, rise: .95, run: 1.4, base: 3, mat: 'stoneDark', dir: 'z' });
+
+  // ---- Hokage Administration Building --------------------------------------
+  const HZ = -74;
+  box(parts, 0, 9.6, HZ - 10.5, 28, 18, 1, 'stoneDark', solid({ bottom: GROUND }));
+  for (const side of [-1, 1]) box(parts, side * 9.4, 9.6, HZ + 10.5, 9.2, 18, 1, 'stoneDark', solid({ bottom: GROUND }));
+  box(parts, -13.5, 9.6, HZ, 1, 18, 22, 'stoneDark', solid({ bottom: GROUND }));
+  box(parts, 13.5, 9.6, HZ, 1, 18, 22, 'stoneDark', solid({ bottom: GROUND }));
+  for (let row = 0; row < 4; row++) for (const dx of [-8, -4, 0, 4, 8]) box(parts, dx, 3.4 + row * 3.8, HZ + 11.04, 2.4, 1.8, .08, 'glassWarm');
+  box(parts, 0, 18.4, HZ, 33, .8, 27, 'roof', solid({ bottom: 18 }));
+  cone(parts, 0, 21.3, HZ, 16.5, 5, 'roof', { seg: 4, ry: Math.PI / 4 });
+  banner(parts, 0, 15.2, HZ + 11.3, 7, 4.4, 'banner');
+  plane(parts, 0, .64, HZ, 8, 20, 'banner');
+  box(parts, 0, 1.35, HZ - 8.2, 10, .7, 2.4, 'wood', solid({ bottom: GROUND }));
+  box(parts, 0, 2.1, HZ - 9.2, 4.2, 1.3, 1.5, 'wood');
+  for (const [dx, dz] of [[-10.5, -5.5], [10.5, -5.5], [-10.5, 6], [10.5, 6]]) {
+    box(parts, dx, 1.25, HZ + dz, 3, 1.3, 1.6, 'wood', solid({ bottom: GROUND }));
+  }
+  for (const [dx, dz] of [[-12.9, -7], [-12.9, 7], [12.9, -7], [12.9, 7]]) lantern(dx, GROUND, HZ + dz);
+
+  // ---- village perimeter, boulevard and plaza ------------------------------
+  box(parts, -150, 4.4, 30, 2.4, 7.6, 200, 'stone', solid({ bottom: GROUND }));
+  box(parts, 150, 4.4, 30, 2.4, 7.6, 200, 'stone', solid({ bottom: GROUND }));
+  for (const side of [-1, 1]) box(parts, side * 88, 4.4, 132, 124, 7.6, 2.4, 'stone', solid({ bottom: GROUND }));
+  for (let i = 0; i < 9; i++) {
+    for (const side of [-1, 1]) {
+      const z = -58 + i * 22;
+      cyl(parts, side * 150, 5.4, z, 3.4, 3.8, 11, 'stoneDark', { seg: 8 });
+      cone(parts, side * 150, 12.4, z, 4.4, 3.4, 'roofBlue', { seg: 4, ry: Math.PI / 4 });
+    }
+  }
+  plane(parts, 0, .64, -8, 26, 96, 'cobble');
+  cyl(parts, 0, .66, -4, 20, 20, .06, 'stoneLight', { seg: 30 });
+  for (const [x, z, w, d] of [[-46, -20, 62, 8], [46, -20, 62, 8], [0, 20, 130, 8], [-42, 40, 90, 8]]) plane(parts, x, .64, z, w, d, 'cobble');
+  // The river runs south past the village and through the forest.
+  box(parts, 38, .63, 128, 14, .06, 152, 'water');
+  box(parts, 38, 1.1, 60, 18, .5, 9, 'wood', solid({ bottom: GROUND }));
+  for (const side of [-1, 1]) railing(parts, 38, 1.35, 60 + side * 4.4, 18, 'x', 'wood');
+
+  // ---- central commercial district ----------------------------------------
+  for (const [z, h, mat, roof] of [[-42, 9, 'building', 'roof'], [-30, 7, 'buildingWarm', 'roofBlue'], [-18, 10, 'buildingBlue', 'roof'], [-6, 6, 'building', 'roofBlue'], [6, 8, 'buildingWarm', 'roof'], [18, 7, 'building', 'roof'], [30, 9, 'buildingBlue', 'roofBlue']]) {
+    house(-24, z, { w: 12, d: 9, h, mat, roof });
+  }
+  // East side of the boulevard: the block opposite Ichiraku stays open, so the ramen shop has
+  // its own frontage instead of standing inside a neighbour's footprint.
+  for (const [z, h, mat, roof] of [[-42, 9, 'buildingWarm', 'roofBlue'], [-30, 8, 'building', 'roof'], [6, 8, 'buildingWarm', 'roof'], [18, 9, 'buildingBlue', 'roofBlue'], [30, 7, 'building', 'roof']]) {
+    house(24, z, { w: 12, d: 9, h, mat, roof });
+  }
+  for (const [x, z, h, mat, roof] of [[40, -26, 10, 'building', 'roofBlue'], [45, -8, 8, 'buildingWarm', 'roof']]) {
+    house(x, z, { w: 12, d: 10, h, mat, roof });
+  }
+  for (let z = -46; z <= 34; z += 12) {
+    lantern(-13.4, GROUND, z); lantern(13.4, GROUND, z);
+  }
+  for (const [x, z] of [[-20, -36], [20, -26], [-20, 2], [20, 12], [-20, 26]]) stall(parts, x, z, GROUND, x > 0 ? Math.PI : 0);
+  for (const z of [-52, 34]) for (const side of [-1, 1]) banner(parts, side * 11.6, 6.2, z, 2.4, 5, side > 0 ? 'bannerBlue' : 'banner', side > 0 ? 0 : Math.PI);
+  parkTree(-18, -50, .9); parkTree(19, 38, 1.05);
+  for (const [x, z] of [[-9, -46], [9, 30]]) { box(parts, x, GROUND + .45, z, 2.4, .9, .8, 'wood'); }
+
+  // ---- Ichiraku Ramen ------------------------------------------------------
+  // A ramen hall big enough to fight in: 40 x 30 m of floor under a 13 m ceiling. The old room
+  // was 22 x 17 m with a 5.5 m ceiling, so the overhead camera had nowhere to stand - it hit
+  // the roof and the shot collapsed onto the fighters with a wall filling the lens.
+  const RX = 34, RZ = -17;                              // hall centre: x 14..54, z -32..-2
+  box(parts, RX, 6.5, -32.5, 41, 13, 1, 'wood', solid({ bottom: GROUND }));
+  box(parts, 54.5, 6.5, RZ, 1, 13, 31, 'wood', solid({ bottom: GROUND }));
+  // West wall, open at z -21..-15 where the street door is.
+  box(parts, 13.5, 6.5, -26.5, 1, 13, 11, 'wood', solid({ bottom: GROUND }));
+  box(parts, 13.5, 6.5, -8.5, 1, 13, 14, 'wood', solid({ bottom: GROUND }));
+  box(parts, RX, 9.6, -18, .9, 2.6, 6.6, 'wood');       // door frame head
+  box(parts, RX, 13.5, RZ, 43, .8, 33, 'roof', solid({ bottom: 13.1 }));
+  cone(parts, RX, 16.4, RZ, 26, 5.6, 'roof', { seg: 4, ry: Math.PI / 4 });
+  plane(parts, RX, .68, RZ, 40, 30, 'wood');
+  // Counter along the back wall, stools in front of it, and the kitchen behind.
+  box(parts, RX, 1.2, -28, 30, 1.2, 1.5, 'wood', solid({ bottom: GROUND }));
+  box(parts, RX, 2.3, -28.9, 26, .5, .5, 'steel');
+  for (let i = 0; i < 7; i++) cyl(parts, RX - 12 + i * 4, GROUND + .35, -25.6, .5, .4, .7, 'wood', { seg: 8 });
+  box(parts, RX, 3.2, -31.6, 24, 2.2, .7, 'steel');
+  for (const dx of [-9, -3, 3, 9]) { cyl(parts, RX + dx, GROUND + 1.5, -31.2, .7, .6, 1.5, 'metal', { seg: 9 }); }
+  // Tables: low solid tops so a fighter can vault them, benches beside.
+  for (const [tx, tz] of [[23, -11], [45, -11], [34, -22]]) {
+    box(parts, tx, GROUND + .6, tz, 4.6, .6, 2.6, 'wood', solid({ bottom: GROUND }));
+    for (const side of [-1, 1]) box(parts, tx + side * 3.2, GROUND + .25, tz, .7, .5, 2.6, 'wood');
+    for (const side of [-1, 1]) box(parts, tx, GROUND + .25, tz + side * 2, 4.6, .5, .7, 'wood');
+  }
+  // Noren across the street door, menu boards and lanterns.
+  box(parts, 13.2, 6.4, -18, .14, 2.8, 6.4, 'cloth');
+  banner(parts, 13.1, 8.4, -18, 1.2, 4.6, 'bannerBlue', Math.PI / 2);
+  for (const [lx, lz] of [[16, -30], [16, -4], [52, -30], [52, -4]]) lantern(lx, GROUND, lz);
+  lantern(RX, GROUND, -13);
+  banner(parts, RX, 9.4, -32.2, 12, 2.6, 'banner');
+
+  // ---- ninja academy -------------------------------------------------------
+  house(-68, -18, { w: 20, d: 32, h: 11, mat: 'building', roof: 'roofBlue', door: false });
+  box(parts, -58.05, 3.1, -18, .1, 2.4, 3.4, 'wood');
+  banner(parts, -58.1, 8.4, -18, 1.8, 4.2, 'bannerBlue', Math.PI / 2);
+  for (let i = 0; i < 3; i++) for (const dz of [-30, -18, -6]) box(parts, -58.02, 5.4 + i * 2.6, -18 + dz, .08, 1.3, 2, 'glassWarm');
+  parkTree(-43, -30, 1.25);
+  for (const [x, z] of [[-52.5, -6.5], [-48.5, -6.5]]) box(parts, x, GROUND + 2.2, z, .35, 4.4, .35, 'wood');
+  box(parts, -50.5, GROUND + 4.3, -6.5, 4.4, .25, .3, 'wood');
+  box(parts, -50.5, GROUND + .9, -6.5, 1.2, .16, .8, 'wood');
+  for (const [x, z] of [[-42, -24], [-40.5, -14]]) cyl(parts, x, GROUND + .8, z, .3, .36, 1.6, 'trunk', { seg: 6 });
+  for (const z of [-26, -18, -10]) box(parts, -41, GROUND + .3, z, 4.4, .5, 1.1, 'wood');
+
+  // ---- hospital ------------------------------------------------------------
+  box(parts, 57, 6.2, -45.5, 28, 12.4, 1, 'stoneLight', solid({ bottom: GROUND }));
+  for (const side of [-1, 1]) box(parts, 57 + side * 9.6, 6.2, -20.5, 9.2, 12.4, 1, 'stoneLight', solid({ bottom: GROUND }));
+  box(parts, 43.5, 6.2, -33, 1, 12.4, 26, 'stoneLight', solid({ bottom: GROUND }));
+  box(parts, 70.5, 6.2, -33, 1, 12.4, 26, 'stoneLight', solid({ bottom: GROUND }));
+  box(parts, 57, 12.6, -33, 30, .7, 28, 'roofBlue', solid({ bottom: 12.2 }));
+  box(parts, 57, 1.35, -44.6, 6, 1.5, .4, 'stoneDark');
+  box(parts, 57, 2.6, -44.5, 2.2, .5, .2, 'banner');
+  box(parts, 57, 2.6, -44.5, .5, 1.4, .2, 'banner');
+  for (const z of [-40, -33, -26]) for (const side of [-1, 1]) box(parts, 57 + side * 13.1, 5.4, z, .1, 1.6, 3, 'glassWarm');
+  for (const [x, z] of [[65, -40], [65, -33], [65, -26]]) {
+    box(parts, x, GROUND + .6, z, 2.4, 1.1, 4.2, 'stoneLight', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 1.3, z, 2.2, .35, 3.8, 'cloth');
+  }
+  box(parts, 49, 1.15, -42.4, 5.4, 1.1, 1.6, 'wood', solid({ bottom: GROUND }));
+
+  // ---- residential district ------------------------------------------------
+  for (const x of [-84, -72, -60]) house(x, 16, { w: 9, d: 9, h: 5, roof: x % 24 === 0 ? 'roofBlue' : 'roof' });
+  for (const x of [-84, -70, -56]) house(x, 56, { w: 10, d: 9, h: 6, mat: 'buildingWarm', roof: x % 28 === 0 ? 'roof' : 'roofBlue' });
+  for (const [x, z] of [[-76, 34], [-64, 40]]) parkTree(x, z, .85);
+  for (const [x, z] of [[-88, 30], [-52, 30]]) { box(parts, x, GROUND + .4, z, 3, .8, .8, 'wood'); lantern(x + 1.6, GROUND, z); }
+  for (const [x, z] of [[-72, 46], [-60, 46]]) cyl(parts, x, GROUND + .55, z, .9, .8, 1.1, 'steel', { seg: 10 });
+
+  // ---- Uchiha clan district ------------------------------------------------
+  for (const side of [-1, 1]) {
+    box(parts, 92.5 + side * 27, 3.4, 17, 54, 5.6, 1.4, 'stoneDark', solid({ bottom: GROUND }));
+    box(parts, 92.5 + side * 27, 3.4, 67, 54, 5.6, 1.4, 'stoneDark', solid({ bottom: GROUND }));
+  }
+  for (const side of [-1, 1]) box(parts, side > 0 ? 119.5 : 65.5, 3.4, 42, 1.4, 5.6, 50, 'stoneDark', solid({ bottom: GROUND }));
+  for (const [x, z] of [[78, 26], [100, 26], [78, 58], [100, 58]]) house(x, z, { w: 12, d: 10, h: 6, mat: 'buildingBlue', roof: 'roofBlue' });
+  arch(parts, 68.5, 41, { w: 12, h: 6.4, d: 1.2, base: GROUND, mat: 'stoneDark' });
+  for (const side of [-1, 1]) banner(parts, 68.8, 6.6, 41 + side * 7.4, 2.2, 4.6, 'banner', Math.PI / 2);
+  cyl(parts, 68.8, 8.4, 41, 1.5, 1.5, .25, 'banner', { rx: Math.PI / 2, seg: 12 });
+  cyl(parts, 68.8, 8.4, 41, .8, .8, .3, 'stoneLight', { rx: Math.PI / 2, seg: 12 });
+  for (const [x, z] of [[88, 42], [108, 42]]) { lantern(x, GROUND, z); box(parts, x, GROUND + .4, z + 2.4, 3, .8, .8, 'wood'); }
+  parkTree(112, 58, .9);
+
+  // ---- Hyuga compound ------------------------------------------------------
+  for (const side of [-1, 1]) {
+    box(parts, 118, 3.4, side > 0 ? -5.5 : -44.5, 46, 5.6, 1.4, 'stoneDark', solid({ bottom: GROUND }));
+  }
+  for (const side of [-1, 1]) box(parts, side > 0 ? 140.5 : 95.5, 3.4, -25, 1.4, 5.6, 40, 'stoneDark', solid({ bottom: GROUND }));
+  house(118, -38, { w: 34, d: 9, h: 8, mat: 'building', roof: 'roofBlue', door: false });
+  for (let i = 0; i < 5; i++) box(parts, 106 + i * 6, 3.4, -33.4, 2.4, 2.2, .08, 'glassWarm');
+  cyl(parts, 108, .66, -12, 6, 6, .1, 'water', { seg: 20 });
+  for (let i = 0; i < 6; i++) rock(parts, 103 + rng() * 12, -14 - rng() * 4, .8 + rng() * .5, GROUND, rng);
+  for (const [x, z] of [[128, -30], [134, -14]]) { cyl(parts, x, GROUND + .8, z, .3, .34, 1.6, 'trunk', { seg: 6 }); ball(parts, x, GROUND + 1.9, z, .55, 'cloth2', { seg: 7 }); }
+  parkTree(134, -8, .8);
+  for (const [x, z] of [[100, -20], [136, -20]]) lantern(x, GROUND, z);
+
+  // ---- training grounds ----------------------------------------------------
+  for (const [x, z] of [[-136, -26], [-128, -22], [-120, -28]]) { cyl(parts, x, GROUND + 1.6, z, .34, .42, 3.2, 'trunk', { seg: 6 }); ball(parts, x, GROUND + 3.3, z, .38, 'cloth2', { seg: 6 }); }
+  for (let i = 0; i < 16; i++) {
+    const tx = -140 + rng() * 42;
+    const tz = -30 + rng() * 46;
+    const scale = .7 + rng() * .35;
+    if (tx > -136 && tx < -104 && tz > -20 && tz < 12) continue;
+    parkTree(tx, tz, scale);
+  }
+  for (let i = 0; i < 5; i++) rock(parts, -138 + rng() * 36, -28 + rng() * 40, .9 + rng() * .45, GROUND, rng);
+  box(parts, -120, .64, 14, 44, .06, 6, 'water');
+  for (const [x, z] of [[-104, -18], [-102, 10]]) { box(parts, x, GROUND + .4, z, 2.8, .8, .8, 'wood'); }
+
+  // ---- village gates -------------------------------------------------------
+  // The gatehouse is the backdrop of its stage, not its corridor: it sits at z = 101 and the
+  // courtyard in front of it (z 106..134) is the fighting floor. Standing the pair inside the
+  // gate passage put a 13 m tower and its roof between the camera and the fight.
+  for (const side of [-1, 1]) {
+    box(parts, side * 11, 5.2, 101, 7, 10.4, 8, 'stoneDark', solid({ bottom: GROUND }));
+    cone(parts, side * 11, 13.4, 101, 6.6, 4.6, 'roofBlue', { seg: 4, ry: Math.PI / 4 });
+    cyl(parts, side * 11, 5.4, 101, 3.2, 3.6, 10.8, 'stoneDark', { seg: 8 });
+    for (const dz of [-2.6, 2.6]) box(parts, side * 7.4, 10.4, 101 + dz, .14, 2.4, 1.8, 'glassWarm');
+    box(parts, side * 30, 3.4, 101, 31, 5.6, 3, 'stone', solid({ bottom: GROUND }));
+    for (let i = 0; i < 3; i++) box(parts, side * (22 + i * 8), 5.4, 101.4, 4, 2.4, .2, 'glassWarm');
+    house(side * 40, 120, { w: 8, d: 8, h: 5, mat: 'buildingWarm', roof: 'roof' });
+  }
+  box(parts, 0, 9.4, 101, 30, 1.4, 2, 'wood');
+  box(parts, 0, 10.6, 101, 34, .9, 3.2, 'roofBlue');
+  banner(parts, 0, 7.5, 100.4, 14, 3.4, 'banner');
+  for (const side of [-1, 1]) { lantern(side * 8, GROUND, 108); lantern(side * 9, GROUND, 118); }
+  plane(parts, 0, .64, 120, 40, 36, 'cobble');
+  // Courtyard dressing: the checkpoint booth, two market stalls, benches and notice banners.
+  box(parts, -18, 2.2, 120, 8, 3.2, 6, 'buildingWarm', solid({ bottom: GROUND }));
+  box(parts, -18, 4.1, 120, 9.4, .5, 7, 'roof');
+  for (const dz of [-1.6, 1.6]) box(parts, -13.9, 2.4, 120 + dz, .1, 1.4, 1.6, 'glassWarm');
+  stall(parts, 18, 114, GROUND, -Math.PI / 2);
+  stall(parts, 18, 124, GROUND, -Math.PI / 2);
+  for (const [x, z] of [[-6, 130], [6, 130], [-6, 110]]) box(parts, x, GROUND + .45, z, 3, .9, .8, 'wood');
+  banner(parts, -21, 6.4, 108, 2.4, 5, 'banner');
+  banner(parts, 21, 6.4, 108, 2.4, 5, 'bannerBlue');
+
+  // ---- Forest of Death -----------------------------------------------------
+  // The far checkpoint tower sits outside the stage, on the tree line the camera looks at.
+  box(parts, 0, 15.6, 216, 16, 30, 12, 'stoneDark', solid({ bottom: GROUND }));
+  cone(parts, 0, 33.4, 216, 12, 6, 'roof', { seg: 4, ry: Math.PI / 4 });
+  for (let i = 0; i < 4; i++) for (const dx of [-5, 5]) box(parts, dx, 6 + i * 7, 209.9, 1.6, 1.8, .1, 'glassWarm');
+  // Leaf litter under the canopy, with the trail through it: bright plateau grass read as a
+  // park, not as the Forest of Death.
+  plane(parts, 0, .652, 186, 176, 116, 'moss');
+  plane(parts, 0, .66, 182, 16, 54, 'road');
+  // Giants wall the clearing in. Their crowns start above the overhead camera, so they frame
+  // the fight instead of filling the frame with leaves; the floor itself stays clear.
+  const clearOfFight = (x, z) => {
+    if (Math.abs(x) < 21 && Math.abs(z - 182) < 16) return false;          // fighting floor
+    if (Math.hypot(x, z - 156) < 7) return false;                          // gates doorway ring
+    if (z < 160 && Math.abs(x) < 22) return false;                         // gate courtyard approach
+    if (Math.hypot(x + 24, z - 168) < 8 || Math.hypot(x - 24, z - 190) < 8) return false;  // spawns
+    return true;
+  };
+  for (let i = 0; i < 64; i++) {
+    const a = rng() * TAU, r = 30 + rng() * 32;
+    const x = Math.cos(a) * r, z = 182 + Math.sin(a) * r;
+    if (z > 212 || !clearOfFight(x, z)) continue;
+    giantTree(x, z, .85 + rng() * .45);
+  }
+  // A few mid-distance trunks inside the stage, so the forest continues past the ring.
+  for (let i = 0; i < 8; i++) {
+    const x = -56 + rng() * 112, z = 156 + rng() * 50;
+    if (!clearOfFight(x, z)) continue;
+    giantTree(x, z, .8 + rng() * .35);
+  }
+  // Undergrowth and deadfall at the edge of the clearing.
+  for (let i = 0; i < 22; i++) {
+    const x = -54 + rng() * 108, z = 158 + rng() * 46;
+    if (!clearOfFight(x, z)) continue;
+    cone(parts, x, GROUND + .8, z, .9 + rng() * .5, 1.6, 'leaf', { seg: 6 });
+  }
+  for (const [x, z, ry] of [[-30, 170, .6], [26, 168, -.9], [-18, 196, 1.7]]) {
+    cyl(parts, x, GROUND + .55, z, .8, .9, 7, 'trunk', { seg: 7, rx: Math.PI / 2, ry });
+  }
+  for (let i = 0; i < 10; i++) rock(parts, -54 + rng() * 108, 156 + rng() * 48, 1 + rng() * .4, GROUND, rng);
+  box(parts, 40, .64, 178, 8, .06, 60, 'water');
+
+  // ---- distant rooftops and sky -------------------------------------------
+  for (let i = 0; i < 18; i++) {
+    const a = rng() * TAU;
+    const r = 220 + rng() * 90;
+    box(parts, Math.cos(a) * r, 6 + rng() * 8, Math.sin(a) * r - 10, 12 + rng() * 12, 12 + rng() * 16, 12 + rng() * 12, 'building');
+    cone(parts, Math.cos(a) * r, 16 + rng() * 8, Math.sin(a) * r - 10, 10, 4, 'roof', { seg: 4, ry: Math.PI / 4 });
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = rng() * TAU;
+    ball(parts, Math.cos(a) * (190 + rng() * 170), 74 + rng() * 52, Math.sin(a) * (190 + rng() * 170) - 10, 16 + rng() * 22, 'cloud', { sx: 1.7, sy: .48, sz: 1.7, seg: 8 });
+  }
+
+  return parts;
+}
+
 // ---- palettes, themes and battle locations ---------------------------------
 export const PALETTES = {
   dbz: {
@@ -1491,6 +1833,16 @@ export const PALETTES = {
     bannerRed: '#9e1f2e', bannerBlue: '#1d426d', bannerGold: '#c2a438', bannerGreen: '#2b623d',
     rock: '#59554c', moss: '#4e5a44', thatch: '#5c4a33', crystal: '#9fd7ff',
     cliff: '#5b5850', dark: '#2a2a2e'
+  },
+  konoha: {
+    rock: '#5f5a4e', cliff: '#575248', mountain: '#586a63', grass: '#4f7a42', grassDark: '#365a2f',
+    moss: '#4a6340', stone: '#8a8579', stoneLight: '#a7a294', stoneDark: '#635f56',
+    cobble: '#7d776a', road: '#9a8f76', sand: '#c4b48c', wood: '#7a5433', trunk: '#4d3826',
+    building: '#c9bda4', buildingWarm: '#b9946a', buildingBlue: '#8fb0b8',
+    roof: '#a4432f', roofBlue: '#3f6b86', leaf: '#2f6b39', water: '#2f7ba8', cloud: '#eef4f8',
+    gold: '#d8b45a', glassWarm: '#ffd79a', banner: '#c02b2b', bannerBlue: '#2f6fd0',
+    cloth: '#3f6f8c', cloth2: '#c7b26a', skin: '#d9a982', metal: '#8d9099', steel: '#9aa4b2',
+    flame: '#ffd9a0', crate: '#8a6a44', dark: '#2a2a2e', thatch: '#5c4a33'
   }
 };
 
@@ -1498,7 +1850,8 @@ const THEMES = {
   dbz: { sky: 0x2f6ea8, fog: 0xbcd6d8, floor: 0x2f7ba8, platform: 0x8a8064, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff2d2, sun: 0xffe3b0, density: .0022, skyPreset: 'tournament' },
   asgard: { sky: 0x28477e, fog: 0xffe2a6, floor: 0x4a4a52, platform: 0x8b8578, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff2e0, sun: 0xffd6a1, density: .0022, skyPreset: 'asgard' },
   deathstar: { sky: 0x070b14, fog: 0x202b3a, floor: 0x424954, platform: 0x262d38, ringA: 0x78cfff, ringB: 0xff453b, light: 0xc8d9ff, sun: 0x8799bb, density: .004, skyPreset: 'deathstar', interior: true },
-  hogwarts: { sky: 0x171a2d, fog: 0x41414b, floor: 0x3c3e43, platform: 0x292b31, ringA: 0xe3c477, ringB: 0x9f252e, light: 0xffd59b, sun: 0xd5c4a1, density: .0045, skyPreset: 'hogwarts', interior: true }
+  hogwarts: { sky: 0x171a2d, fog: 0x41414b, floor: 0x3c3e43, platform: 0x292b31, ringA: 0xe3c477, ringB: 0x9f252e, light: 0xffd59b, sun: 0xd5c4a1, density: .0045, skyPreset: 'hogwarts', interior: true },
+  konoha: { sky: 0x3d78b8, fog: 0xd6e2df, floor: 0x2f7ba8, platform: 0x8a8579, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff3d6, sun: 0xffe2b0, density: .0021, skyPreset: 'konoha' }
 };
 
 const loc = (id, label, kind, bounds, spawns, extra = {}) => ({
@@ -1633,10 +1986,67 @@ export const WORLDS = {
         { x: -86, z: -2, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }
       ] })
     ]
+  },
+  konoha: {
+    id: 'konoha', label: 'Konoha', subtitle: 'Hidden Leaf Village', paletteKey: 'konoha',
+    build: buildKonoha, ground: 0.6,
+    locations: [
+      // The Hokage Rock terrace sits 24 m above the village, so the whole valley is the backdrop.
+      // Yawed 180 degrees: the camera stands on the mountain side so the shot looks out over the
+      // railing at the village below instead of into the cliff behind the terrace.
+      loc('konoha_hokage_rock', 'Hokage Rock', 'cliff', [-32, -128, 32, -110], [-8, -115, 24, 8, -123, 24], { ground: 24, camera: { yaw: Math.PI, tilt: .24, scale: 1.35 }, exits: [
+        { x: 0, z: -126, to: 'konoha_hokage_office', label: 'Hokage Administration' }
+      ] }),
+      loc('konoha_hokage_office', 'Hokage Administration', 'interior', [-11.5, -83, 11.5, -65], [-5, -70, 0.6, 5, -77, 0.6], { interior: true, camera: { tilt: .12, scale: .95 }, exits: [
+        { x: 0, z: -66, to: 'konoha_main_street', label: 'Main Street' },
+        { x: -7, z: -82, to: 'konoha_hokage_rock', label: 'Hokage Rock' }
+      ] }),
+      loc('konoha_main_street', 'Main Street', 'district', [-12, -54, 12, 38], [-5, -30, 0.6, 5, 6, 0.6], { exits: [
+        { x: 0, z: -52, to: 'konoha_hokage_office', label: 'Hokage Administration' },
+        { x: -11, z: -34, to: 'konoha_academy', label: 'Ninja Academy' },
+        { x: 11, z: -34, to: 'konoha_hyuga', label: 'Hyuga Compound' },
+        { x: 11, z: -40, to: 'konoha_hospital', label: 'Konoha Hospital' },
+        { x: 11, z: -18, to: 'konoha_ichiraku', label: 'Ichiraku Ramen' },
+        { x: -11, z: 20, to: 'konoha_residential', label: 'Residential District' },
+        { x: 11, z: 20, to: 'konoha_uchiha', label: 'Uchiha District' },
+        { x: 0, z: 36, to: 'konoha_gates', label: 'Village Gates' }
+      ] }),
+      loc('konoha_ichiraku', 'Ichiraku Ramen', 'shop', [20, -28, 46, -8], [26, -22, 0.6, 40, -14, 0.6], { interior: true, camera: { tilt: .2, scale: 1.45 }, exits: [
+        { x: 22, z: -18, to: 'konoha_main_street', label: 'Main Street' }
+      ] }),
+      loc('konoha_academy', 'Ninja Academy', 'campus', [-56, -34, -38, -2], [-50, -28, 0.6, -44, -8, 0.6], { exits: [
+        { x: -40, z: -18, to: 'konoha_main_street', label: 'Main Street' },
+        { x: -46, z: -6, to: 'konoha_training', label: 'Training Grounds' }
+      ] }),
+      loc('konoha_hospital', 'Konoha Hospital', 'interior', [46.5, -44.5, 67.5, -21.5], [52, -30, 0.6, 62, -38, 0.6], { interior: true, camera: { tilt: .12, scale: .95 }, exits: [
+        { x: 49, z: -23, to: 'konoha_main_street', label: 'Main Street' }
+      ] }),
+      loc('konoha_residential', 'Residential District', 'district', [-92, 12, -44, 62], [-80, 22, 0.6, -58, 48, 0.6], { exits: [
+        { x: -60, z: 40, to: 'konoha_main_street', label: 'Main Street' },
+        { x: -88, z: 40, to: 'konoha_training', label: 'Training Grounds' }
+      ] }),
+      loc('konoha_uchiha', 'Uchiha District', 'clan', [68, 18, 118, 66], [84, 40, 0.6, 108, 44, 0.6], { exits: [
+        { x: 70, z: 41, to: 'konoha_main_street', label: 'Main Street' }
+      ] }),
+      loc('konoha_hyuga', 'Hyuga Compound', 'clan', [96, -44, 140, -6], [108, -28, 0.6, 130, -12, 0.6], { exits: [
+        { x: 98, z: -24, to: 'konoha_main_street', label: 'Main Street' }
+      ] }),
+      loc('konoha_training', 'Training Grounds', 'grounds', [-142, -32, -98, 18], [-130, -10, 0.6, -112, 6, 0.6], { exits: [
+        { x: -100, z: 0, to: 'konoha_academy', label: 'Ninja Academy' },
+        { x: -110, z: 14, to: 'konoha_residential', label: 'Residential District' }
+      ] }),
+      loc('konoha_gates', 'Village Gates', 'gate', [-26, 106, 26, 134], [-8, 114, 0.6, 8, 124, 0.6], { camera: { tilt: .26, scale: 1.7 }, exits: [
+        { x: 0, z: 108, to: 'konoha_main_street', label: 'Main Street' },
+        { x: 0, z: 132, to: 'konoha_forest_death', label: 'Forest of Death' }
+      ] }),
+      loc('konoha_forest_death', 'Forest of Death', 'forest', [-60, 152, 60, 212], [-24, 168, 0.6, 24, 190, 0.6], { camera: { tilt: .2, scale: 1.5 }, exits: [
+        { x: 0, z: 156, to: 'konoha_gates', label: 'Village Gates' }
+      ] })
+    ]
   }
 };
 
-// Per-world lighting. One shared key/rim/hemisphere rig lit all four worlds with the same
+// Per-world lighting. One shared key/rim/hemisphere rig lit every world with the same
 // numbers, so Hogwarts read as grey haze and the Death Star as a lit warehouse. These keep
 // sun direction constant per world (so shadows land the same way every match) but separate
 // exposure, fill, rim tint and fog.
@@ -1659,10 +2069,16 @@ export const STAGE_LIGHTING = {
     exterior: { sun: 1.4, shadow: true, rim: .5, rimColor: 0x9db8d8, hemi: .62, hemiSky: 0xa8bdd6, hemiGround: 0x2b2f26, exposure: .98, fogScale: .7, sunPos: [30, 42, -44], rimPos: [-18, 22, 30] },
     // The hall is lit by candles and windows: a low shadowless key, warm fill, cool rim.
     interior: { sun: 1.5, shadow: false, rim: .75, rimColor: 0x8aa4d6, hemi: .8, hemiSky: 0x8f8a78, hemiGround: 0x241f18, exposure: 1.04, fogScale: .5, sunPos: [12, 38, -18], rimPos: [-14, 20, 26] }
+  },
+  konoha: {
+    // High midday sun over a green valley: bright key, cool sky bounce, long shadows across
+    // the boulevard so the streets read as depth rather than a flat plane.
+    exterior: { sun: 1.1, shadow: true, rim: .38, rimColor: 0xa8d2ff, hemi: .58, hemiSky: 0xa8ccea, hemiGround: 0x2c3526, exposure: .97, fogScale: 1, sunPos: [38, 52, -42], rimPos: [-22, 26, 32] },
+    interior: { sun: 1.15, shadow: false, rim: .46, rimColor: 0xffd9a0, hemi: .64, hemiSky: 0xbcd0e0, hemiGround: 0x2b2a25, exposure: 1.0, fogScale: .8, sunPos: [24, 44, -30], rimPos: [-18, 24, 30] }
   }
 };
 
-export const WORLD_ORDER = ['dbz', 'asgard', 'deathstar', 'hogwarts'];
+export const WORLD_ORDER = ['dbz', 'asgard', 'deathstar', 'hogwarts', 'konoha'];
 
 // Layouts are assembled once: bounds and spawns from the battle location, collision volumes
 // derived from the solid parts of the world it belongs to.

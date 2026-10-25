@@ -608,7 +608,7 @@ function applyWorldStage(key){
 }
 const finalValleyArena=createFinalValley(THREE);scene.add(finalValleyArena.group);finalValleyArena.group.visible=false;
 const mapSelect=$('#mapSelect');const menuMapSelect=$('#menuMapSelect');
-// Add the four reference worlds and every battle location to both map pickers.
+// Add the five reference worlds and every battle location to both map pickers.
 for(const world of worldGroups()){
  for(const select of [mapSelect,menuMapSelect]){
   if(!select)continue;
@@ -622,9 +622,9 @@ for(const world of worldGroups()){
 function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
 
 const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},volcano:{label:'OBSIDIAN VOLCANO · LAVA CALDERA',sky:0x230d16,fog:0x5b1d1c,floor:0x251d20,platform:0x3b2929,ringA:0xff4c20,ringB:0xffb13b,light:0xff8b52,sun:0xff4428,density:.013},ice:{label:'FROSTFALL CITADEL · CRYSTAL KEEP',sky:0x071c35,fog:0x315b78,floor:0x7bafc6,platform:0x31566e,ringA:0x73f5ff,ringB:0xc4eaff,light:0xc5f3ff,sun:0x9cecff,density:.007},neon:{label:'NEON MEGACITY · SKYLINE DISTRICT',sky:0x08051e,fog:0x25205a,floor:0x17172b,platform:0x24213c,ringA:0xff32db,ringB:0x31eaff,light:0xb2a1ff,sun:0xff4dd8,density:.006},deathstar:{label:'DEATH STAR · BRIEFING ROOM & THRONE ROOM',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x2c4460,fog:0xc08a5e,floor:0x5d6552,platform:0x4e5445,ringA:0x9fb4a6,ringB:0xb98a63,light:0xffc389,sun:0xff8f45,density:.006},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'AVENGERS HELICARRIER · NYC SKYDECK / STARK PENTHOUSE',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x8cb1d2,fog:0x9eb3c0,floor:0xc1b99f,platform:0x77776e,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.003},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
-// The four reference worlds (Dragon Ball Z tournament island, Asgard, Death Star, Hogwarts)
-// register every one of their battle locations as a normal map, so map selection, lighting,
-// HUD labels and match flow all keep using the existing map plumbing.
+// The five reference worlds (Dragon Ball Z tournament island, Asgard, Death Star, Hogwarts,
+// Konoha) register every one of their battle locations as a normal map, so map selection,
+// lighting, HUD labels and match flow all keep using the existing map plumbing.
 for(const location of WORLD_LOCATIONS){mapThemes[location.id]={label:location.worldLabel.toUpperCase()+' · '+location.label.toUpperCase(),sky:location.theme.sky,fog:location.theme.fog,floor:location.theme.floor,platform:location.theme.platform,ringA:location.theme.ringA,ringB:location.theme.ringB,light:location.theme.light,sun:location.theme.sun,density:location.theme.density,world:location.world};}
 // Five maps also ship as authored Blender arenas (public/assets/arenas/*.glb). They are the
 // same designs the procedural build inside applyMap() reproduces, so exactly one of the two

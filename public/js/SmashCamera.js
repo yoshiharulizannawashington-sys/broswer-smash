@@ -160,12 +160,17 @@ export default class SmashCamera {
     // The pulled-back offset normally sits on +Z. A yawed stage rotates that offset around
     // the fighters so a wide room is framed along its length instead of into the near wall.
     const yaw = this.stageYaw || 0;
+    // `midY * .55` was tuned on stages whose floor is y = 0. On a raised terrace (Konoha's
+    // Hokage Rock sits 24 m up, King Kai's planet 62 m) it put the camera *below* the floor it
+    // was filming, so the shot opened inside the rock. The camera is never placed under the
+    // fighters' feet, and it aims at their chest rather than at a fraction of their height.
+    const liftY = Math.max(2.4, midY * .55);
     return {
       x: midX + horizontal * Math.sin(yaw),
-      y: Math.max(2.4, midY * .55) + reach * elevation,
+      y: Math.max(liftY, midY) + reach * elevation,
       z: midZ + horizontal * Math.cos(yaw),
       lookX: midX,
-      lookY: Math.max(1.1, midY * .72),
+      lookY: Math.max(1.1, midY + .5),
       lookZ: midZ
     };
   }
