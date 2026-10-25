@@ -162,12 +162,12 @@ function drawShingle(ctx, size) {
 const DRAW = { stone: drawStone, panel: drawPanel, wood: drawWood, grass: drawGrass, marble: drawMarble, shingle: drawShingle };
 
 /**
- * Tileable surface texture for a family, sized so one tile covers `tileMetres`.
- * World geometry UVs are projected in metres, so the repeat is 1 / tile size. Materials
- * that ask for the same family and tile size share one GPU texture.
+ * Tileable procedural surface texture for a family, used when the photographic set for that
+ * family is missing (a stripped checkout, a failed request, or a world built during boot).
+ * Geometry UVs are already divided by the family's tile size, so the repeat is 1.
  */
-export function surfaceTexture(kind, tileMetres = 4) {
-  const cacheKey = `${kind}:${tileMetres}`;
+export function surfaceTexture(kind) {
+  const cacheKey = `canvas:${kind}`;
   if (textureCache.has(cacheKey)) return textureCache.get(cacheKey);
   const draw = DRAW[kind];
   if (!draw) return null;
@@ -176,7 +176,7 @@ export function surfaceTexture(kind, tileMetres = 4) {
   const texture = new THREE.CanvasTexture(c);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1 / tileMetres, 1 / tileMetres);
+  texture.repeat.set(1, 1);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   texture.needsUpdate = true;
@@ -184,23 +184,110 @@ export function surfaceTexture(kind, tileMetres = 4) {
   return texture;
 }
 
-/** Families whose relief is worth a bump map. Marble and grass stay flat to save shader work. */
+/** Families whose relief was worth a bump map when the maps were procedural. */
 export const BUMPY = new Set(['stone', 'panel', 'wood', 'shingle']);
+
+// ---- photographic CC0 surface maps -----------------------------------------
+//
+// public/assets/textures/<family>/ holds albedo.jpg, normal.jpg and roughness.jpg copied from
+// Poly Haven (CC0, see that folder's manifest.json for asset ids, authors and sources, and
+// scripts/fetch-world-textures.py for the reproducible download). The albedo is processed to
+// a bright luminance-only detail map so every world keeps its palette colour; the normal and
+// roughness maps add real relief and specular breakup on top.
+//
+// The files load once per session. A world drawn before a family arrives is built with the
+// procedural fallback and upgraded in place when the maps decode, so the first frame is never
+// a black or white surface, and no world is permanently stuck on the placeholder.
+const SURFACE_FAMILIES = [
+  'stone', 'rock', 'concrete', 'brick', 'asphalt', 'marble', 'wood', 'grass', 'roof', 'metal', 'paving'
+];
+const familyState = new Map();
+const canLoadImages = typeof document !== 'undefined' && typeof THREE.TextureLoader === 'function';
+
+function familyRecord(kind) {
+  let record = familyState.get(kind);
+  if (!record) {
+    record = { maps: null, failed: false, started: false, listeners: new Set() };
+    familyState.set(kind, record);
+  }
+  return record;
+}
+
+function configureSurfaceTexture(texture, colorSpace) {
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 1);
+  texture.colorSpace = colorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+function beginSurfaceLoad(kind) {
+  const record = familyRecord(kind);
+  if (record.started || !SURFACE_FAMILIES.includes(kind)) return record;
+  record.started = true;
+  if (!canLoadImages) { record.failed = true; return record; }
+  const loader = new THREE.TextureLoader();
+  const base = `/assets/textures/${kind}/`;
+  Promise.all([
+    loader.loadAsync(base + 'albedo.jpg'),
+    loader.loadAsync(base + 'normal.jpg'),
+    loader.loadAsync(base + 'roughness.jpg')
+  ]).then(([albedo, normal, roughness]) => {
+    record.maps = {
+      albedo: configureSurfaceTexture(albedo, THREE.SRGBColorSpace),
+      normal: configureSurfaceTexture(normal, THREE.NoColorSpace),
+      roughness: configureSurfaceTexture(roughness, THREE.NoColorSpace)
+    };
+    for (const listener of record.listeners) listener(record.maps);
+    record.listeners.clear();
+  }).catch(() => {
+    record.failed = true;
+    record.listeners.clear();
+  });
+  return record;
+}
+
+/** Maps for a family when they are already decoded, otherwise null (caller falls back). */
+export function pbrSurface(kind) {
+  return familyRecord(kind).maps;
+}
+
+/** Run `apply` once the family's maps exist (immediately when they are already loaded). */
+export function whenSurfaceReady(kind, apply) {
+  const record = beginSurfaceLoad(kind);
+  if (record.maps) { apply(record.maps); return; }
+  if (record.failed) return;
+  record.listeners.add(apply);
+}
+
+// Kick the loads off as the module is imported (well before any world is selected), so a
+// normal session draws the worlds with the photographic maps on the first build.
+if (canLoadImages) for (const kind of SURFACE_FAMILIES) beginSurfaceLoad(kind);
 
 /**
  * Material key -> [surface family, metres per tile]. Emissive, transparent and tiny details
  * keep their flat colour, which keeps the texture count (and the draw-call count) low.
  */
 export const SURFACES = {
-  stone: ['stone', 4], stoneLight: ['stone', 4], stoneDark: ['stone', 4], rock: ['stone', 8],
-  cliff: ['stone', 8], cobble: ['stone', 3], brick: ['stone', 3], building: ['stone', 5],
-  buildingWarm: ['stone', 5], buildingBlue: ['stone', 5], marble: ['marble', 6],
-  floorHall: ['stone', 4], floor: ['panel', 5], floorCommand: ['panel', 5],
-  floorHangar: ['panel', 5], floorCorridor: ['panel', 5], metal: ['panel', 4],
-  metalDark: ['panel', 4], steel: ['panel', 3], panel: ['panel', 3], dark: ['panel', 3],
-  crate: ['wood', 2], wood: ['wood', 3], trunk: ['wood', 2], thatch: ['shingle', 3],
-  roof: ['shingle', 4], roofCastle: ['shingle', 4], roofHall: ['shingle', 4],
-  roofBlue: ['shingle', 4], roofGold: ['shingle', 3],
-  grass: ['grass', 6], moss: ['grass', 4], leaf: ['grass', 3], sand: ['grass', 5], road: ['grass', 6],
-  pitch: ['grass', 8]
+  // Stone and masonry.
+  stone: ['stone', 4], stoneLight: ['stone', 4], stoneDark: ['stone', 4], rock: ['rock', 8],
+  cliff: ['rock', 8], cobble: ['paving', 3], brick: ['brick', 3], brickDark: ['brick', 3],
+  // Buildings: city facades read as modern cladding, the fantasy worlds tint the same concrete
+  // detail to their own stone colour.
+  building: ['concrete', 5], buildingWarm: ['concrete', 5], buildingBlue: ['concrete', 5],
+  buildingDark: ['concrete', 5], facade: ['concrete', 4],
+  marble: ['marble', 6], floorHall: ['stone', 4],
+  // Metal: the station, tower cladding, catwalks and industrial floors.
+  floor: ['metal', 5], floorCommand: ['metal', 5], floorHangar: ['metal', 5],
+  floorCorridor: ['metal', 5], metal: ['metal', 4], metalDark: ['metal', 4],
+  steel: ['metal', 3], panel: ['metal', 3], dark: ['metal', 3],
+  // Timber.
+  crate: ['wood', 2], wood: ['wood', 3], trunk: ['wood', 2],
+  // Roofing.
+  thatch: ['roof', 3], roof: ['roof', 4], roofCastle: ['roof', 4], roofHall: ['roof', 4],
+  roofBlue: ['roof', 4], roofGold: ['roof', 3],
+  // Ground cover.
+  grass: ['grass', 6], moss: ['grass', 4], leaf: ['grass', 3], sand: ['grass', 5],
+  road: ['asphalt', 6], asphalt: ['asphalt', 5], pavement: ['paving', 2.5], pitch: ['grass', 8]
 };

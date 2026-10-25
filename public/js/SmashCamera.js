@@ -263,7 +263,9 @@ export default class SmashCamera {
     // the fastest way to shrink both fighters into specks while still "framing" them.
     // When scenery caps the shot, though, a wider lens is the only way to keep a fighter
     // that is already at the frame edge from falling out of it entirely.
-    let targetFov = 38 + spread * 12 + (this.zoom - 1) * 4;
+    // Free roam is a walk-around lens: a narrower duel FOV turned a street into a close-up of
+    // the fighter's back, so explore opens out to show the world they are walking through.
+    let targetFov = mode === 'explore' ? 54 : 38 + spread * 12 + (this.zoom - 1) * 4;
     if (this.framing.capped) {
       const reach = Math.max(2, this.positionTarget.distanceTo(this.lookTarget));
       const halfSpan = distance * .5 + 1.8;

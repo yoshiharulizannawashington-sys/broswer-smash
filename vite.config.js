@@ -26,13 +26,14 @@ const stripCacheBustFromEntry = {
 //   /models/**  character manifest and any installed Goku/Iron Man package
 //   /data/**  animation manifest (fetched by animation_loader.js at runtime)
 //   /assets/arenas/**  authored Blender arenas loaded lazily by the arena loader
+//   /assets/textures/**  CC0 PBR surface maps loaded by the world material pipeline
 // Everything else under public/assets is referenced through new URL(..., import.meta.url)
 // and is emitted with a content hash by Vite itself.
 const copyRuntimeAssets = {
   name: 'browser-smash-copy-runtime-assets',
   writeBundle(options) {
     const outDir = options.dir || join(process.cwd(), 'dist');
-    for (const relative of ['models', 'data', join('assets', 'arenas')]) {
+    for (const relative of ['models', 'data', join('assets', 'arenas'), join('assets', 'textures')]) {
       const source = join(process.cwd(), 'public', relative);
       if (!existsSync(source)) continue;
       mkdirSync(join(outDir, relative), { recursive: true });

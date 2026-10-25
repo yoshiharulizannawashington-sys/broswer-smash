@@ -41,23 +41,27 @@ Baseline: `work/gameplay-and-polish` (461 commits, ahead of `origin/main`).
 - `test:gameplay` asserts "camera stays pulled back and elevated"; `test:feel` (138 checks) covers
   framing, elevation and scenery clipping on four stages.
 
-**Worlds (six, 58 battle locations)**
+**Worlds (six, 59 battle locations)**
 - Asgard (6), Hogwarts (9), Death Star (11), World Tournament (11), Hidden Leaf Village (12),
-  New York / Stark Tower (9).
+  New York / Stark Tower (10).
 - One registry drives geometry, collision, spawns, map pickers, stage cards and lighting.
 - Doorway travel between stages of a world; one world group mounted at a time.
-- Ground + world tests: 26,672 assertions; browser test 805 checks across all 58 locations.
+- Ground + world tests: 38,667 assertions; browser test 818 checks across all 59 locations.
+- Free roam: `test:explore` (49 checks) walks out of stages, checks the world fence in all six
+  worlds and asserts the mouse only turns the camera in explore mode.
 
 **Environments and assets**
 - Five authored arena GLBs (asgard, deathstar, helicarrier, hogwarts, tournament) plus
   `final_valley.glb`; all load, and a missing GLB falls back to the procedural build.
-- Tileable canvas surface textures (stone, panel, plank, grass, marble, roof) projected from world
-  position, shared per material family.
+- Photographic CC0 surface maps (11 Poly Haven families: albedo/normal/roughness; ids, authors and
+  licence in `public/assets/textures/manifest.json`), projected from world position and shared per
+  material family, with the procedural canvas maps as the fallback.
 - Per-world sky presets and image-based lighting.
 
 ## Incomplete or broken
 
-- **New York interiors.** Stark Tower has a glass lobby shell only; no explorable floors.
+- **New York upper floors.** The Stark Tower lobby is a real interior stage; the tower's office
+  floors above it are not modelled.
 - **Valley of the End is not connected to Konoha.** It exists as the standalone `finalvalley`
   arena + `final_valley.glb`; the exit graph is per-world, so there is no doorway from the village.
 - **No world-overview screen.** Stages are cards in tabs; there is no numbered map overview with
@@ -68,9 +72,8 @@ Baseline: `work/gameplay-and-polish` (461 commits, ahead of `origin/main`).
   definitions are dead metadata. Recoverable only if the GLBs are supplied.
 - **Legacy arenas still listed.** `starktower` (Helicarrier deck / Stark penthouse) predates the
   New York world and remains selectable; it and the New York stages overlap in theme.
-- **Art direction.** Worlds are procedural primitives with generated textures: stylised, not the
-  photoreal reference art. Closing that gap needs authored GLB kits and PBR textures, not more
-  procedural geometry.
+- **Art direction.** Surfaces now use photographic PBR maps, but geometry is still procedural
+  primitives. Closing the silhouette gap needs authored GLB kits; no such kit is in the repo.
 - **Crowds, traffic, NPCs.** Absent by design (static props only).
 - **Vehicles** in New York are static boxes; no animation.
 

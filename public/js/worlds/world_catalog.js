@@ -1860,9 +1860,163 @@ function buildNYC() {
   }
   function parkTree(x, z, scale = 1, base = GROUND) { tree(parts, x, z, scale, base, rng); }
 
+  // ---- district kits --------------------------------------------------------
+  // Street furniture, roof machinery and district-specific massing. Each helper stays a small
+  // number of primitives so the merged world keeps one draw call per material while the
+  // silhouettes, depth and clutter of a real city come through at street level.
+  function hydrant(x, z) {
+    cyl(parts, x, GROUND + .42, z, .17, .21, .84, 'banner', { seg: 6 });
+    ball(parts, x, GROUND + .9, z, .2, 'banner', { seg: 6 });
+    for (const s of [-1, 1]) box(parts, x + s * .25, GROUND + .52, z, .16, .16, .16, 'steel');
+  }
+  function trashBin(x, z) {
+    cyl(parts, x, GROUND + .55, z, .34, .3, 1.1, 'metal', { seg: 8 });
+    cyl(parts, x, GROUND + 1.13, z, .36, .36, .08, 'steel', { seg: 8 });
+  }
+  function planter(x, z, scale = 1) {
+    box(parts, x, GROUND + .4 * scale, z, 1.8 * scale, .8 * scale, 1.8 * scale, 'stoneDark', solid({ bottom: GROUND }));
+    parkTree(x, z, .55 * scale, GROUND + .8 * scale);
+  }
+  function manhole(x, z) {
+    cyl(parts, x, GROUND + .09, z, .72, .72, .06, 'metalDark', { seg: 12 });
+    cyl(parts, x, GROUND + .13, z, .34, .34, .05, 'steel', { seg: 8 });
+  }
+  function busShelter(x, z, alongZ = true) {
+    const w = alongZ ? 3.2 : 8, d = alongZ ? 8 : 3.2;
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      box(parts, x + sx * (w / 2 - .3), GROUND + 1.3, z + sz * (d / 2 - .3), .16, 2.6, .16, 'steel');
+    }
+    box(parts, x, GROUND + 2.7, z, w + .6, .16, d + .6, 'steel');
+    box(parts, x, GROUND + 2.1, z, w, 1.6, .12, 'glass');
+    box(parts, x + (alongZ ? w / 2 : 0), GROUND + 1.5, z + (alongZ ? 0 : d / 2), alongZ ? .12 : w, 1.5, alongZ ? d : .12, 'glass');
+    box(parts, x, GROUND + .55, z, 1.8, .5, .5, 'wood');
+  }
+  function foodCart(x, z) {
+    box(parts, x, GROUND + .9, z, 2.6, 1.4, 1.5, 'steel', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 1.72, z, 2.9, .16, 1.9, 'bannerBlue');
+    for (const s of [-1, 1]) cyl(parts, x + s * .9, GROUND + .35, z + .8, .3, .3, .7, 'metalDark', { seg: 8 });
+    box(parts, x, GROUND + 2.4, z, .12, 1.4, .12, 'steel');
+  }
+  function taxi(x, z, alongZ = true) {
+    const w = alongZ ? 2.2 : 4.6, d = alongZ ? 4.6 : 2.2;
+    box(parts, x, GROUND + .62, z, w, .9, d, 'taxi', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + 1.28, z, w * .8, .6, d * .5, 'glassBlue');
+    box(parts, x, GROUND + 1.68, z, .9, .2, .5, 'steel');
+    for (const s of [-1, 1]) {
+      box(parts, x + (alongZ ? s * 1 : 0), GROUND + .3, z + (alongZ ? 0 : s * 1), alongZ ? .34 : .52, .56, alongZ ? .52 : .34, 'dark');
+    }
+    box(parts, x + (alongZ ? 0 : w * .5), GROUND + .78, z + (alongZ ? d * .5 : 0), alongZ ? 1.2 : .1, .16, alongZ ? .1 : 1.2, 'glassWarm');
+  }
+  function truck(x, z, alongZ = true) {
+    const w = alongZ ? 2.6 : 8.4, d = alongZ ? 8.4 : 2.6;
+    box(parts, x, GROUND + 1.5, z, w, 3, d, 'buildingWarm', solid({ bottom: GROUND }));
+    box(parts, x + (alongZ ? 0 : -w * .34), GROUND + 1.1, z + (alongZ ? -d * .34 : 0), alongZ ? 2.3 : 2.9, 2.1, alongZ ? 2.9 : 2.3, 'metal');
+    for (const s of [-1, 1]) box(parts, x + (alongZ ? s * 1.3 : 0), GROUND + .45, z + (alongZ ? 0 : s * 1.3), alongZ ? .4 : .7, .9, alongZ ? .7 : .4, 'dark');
+  }
+  function fireEscape(x, z, width, face, floors, base = GROUND) {
+    for (let i = 1; i <= floors; i++) {
+      const y = base + i * 3.2;
+      box(parts, x, y, z, width, .12, 1.5, 'metalDark');
+      railing(parts, x, y + .55, z + face * .7, width, 'x', 'metalDark');
+      if (i < floors) box(parts, x + face * width * .4, y + 1.6, z, .18, 3.2, .18, 'metalDark');
+    }
+  }
+  function waterTower(x, z, base, scale = 1) {
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      box(parts, x + sx * 1.5 * scale, base + 1.6 * scale, z + sz * 1.5 * scale, .28, 3.2 * scale, .28, 'steel');
+    }
+    cyl(parts, x, base + 4.5 * scale, z, 2.4 * scale, 2.4 * scale, 3.4 * scale, 'wood', { seg: 12 });
+    cyl(parts, x, base + 6.3 * scale, z, 2.5 * scale, 2.5 * scale, .3, 'steel', { seg: 12 });
+    cone(parts, x, base + 7.1 * scale, z, 2.6 * scale, 1.4 * scale, 'steel', { seg: 12 });
+  }
+  /** Every New York roof: HVAC, ductwork, a stair bulkhead, a vent stack and an aerial. */
+  function rooftopKit(x, z, w, d, base) {
+    box(parts, x - w * .22, base + 1.2, z - d * .18, 4.4, 2.4, 3.4, 'metal', solid({ bottom: base }));
+    box(parts, x - w * .22, base + 2.55, z - d * .18, 4.9, .3, 3.9, 'metalDark');
+    for (let i = 0; i < 4; i++) box(parts, x - w * .22 + (i - 1.5) * .9, base + 2.85, z - d * .18, .7, .3, 2.2, 'metalDark');
+    box(parts, x + w * .18, base + 1.9, z + d * .1, 3.4, 3.8, 3.4, 'buildingWarm', solid({ bottom: base }));
+    box(parts, x + w * .18, base + 3.95, z + d * .1, 4, .3, 4, 'roof');
+    cyl(parts, x + w * .1, base + .6, z - d * .34, .5, .5, 1.2, 'metalDark', { seg: 8 });
+    box(parts, x - w * .34, base + 5.6, z + d * .3, .18, 11, .18, 'steel');
+    ball(parts, x - w * .34, base + 11.3, z + d * .3, .22, 'glowRed', { seg: 6 });
+    box(parts, x + w * .3, base + .5, z - d * .3, 2.6, 1, 2.6, 'crate');
+  }
+  /** Financial district: stepped glass massing with a lit podium arcade. */
+  function financialTower(x, z, w, d, h) {
+    const baseH = h * .22, midH = h * .5, topH = h * .28;
+    box(parts, x, GROUND + baseH / 2, z, w, baseH, d, 'stoneDark', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + baseH + midH / 2, z, w * .84, midH, d * .84, 'buildingBlue', solid({ bottom: GROUND + baseH }));
+    box(parts, x, GROUND + baseH + midH + topH / 2, z, w * .58, topH, d * .58, 'building', solid({ bottom: GROUND + baseH + midH }));
+    for (let i = 0; i < 6; i++) {
+      const off = (i + .5) / 6 - .5;
+      box(parts, x + off * w * .8, GROUND + baseH + midH * .5, z + d * .42 + .05, (w / 6) * .72, midH * .9, .12, 'glassBlue');
+      box(parts, x + off * w * .5, GROUND + baseH + midH + topH * .5, z + d * .29 + .05, (w / 9) * .7, topH * .88, .12, 'glassCool');
+    }
+    for (let y = GROUND + 8; y < GROUND + h; y += 8) {
+      box(parts, x, y, z + d * .43, w * .9, .4, .08, rng() > .5 ? 'glassWarm' : 'glassCool');
+    }
+    box(parts, x, GROUND + h + 3, z, 3, 6, 3, 'steel');
+    cyl(parts, x, GROUND + h + 9, z, .16, .16, 7, 'steel', { seg: 5 });
+    // Podium arcade at street level.
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      box(parts, x + sx * (w / 2 - 1), GROUND + 3, z + sz * (d / 2 - 1), 1.2, 6, 1.2, 'steel', solid({ bottom: GROUND }));
+    }
+    box(parts, x, GROUND + 3, z + d / 2 + .1, w * .66, 5.4, .14, 'glassWarm');
+    box(parts, x, GROUND + 6.2, z + d / 2 + .5, w * .8, .5, 1, 'steel');
+  }
+  /** Residential: brick walk-up with window grid, stoop, fire escape, shopfront and water tower. */
+  function brickWalkup(x, z, w, d, h, face = 1) {
+    box(parts, x, GROUND + h / 2, z, w, h, d, 'brick', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + h + .4, z, w + 1.2, .8, d + 1.2, 'stoneDark');
+    const floors = Math.max(3, Math.round((h - 3) / 3.2));
+    const cols = Math.max(2, Math.round(w / 3.4));
+    for (let f = 1; f <= floors; f++) {
+      const y = GROUND + 1 + f * ((h - 2) / floors);
+      for (let c = 0; c < cols; c++) {
+        const wx = x + (c - (cols - 1) / 2) * (w / cols) * .78;
+        for (const s of [-1, 1]) {
+          box(parts, wx, y, z + s * (d / 2 + .04), 1.1, 1.5, .1, rng() > .78 ? 'glassWarm' : 'glassCool');
+          box(parts, wx, y - .85, z + s * (d / 2 + .09), 1.3, .16, .2, 'stoneLight');
+        }
+      }
+    }
+    for (let i = 0; i < 4; i++) box(parts, x - w * .3, GROUND + .2 + i * .22, z + face * (d / 2 + 1.7 - i * .7), 3, .24, .8, 'stoneDark');
+    box(parts, x - w * .3, GROUND + 1.2, z + face * (d / 2 + .55), 3.4, .3, 2, 'stoneDark');
+    fireEscape(x + w * .2, z + face * (d / 2 + .85), w * .5, face, Math.min(4, floors));
+    box(parts, x + w * .18, GROUND + 1.5, z + face * (d / 2 + .06), w * .44, 2.6, .12, 'glassWarm');
+    box(parts, x + w * .18, GROUND + 2.95, z + face * (d / 2 + .35), w * .52, .5, 1.3, rng() > .5 ? 'awning' : 'awningBlue');
+    waterTower(x + w * .28, z - d * .26, GROUND + h + .9, .9);
+  }
+  /** Commercial: low storefront block with sign band, awning, lit windows and roof clutter. */
+  function storefrontBlock(x, z, w, d, h, face = 1) {
+    box(parts, x, GROUND + h / 2, z, w, h, d, rng() > .5 ? 'brick' : 'buildingWarm', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + h + .35, z, w + .8, .7, d + .8, 'stoneDark');
+    box(parts, x, GROUND + 1.8, z + face * (d / 2 + .05), w * .82, 3, .1, 'glassWarm');
+    box(parts, x, GROUND + 3.6, z + face * (d / 2 + .2), w * .9, 1, .35,
+      ['glowBlue', 'glowRed', 'glassWarm', 'glowGreen'][Math.floor(rng() * 4)]);
+    box(parts, x, GROUND + 3.05, z + face * (d / 2 + .95), w * .82, .18, 1.8, rng() > .5 ? 'awning' : 'awningBlue');
+    const floors = Math.max(1, Math.round((h - 4.5) / 3.4));
+    for (let f = 0; f < floors; f++) {
+      const y = GROUND + 5.4 + f * 3.4;
+      if (y > GROUND + h - 1.4) break;
+      for (let c = 0; c < 3; c++) {
+        box(parts, x + (c - 1) * (w / 3.2), y, z + face * (d / 2 + .05), 1.2, 1.6, .1, rng() > .7 ? 'glassWarm' : 'glassCool');
+      }
+    }
+    rooftopKit(x, z, w, d, GROUND + h + .7);
+  }
+  function industrialShed(x, z, w, d, h) {
+    box(parts, x, GROUND + h / 2, z, w, h, d, 'metal', solid({ bottom: GROUND }));
+    box(parts, x, GROUND + h + .2, z, w + 1, .6, d + 1, 'metalDark');
+    for (let i = 0; i < 3; i++) box(parts, x - w * .3 + i * w * .3, GROUND + h * .32, z + d / 2 + .06, w * .18, h * .5, .12, 'metalDark');
+    for (let i = 0; i < 4; i++) cyl(parts, x - w * .3 + i * w * .2, GROUND + h + 1.4, z - d * .2, .5, .5, 2.2, 'metalDark', { seg: 8 });
+  }
+
   // ---- ground, streets, river ----------------------------------------------
   // One city slab from the west shore to the river; the water is its own surface.
-  box(parts, -25, -5.4, 40, 550, 12, 600, 'dark', solid({ bottom: -9 }));
+  // The slab top is the block interior between buildings: paved, not black, or every gap
+  // between two towers read as a hole in the city.
+  box(parts, -25, -5.4, 40, 550, 12, 600, 'pavement', solid({ bottom: -9 }));
   plane(parts, 372, .2, 40, 250, 640, 'water');
   for (const x of AVE) plane(parts, x, GROUND + .06, 40, 22, 600, 'road');
   for (const z of ST) plane(parts, -25, GROUND + .06, z, 550, 20, 'road');
@@ -1871,10 +2025,14 @@ function buildNYC() {
   for (const z of ST) for (const s of [-1, 1]) box(parts, -25, GROUND + .15, z + s * 12, 550, .3, 4, 'stoneLight', solid({ bottom: GROUND }));
   // Crosswalks at every junction.
   for (const x of AVE) for (const z of ST) for (let i = -4; i <= 4; i++) {
-    box(parts, x + i * 2.2, GROUND + .07, z, 1.1, .02, 16, 'glassWarm');
-    box(parts, x, GROUND + .07, z + i * 2.2, 18, .02, 1.1, 'glassWarm');
+    box(parts, x + i * 2.2, GROUND + .075, z, 1.1, .02, 16, 'stoneLight');
+    box(parts, x, GROUND + .075, z + i * 2.2, 18, .02, 1.1, 'stoneLight');
   }
   for (const x of AVE) for (let z = -130; z <= 250; z += 30) { streetLamp(x - 14, z); streetLamp(x + 14, z); }
+  for (const x of AVE) for (let z = -138; z <= 244; z += 11) {
+    if (ST.some(street => Math.abs(z - street) < 12)) continue;
+    box(parts, x, GROUND + .07, z, .3, .02, 4.4, 'glassWarm');
+  }
   for (const z of ST) for (let x = -230; x <= 230; x += 34) {
     if (AVE.some(a => Math.abs(x - a) < 16)) continue;
     streetLamp(x, z - 13); streetLamp(x, z + 13);
@@ -1886,11 +2044,43 @@ function buildNYC() {
     car(x + 9.5, z - 6, true, rng() > .5 ? 'buildingWarm' : 'panel');
   }
 
+  // ---- street furniture ----------------------------------------------------
+  // Hydrants, bins, shelters, carts, steam and taxis: the street-level clutter that makes a
+  // grid read as a lived-in city rather than a set of roads between boxes.
+  for (const x of AVE) {
+    for (let z = -130; z <= 250; z += 19) {
+      hydrant(x - 15.6, z + 2);
+      trashBin(x + 15.6, z + 7);
+      if (Math.abs(z) < 28) continue;
+      if (Math.round(z) % 57 === 0) busShelter(x + 16.2, z + 10);
+      if (Math.round(z) % 38 === 0) planter(x - 16.2, z - 6);
+      if (Math.round(z) % 76 === 0) foodCart(x - 17.4, z - 13);
+    }
+    for (let z = -122; z <= 246; z += 23) manhole(x, z + 4);
+    for (let z = -110; z <= 232; z += 47) {
+      if (ST.some(street => Math.abs(z - street) < 20)) continue;
+      taxi(x + (Math.round(z / 47) % 2 ? 9.8 : -9.8), z, true);
+    }
+  }
+  for (const z of ST) for (let x = -232; x <= 232; x += 41) {
+    if (AVE.some(avenue => Math.abs(x - avenue) < 18)) continue;
+    hydrant(x + 3, z - 14.4);
+    trashBin(x - 6, z + 14.4);
+    if (Math.round(x) % 82 === 0) manhole(x + 8, z);
+  }
+  truck(-69.8, 96, true);
+  truck(69.8, -52, true);
+
   // ---- Stark Tower ---------------------------------------------------------
   // Three tiers, each a real surface: the 80 m terrace carries the observation-deck stage and
   // the 120 m crown carries the helipad stage, so both are places rather than backdrops.
   const TX = 0, TZ = -70;
-  box(parts, TX, GROUND + 20, TZ, 70, 40, 70, 'building', solid({ bottom: GROUND }));
+  // Base tier: four walls and a roof slab around a real lobby interior (stage
+  // nyc_stark_lobby) instead of a solid block, so the tower has a hall you can walk into.
+  for (const [ox, oz, w, d] of [[0, -32, 70, 6], [0, 32, 70, 6], [-32, 0, 6, 64], [32, 0, 6, 64]]) {
+    box(parts, TX + ox, GROUND + 20, TZ + oz, w, 40, d, 'building', solid({ bottom: GROUND }));
+  }
+  box(parts, TX, GROUND + 40.8, TZ, 70, 1.6, 70, 'roof', solid({ bottom: GROUND + 39.6 }));
   box(parts, TX, GROUND + 60, TZ, 54, 40, 54, 'buildingBlue', solid({ bottom: GROUND + 40 }));
   box(parts, TX, GROUND + 100, TZ, 24, 40, 40, 'building', solid({ bottom: GROUND + 80 }));
   for (const [w, d, h0, h1] of [[70, 70, 2, 38], [54, 54, 42, 78], [24, 40, 82, 118]]) {
@@ -1912,6 +2102,54 @@ function buildNYC() {
   box(parts, TX, GROUND + 6, TZ + 36, 34, 12, 8, 'glass', solid({ bottom: GROUND }));
   box(parts, TX, GROUND + 12.4, TZ + 36, 40, 1, 12, 'steel');
   for (const s of [-1, 1]) box(parts, TX + s * 15, GROUND + .9, TZ + 41, 3, 1.8, 3, 'marble', solid({ bottom: GROUND }));
+
+  // ---- Stark Tower lobby (walkable interior) -------------------------------
+  // The fight rectangle (x -20..20, z -80..-52) is kept clear; reception, elevators, the arc
+  // reactor exhibit, columns, mezzanine and turnstiles sit in the aisles around it.
+  plane(parts, TX, GROUND + .12, TZ, 58, 58, 'marble');
+  box(parts, TX, GROUND + 1.1, TZ - 22, 16, 2.2, 2.4, 'stoneDark', solid({ bottom: GROUND }));
+  box(parts, TX, GROUND + 2.3, TZ - 22, 17, .25, 2.9, 'stoneLight');
+  for (const s of [-1, 1]) {
+    box(parts, TX + s * 5, GROUND + 2.9, TZ - 22, 2.6, 1.3, .2, 'glassCool');
+    box(parts, TX + s * 5, GROUND + 2.9, TZ - 22.3, 2.2, 1, .12, 'glowBlue');
+  }
+  banner(parts, TX, GROUND + 7.2, TZ - 27.2, 16, 2.6, 'glowBlue');
+  // Arc reactor exhibit.
+  cyl(parts, TX + 17, GROUND + .4, TZ - 12, 3.4, 3.6, .8, 'stoneDark', solid({ bottom: GROUND }));
+  cyl(parts, TX + 17, GROUND + 1.4, TZ - 12, 2.4, 2.4, 1.2, 'glassCool');
+  cyl(parts, TX + 17, GROUND + 2.1, TZ - 12, .9, .9, .5, 'glowBlue', { seg: 18 });
+  torus(parts, TX + 17, GROUND + 5.6, TZ - 12, 3.1, .1, 'glowBlue', { rx: Math.PI / 2 });
+  // Elevator bank on the north wall.
+  for (let i = -2; i <= 2; i++) {
+    box(parts, TX + i * 4.6, GROUND + 2.6, TZ - 28.6, 3.4, 5.2, .3, 'steel');
+    box(parts, TX + i * 4.6, GROUND + 2.6, TZ - 28.4, 2.6, 4.4, .16, 'metalDark');
+    box(parts, TX + i * 4.6, GROUND + 5.5, TZ - 28.2, 1.2, .5, .12, 'glowBlue');
+  }
+  // Columns and side aisles.
+  for (const cx of [-22, 22]) for (const cz of [-18, 4, 20]) {
+    box(parts, TX + cx, GROUND + 19, TZ + cz, 2.2, 38, 2.2, 'stoneDark', solid({ bottom: GROUND }));
+  }
+  for (const s of [-1, 1]) for (const cz of [-8, 8]) {
+    box(parts, TX + s * 24, GROUND + .6, TZ + cz, 3.6, .7, 1.2, 'wood', solid({ bottom: GROUND }));
+    planter(TX + s * 24, TZ + cz + 4.4, .7);
+  }
+  // Turnstiles at the street entrance.
+  for (let i = -1; i <= 1; i++) {
+    box(parts, TX + i * 3.4, GROUND + .7, TZ + 27, 1, 1.4, 2.6, 'steel', solid({ bottom: GROUND }));
+    box(parts, TX + i * 3.4, GROUND + 1.5, TZ + 26, .9, .16, .9, 'glowGreen');
+  }
+  // Mezzanine over the north third with a stair up the west wall.
+  box(parts, TX, GROUND + 7.4, TZ - 21, 56, .9, 16, 'stoneDark', solid({ bottom: GROUND + 6.9 }));
+  railing(parts, TX, GROUND + 8.3, TZ - 13.2, 56, 'x', 'steel');
+  for (let i = 0; i < 9; i++) {
+    box(parts, TX - 24, GROUND + .35 + i * .78, TZ - 4 - i * .85, 3, .5, .9, 'stoneLight', solid({ bottom: GROUND }));
+  }
+  // Ceiling light strips, so the hall reads as lit rather than as a hole in the tower.
+  for (let i = -3; i <= 3; i++) {
+    box(parts, TX, GROUND + 36, TZ + i * 7, 44, .22, .8, 'glassWarm');
+    box(parts, TX + i * 7, GROUND + 36, TZ, .8, .22, 44, 'glassWarm');
+  }
+
   // Paving covers the whole plaza stage, not just the strip in front of the doors: half a
   // marble forecourt over raw asphalt read as a hole in the map.
   plane(parts, TX, GROUND + .08, -8, 62, 58, 'marble');
@@ -1936,13 +2174,30 @@ function buildNYC() {
   ball(parts, TX, CROWN + 12.4, TZ - 18, .8, 'glowRed', { seg: 8 });
 
   // ---- city blocks ---------------------------------------------------------
-  const blocks = [
-    [-240, -190, -125, -55], [-155, -95, -125, -55], [95, 155, -125, -75], [190, 240, -125, -55],
-    [-240, -190, -20, 45], [-155, -95, -20, 45], [-55, -20, -20, 45], [95, 155, -20, 45], [190, 240, -20, 45],
-    [-240, -190, 80, 145], [-155, -95, 80, 145], [-40, 40, 80, 145], [190, 240, 80, 145],
-    [-240, -190, 180, 240], [-155, -95, 180, 240], [-40, 40, 180, 240], [95, 155, 180, 240], [190, 240, 180, 240]
+  // Three districts with their own massing, materials and street detail instead of one
+  // repeated tower: financial glass canyons, commercial storefront streets and residential
+  // brick walk-ups. The block grid is the same one the stage rectangles sit on.
+  const districts = [
+    { x0: -240, x1: -190, z0: -125, z1: -55, kind: 'financial' },
+    { x0: -155, x1: -95, z0: -125, z1: -55, kind: 'financial' },
+    { x0: 95, x1: 155, z0: -125, z1: -75, kind: 'commercial' },
+    { x0: 190, x1: 240, z0: -125, z1: -55, kind: 'financial' },
+    { x0: -240, x1: -190, z0: -20, z1: 45, kind: 'residential' },
+    { x0: -155, x1: -95, z0: -20, z1: 45, kind: 'residential' },
+    { x0: -55, x1: -20, z0: -20, z1: 45, kind: 'commercial' },
+    { x0: 95, x1: 155, z0: -20, z1: 45, kind: 'commercial' },
+    { x0: 190, x1: 240, z0: -20, z1: 45, kind: 'financial' },
+    { x0: -240, x1: -190, z0: 80, z1: 145, kind: 'residential' },
+    { x0: -155, x1: -95, z0: 80, z1: 145, kind: 'residential' },
+    { x0: -40, x1: 40, z0: 80, z1: 145, kind: 'commercial' },
+    { x0: 190, x1: 240, z0: 80, z1: 145, kind: 'financial' },
+    { x0: -240, x1: -190, z0: 180, z1: 240, kind: 'residential' },
+    { x0: -155, x1: -95, z0: 180, z1: 240, kind: 'residential' },
+    { x0: -40, x1: 40, z0: 180, z1: 240, kind: 'commercial' },
+    { x0: 95, x1: 155, z0: 180, z1: 240, kind: 'financial' },
+    { x0: 190, x1: 240, z0: 180, z1: 240, kind: 'financial' }
   ];
-  for (const [x0, x1, z0, z1] of blocks) {
+  for (const { x0, x1, z0, z1, kind } of districts) {
     const cols = x1 - x0 > 52 ? 2 : 1;
     const rows = z1 - z0 > 52 ? 2 : 1;
     const cw = (x1 - x0) / cols, cd = (z1 - z0) / rows;
@@ -1950,11 +2205,27 @@ function buildNYC() {
       for (let j = 0; j < rows; j++) {
         const cx = x0 + cw * (i + .5), cz = z0 + cd * (j + .5);
         const w = cw - 12, d = cd - 12;
-        skyscraper(cx, cz, w, d, 24 + rng() * 52, {
-          mat: rng() > .62 ? 'buildingWarm' : (rng() > .5 ? 'building' : 'buildingBlue'),
-          glass: rng() > .5 ? 'glassBlue' : 'glassCool',
-          crown: rng() > .5 ? 'steel' : 'metal'
-        });
+        // Shopfronts face the cross street the block sits beside.
+        const face = cz > 40 ? -1 : 1;
+        if (kind === 'financial') {
+          financialTower(cx, cz, w, d, 58 + rng() * 78);
+          if (rng() > .45) {
+            planter(cx + w * .34, cz - d * .36);
+            box(parts, cx - w * .3, GROUND + .5, cz + d * .34, 3.4, .8, 1.1, 'wood', solid({ bottom: GROUND }));
+            cyl(parts, cx - w * .34, GROUND + 5, cz - d * .34, .14, .14, 10, 'steel', { seg: 5 });
+            banner(parts, cx - w * .34, GROUND + 9.4, cz - d * .34 + .14, 3.2, 2.2, 'bannerBlue');
+          }
+        } else if (kind === 'commercial') {
+          const h = 16 + rng() * 16;
+          storefrontBlock(cx, cz, w, d, h, face);
+          trashBin(cx + w * .42, cz + face * (d / 2 + 1.6));
+          foodCart(cx - w * .42, cz + face * (d / 2 + 2.2));
+          if (rng() > .55) box(parts, cx + w * .3, GROUND + h + 5, cz + face * (d / 2 + .3), 3.4, 6, .3, 'glowBlue');
+        } else {
+          brickWalkup(cx, cz, w, d, 12 + rng() * 13, face);
+          planter(cx - w * .42, cz + face * (d / 2 + 1.8), .8);
+          hydrant(cx + w * .46, cz + face * (d / 2 + 1.4));
+        }
       }
     }
   }
@@ -2094,8 +2365,8 @@ export const PALETTES = {
   },
   nyc: {
     rock: '#4a4d52', cliff: '#3f4247', mountain: '#3a4048', grass: '#3f6b3a', grassDark: '#2f5730',
-    moss: '#3c5a37', stone: '#8f9298', stoneLight: '#a8acb2', stoneDark: '#5a5e64',
-    cobble: '#7a7d83', road: '#2a2d33', sand: '#8d8577', wood: '#6b4c30', trunk: '#42301f',
+    moss: '#3c5a37', stone: '#8b8f95', stoneLight: '#9ba0a6', stoneDark: '#575b61',
+    cobble: '#7a7d83', road: '#434952', sand: '#8d8577', wood: '#6b4c30', trunk: '#42301f',
     building: '#8d9198', buildingWarm: '#a98f74', buildingBlue: '#5f7f96',
     roof: '#42464c', roofBlue: '#3d5a70', leaf: '#2f6b39', water: '#1f4e6e', cloud: '#dbe4ea',
     gold: '#d8b45a', glassWarm: '#ffd79a', glassBlue: '#7fc8ee', glassCool: '#9fd8ff',
@@ -2103,7 +2374,11 @@ export const PALETTES = {
     skin: '#d9a982', metal: '#8d9099', steel: '#9aa4b2', dark: '#1b1e24', crate: '#6a5136',
     flame: '#ffb066', panel: '#3a3f47', floorStripe: '#e0b23c', glowBlue: '#3fd2ff',
     glowRed: '#ff4b4b', glowGreen: '#5df0a8', floorHall: '#4a4e55', floor: '#585c63',
-    marble: '#9aa0a8', thatch: '#6b5334', glass: '#a8d8ee'
+    marble: '#767c85', thatch: '#6b5334', glass: '#a8d8ee',
+    // NYC district materials: brownstone brick, taxi yellow and shop awnings.
+    brick: '#7d5042', taxi: '#e6b23a', awning: '#a8362f', awningBlue: '#2f5f8f',
+    pavement: '#8f9399', asphalt: '#414750', facade: '#7f8890', buildingDark: '#4d5259',
+    metalDark: '#3c4148'
   }
 };
 
@@ -2113,7 +2388,7 @@ const THEMES = {
   deathstar: { sky: 0x070b14, fog: 0x202b3a, floor: 0x424954, platform: 0x262d38, ringA: 0x78cfff, ringB: 0xff453b, light: 0xc8d9ff, sun: 0x8799bb, density: .004, skyPreset: 'deathstar', interior: true },
   hogwarts: { sky: 0x171a2d, fog: 0x41414b, floor: 0x3c3e43, platform: 0x292b31, ringA: 0xe3c477, ringB: 0x9f252e, light: 0xffd59b, sun: 0xd5c4a1, density: .0045, skyPreset: 'hogwarts', interior: true },
   konoha: { sky: 0x3d78b8, fog: 0xd6e2df, floor: 0x2f7ba8, platform: 0x8a8579, ringA: 0x58d8ef, ringB: 0xf4c65e, light: 0xfff3d6, sun: 0xffe2b0, density: .0021, skyPreset: 'konoha' },
-  nyc: { sky: 0x121a2a, fog: 0x27313f, floor: 0x2a2d33, platform: 0x3a3f47, ringA: 0x35eaff, ringB: 0xffb44f, light: 0xbcd4ff, sun: 0xffc98f, density: .0028, skyPreset: 'nyc' }
+  nyc: { sky: 0x141d2e, fog: 0x2c3846, floor: 0x2a2d33, platform: 0x3a3f47, ringA: 0x35eaff, ringB: 0xffb44f, light: 0xc6d9ff, sun: 0xffc98f, density: .0024, skyPreset: 'nyc' }
 };
 
 const loc = (id, label, kind, bounds, spawns, extra = {}) => ({
@@ -2314,7 +2589,12 @@ export const WORLDS = {
       // location connects through.
       loc('nyc_stark_plaza', 'Stark Tower Plaza', 'landmark', [-26, -30, 26, 14], [-12, -20, 0.6, 12, 4, 0.6], { camera: { tilt: .2, scale: 1.5 }, exits: [
         { x: 0, z: 10, to: 'nyc_avenue', label: 'Fifth Avenue' },
-        { x: -18, z: -20, to: 'nyc_stark_deck', label: 'Observation Deck' }
+        { x: -18, z: -20, to: 'nyc_stark_deck', label: 'Observation Deck' },
+        { x: 0, z: -22, to: 'nyc_stark_lobby', label: 'Stark Tower Lobby' }
+      ] }),
+      // The tower's ground floor: a real interior hall under the base tier's roof slab.
+      loc('nyc_stark_lobby', 'Stark Tower Lobby', 'interior', [-20, -80, 20, -52], [-8, -74, 0.7, 8, -58, 0.7], { interior: true, ground: 0.7, camera: { tilt: .1, scale: 1.15 }, exits: [
+        { x: 0, z: -58, to: 'nyc_stark_plaza', label: 'Stark Tower Plaza' }
       ] }),
       loc('nyc_avenue', 'Fifth Avenue', 'street', [-76, -20, -44, 60], [-68, -8, 0.6, -52, 44, 0.6], { camera: { tilt: .18, scale: 1.45 }, exits: [
         { x: -60, z: -18, to: 'nyc_stark_plaza', label: 'Stark Tower Plaza' },
@@ -2386,7 +2666,7 @@ export const STAGE_LIGHTING = {
     // Dusk over Manhattan: a low warm key from the west, cool sky bounce and window light
     // doing the work at street level. The same rig runs on the bridge and the tower decks, so
     // the city reads as one place whether the fight is 120 m up or on the sidewalk.
-    exterior: { sun: 1.05, shadow: true, rim: .62, rimColor: 0x8fc0ff, hemi: .5, hemiSky: 0x94b2d8, hemiGround: 0x1d2026, exposure: 1.05, fogScale: 1, sunPos: [-46, 40, 26], rimPos: [30, 22, -34] },
+    exterior: { sun: 1.3, shadow: true, rim: .72, rimColor: 0x8fc0ff, hemi: .42, hemiSky: 0x94b2d8, hemiGround: 0x1d2026, exposure: 1.06, fogScale: 1, sunPos: [-46, 40, 26], rimPos: [30, 22, -34] },
     interior: { sun: 1.0, shadow: false, rim: .55, rimColor: 0x9fd8ff, hemi: .58, hemiSky: 0xa8bccc, hemiGround: 0x22252a, exposure: 1.06, fogScale: .7, sunPos: [26, 46, -24], rimPos: [-20, 24, 26] }
   }
 };

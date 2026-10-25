@@ -33,9 +33,9 @@ a deliberate stage-to-stage transition, **not** a streaming open world.
 | 3 | **Death Star** — 11 locations | Yes: `buildDeathStar`, plus `deathstar.glb` | Same registry path | `deathstar.glb` | None needed | PLAYABLE — NEEDS POLISH | 254 solid volumes (the densest world); hangar spine and trench corridor are built as geometry | Eleven stage cards | Flight works; interior ceilings use the non-shadowing interior lighting rig | `test:worlds`, `test:worlds:browser`, `test:smoke` | No moving turbolifts; outer-hull stage is a deck, not a station exterior |
 | 4 | **Dragon Ball World Tournament** — 11 locations | Yes: `buildDragonBall` (island + districts) and `tournament.glb` | Same registry path | `tournament.glb` | None needed | PLAYABLE — NEEDS POLISH | 178 solid volumes; Ring Out Cliffs use `ringOut` + `fallBelow`, so knockback past the edge scores a ring-out | Eleven stage cards | Flight works; King Kai's planet is a real 62 m sky island | `test:worlds` (including ring-out assertions), `test:worlds:browser`, `test:combat` | No breakable scenery; crowd is scenery, not NPCs |
 | 5 | **Hidden Leaf Village** — 12 locations | Yes, as of commit `e09e215` (built in this session on the existing registry) | `world_catalog.js`, `sky_environment.js`, `SmashCamera.js` | Shared surface textures, shared prefab fighters | None needed | RESTORED AND TESTED (village) | 309 solid volumes; Hokage Rock is a real 24 m terrace; Forest of Death has 26–40 m giants with trunk collision | Twelve stage cards under the Konoha tab | Flight works; Hokage Rock and the forest canopy give vertical room | `test:worlds` (19,930 assertions at the time), `test:worlds:browser` (805 checks across all 58 stages), screenshots of five stages | **Valley of the End is NOT part of this world.** It exists only as the separate authored `finalvalley` arena (`final_valley.glb`) with its own legacy layout, so there is no walk or doorway from the village into the valley — the transition graph is per-world |
-| 6 | **New York / Stark Tower** — 9 locations | No: only the legacy `starktower` arena (Helicarrier deck / Stark penthouse) existed | New: `buildNYC` in `world_catalog.js`, palette/theme/lighting, nine locations | `helicarrier.glb` remains the legacy arena; shared surface textures | None needed | PARTIALLY RESTORED → PLAYABLE, TESTED — NEEDS POLISH | 160 solid volumes; street, avenue, times square, park, docks, midtown roof (44.6 m), Stark deck (80.6 m), Stark crown (120.6 m), bridge (16 m) all pass spawn/collision checks | Nine stage cards under the New York tab | Flight works and is the point of the map: the tower, the bridge and the roof decks all sit in open air with building collision | `test:worlds` (26,672 assertions), `test:worlds:browser` (805 checks, all 58 stages), screenshots of five stages | No interior floors of the tower; vehicles are static; the far shore is backdrop only |
+| 6 | **New York / Stark Tower** — 10 locations | Partly: the legacy `starktower` arena (Helicarrier deck / Stark penthouse) only | `buildNYC` rebuilt in this pass: three districts (financial/commercial/residential), street furniture, Stark Tower lobby interior | `helicarrier.glb` remains the legacy arena; shared surface maps | 11 CC0 PBR surface families (Poly Haven, `public/assets/textures/`) | PLAYABLE, TESTED — NEEDS POLISH | 359 solid volumes; street, avenue, times square, park, docks, midtown roof (44.6 m), Stark deck (80.6 m), Stark crown (120.6 m), bridge (16 m) and the tower lobby all pass spawn/collision checks | Ten stage cards under the New York tab | Flight is the point of the map: tower, bridge and roof decks sit in open air with building collision | `test:worlds` (38,667 assertions), `test:worlds:browser` (818 checks, all 59 stages), `test:explore`, screenshots of plaza, avenue, Times Square and the lobby | No upper-floor tower interiors; vehicles static; far shore backdrop only |
 
-Totals after this session: **6 worlds, 58 battle locations, 1,344 solid collision volumes.**
+Totals after this session: **6 worlds, 59 battle locations, 1,383 solid collision volumes.**
 
 ## Recovery findings from Git history and older branches
 
@@ -70,7 +70,13 @@ Totals after this session: **6 worlds, 58 battle locations, 1,344 solid collisio
 | `public/js/sky_environment.js` | `konoha` and `nyc` sky presets |
 | `public/js/main.js` | World list comments updated; every added location is picked up by the existing `WORLD_LOCATIONS` loop |
 | `public/js/world/arena_layouts.js` | Comment updated (five → six worlds) |
-| `scripts/test-worlds.mjs` | Six worlds, 58 locations; Konoha and New York material assertions; New York lookup assertion |
+| `scripts/test-worlds.mjs` | Six worlds, 59 locations; Konoha and New York material assertions; New York lookup assertion; free-roam contract checks (roam rectangle, recovery floor) |
+| `public/js/worlds/world_catalog.js` | New York detail pass: three districts with their own massing (stepped financial towers, storefront blocks, brick walk-ups with stoops/fire escapes/water towers), rooftop kits, street furniture (hydrants, bins, shelters, carts, taxis, trucks, lane dashes), Stark Tower base rebuilt as walls + roof slab around a walkable lobby interior, new `nyc_stark_lobby` stage, wheel-friendly palette tuning |
+| `public/js/worlds/world_textures.js` | CC0 photographic surface pipeline: loads albedo/normal/roughness per family, upgrades materials in place, keeps the procedural canvas fallback |
+| `public/js/worlds/world_builder.js` | UV projection now divides by the material's surface tile size, so one texture instance serves a whole family; applies normal/roughness maps |
+| `public/assets/textures/**`, `scripts/fetch-world-textures.py` | 11 CC0 PBR families (1.6 MB) from Poly Haven with `manifest.json` recording asset ids, authors, licence and source, and the reproducible fetch/prep script |
+| `vite.config.js` | Copies `/assets/textures/**` into the build |
+| `public/js/SmashCamera.js` | Explore mode uses a 54° walk-around lens instead of the duel lens |
 | `scripts/test-worlds-browser.mjs` | Six world tabs; every world must expose at least five stages |
 | `README.md` | World counts, Konoha stage list, material notes |
 | `docs/WORLD_RESTORATION_REPORT.md`, `docs/RECOVERY_STATUS.md` | This report and the feature status ledger |
@@ -79,9 +85,10 @@ Totals after this session: **6 worlds, 58 battle locations, 1,344 solid collisio
 
 ```
 npm run build                 pass  (1,148 kB bundle, 2.9 s)
-npm run test:worlds           pass  26,672 assertions, 58 locations, 6 worlds
-npm run test:worlds:browser   pass  805 checks, 58 locations, 6 worlds, no page errors
-npm run test:combat           pass  339 checks
+npm run test:worlds           pass  38,667 assertions, 59 locations, 6 worlds
+npm run test:worlds:browser   pass  818 checks, 59 locations, 6 worlds, no page errors
+npm run test:explore          pass  49 checks (free roam + explore-only mouse look)
+npm run test:combat           pass  384 checks
 npm run test:gameplay         pass  48 checks
 npm run test:feel             pass  138 checks across 4 stages
 npm run test:rig              pass  31/31
@@ -99,10 +106,10 @@ photoreal reference art — see the honest gap list below.
 
 ## Honest gaps against the reference images
 
-1. **Art direction.** Worlds are procedural primitives with tiled canvas textures and a shared
-   `MeshStandardMaterial` set. They read as stylised low-poly, not AAA. Nothing in the repo
-   contains authored PBR environment assets to close that gap; it needs an asset pipeline
-   (GLB kits + real textures) rather than more procedural geometry.
+1. **Art direction.** Worlds are still procedural primitives, now surfaced with CC0 photographic
+   albedo/normal/roughness maps (11 families, Poly Haven). That closes the "plastic" gap but not
+   the geometry gap: no authored mesh kits (building pieces, props, foliage) exist in the repo, so
+   silhouettes remain simple boxes, cylinders and cones. Closing that needs a GLB kit pipeline.
 2. **No world-overview screen.** The arena select screen lists stages as cards grouped by world
    tab. There is no numbered map overview with per-location previews like the reference sheets.
    The data to drive one exists (`WORLD_LOCATIONS`, each with `world`, `label`, `kind`, `layout`);
@@ -110,9 +117,9 @@ photoreal reference art — see the honest gap list below.
 3. **Valley of the End is not connected to Konoha.** It is its own authored arena. Connecting it
    needs either a second world id sharing geometry, or a cross-world transition the exit graph
    does not support today.
-4. **Interiors.** Only Konoha (Hokage Administration, Ichiraku, Hospital) and the Great Hall /
-   Throne Hall are real interiors. New York's tower has no interior floors; the Death Star rooms
-   are single-storey shells.
+4. **Interiors.** Konoha (Hokage Administration, Ichiraku, Hospital), the Great Hall, the Throne
+   Hall and now the Stark Tower lobby are real interiors. The tower has no upper-floor rooms; the
+   Death Star rooms are single-storey shells.
 5. **Characters.** The user's Goku and Iron Man packages are not in the repository. Until they are
    installed (`node scripts/install-character-assets.mjs <package>`), those fighters use
    procedural bodies and the game reports the fallback.

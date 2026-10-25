@@ -288,8 +288,8 @@ fighter, so a mounted-but-broken rig fails the audit instead of passing on a nod
 
 ## Worlds, stages and travel
 
-The six reference worlds now hold 58 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
-Hogwarts 9, Konoha 12, New York 9). Each world is one built environment; the locations inside it are
+The six reference worlds now hold 59 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
+Hogwarts 9, Konoha 12, New York 10). Each world is one built environment; the locations inside it are
 rectangles over that same geometry, so switching stages within a world does not rebuild the map.
 
 Stages are joined by marked doorways: a lit ring and light column at the edge of a stage that
@@ -337,12 +337,18 @@ gallery reached by stairs at both corners, tall windows above the gallery, brazi
 red processional carpet. The court's doorway sits at the palace gate (the ziggurat itself is still
 facade), so the hall is entered the same way as every other stage transition.
 
-New York stages: Stark Tower Plaza, Fifth Avenue, Times Square, Midtown Rooftops, the Stark
-observation deck (80 m), the Stark crown (120 m), the Brooklyn Bridge deck, the East River docks
-and Central Park. Stark Tower is three real tiers rather than a facade: the deck is the roof of the
-middle tier and the helipad stage is the roof of the top one, so both are fought on, not looked at.
-Streets are a grid of avenues and cross-streets with kerbs, crosswalks, lamps, traffic lights and
-parked cars; the bridge span is a 16 m deck over the East River with stone towers and cables.
+New York stages: Stark Tower Plaza, the Stark Tower Lobby (a walkable interior under the base
+tier), Fifth Avenue, Times Square, Midtown Rooftops, the Stark observation deck (80 m), the Stark
+crown (120 m), the Brooklyn Bridge deck, the East River docks and Central Park. Stark Tower is
+three real tiers rather than a facade: the deck is the roof of the middle tier and the helipad stage
+is the roof of the top one, so both are fought on, not looked at, and the base tier is four walls
+and a roof slab around a real lobby hall (reception, arc reactor exhibit, elevator bank,
+mezzanine, turnstiles). The city is built in three districts with their own massing: financial
+stepped glass towers with podium arcades, commercial storefront blocks with awnings, sign bands and
+roof HVAC, and residential brick walk-ups with window grids, stoops, fire escapes and water towers.
+Streets carry kerbs, crosswalks, lane dashes, lamps, traffic lights, parking, hydrants, bins, bus
+shelters, food carts, taxis and steam covers; the bridge span is a 16 m deck over the East River with
+stone towers and cables.
 
 Konoha stages: Hokage Rock, Hokage Administration, Main Street, Ichiraku Ramen, Ninja Academy,
 Konoha Hospital, Residential District, Uchiha District, Hyuga Compound, Training Grounds, Village
@@ -374,17 +380,26 @@ no continuous walk from one end of a world to the other.
 
 ## Large world materials
 
-`public/js/worlds/world_textures.js` draws the tileable surface maps the six reference worlds
-are built from: stone courses, riveted metal panels, timber planks, grass, marble veining, roof
-tiles and shingles. Each world part is merged per material, so per-object tiling is impossible;
-instead `world_builder.js` projects every vertex's UV from its own world position, and the texture
-repeat turns those metre-space UVs into a fixed tile size per surface family (3-8 m). One 256px
-canvas per family is shared by every material that asks for the same tile size, so the worlds still
-render in roughly 17-31 draw calls each and no external texture assets are required. Palette
-colours stay authoritative, which is how the same stone map reads as DBZ sandstone, Asgard marble
-and Hogwarts granite. `STAGE_LIGHTING` in `world_catalog.js` gives each world its own key strength,
-rim tint, hemisphere fill, exposure and fog scale, and `SmashCamera.setStageBounds()` keeps the
-camera out of the stage's solid volumes on the large maps.
+Each world part is merged per material, so per-object tiling is impossible; instead
+`world_builder.js` projects every vertex's UV from its own world position and divides it by the
+material's surface tile size (2-8 m), so one texture instance serves every material that shares a
+family. The worlds still render in roughly 17-35 draw calls each.
+
+Surfaces are photographic. `public/assets/textures/<family>/` holds 11 CC0 map sets from Poly
+Haven (stone, rock, concrete, brick, asphalt, marble, wood, grass, roof tiles, metal plate,
+paving) with an `albedo.jpg`, `normal.jpg` and `roughness.jpg` per family. The albedo is processed
+into a bright luminance-only detail map (see `scripts/fetch-world-textures.py`) so the palette
+colour still decides each world's look while photographed stone, brick, asphalt and plate relief
+shows through; the normal and roughness maps carry real relief and specular breakup. Asset ids,
+authors, licence and sources are recorded in `public/assets/textures/manifest.json`, and the whole
+set is 1.6 MB. `world_textures.js` loads the maps once per session and upgrades a material in place
+if a world was built before they decoded; if the files are missing, it falls back to the original
+procedural canvas maps, so no world ships a blank surface.
+
+Palette colours stay authoritative, which is how the same concrete detail reads as DBZ sandstone,
+Asgard marble and Hogwarts granite. `STAGE_LIGHTING` in `world_catalog.js` gives each world its own
+key strength, rim tint, hemisphere fill, exposure and fog scale, and `SmashCamera.setStageBounds()`
+keeps the camera out of the stage's solid volumes on the large maps.
 
 ## Authored arenas
 
