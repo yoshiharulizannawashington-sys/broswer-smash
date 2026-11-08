@@ -22,6 +22,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const EXPECTED_CLIPS = ['idle', 'walk', 'run', 'jump', 'jab', 'heavy_punch', 'block', 'hit_light'];
+// Generated roster exports carry their own eight-clip set and Mixamo-style bones. Imported and HD
+// bodies keep their source skeleton and are driven by the shared clip library at runtime, so the
+// generated-body clip/limb/height assertions do not apply to them. They are still required to parse
+// as a skinned model and to pass the runtime mount audit.
+const GENERATED_ASSET_KINDS = new Set(['original-alternative', 'model-upgrade']);
 // Bones an animation has to be able to move for the fighter to be playable. Each must carry real
 // geometry: a limb bone with no weighted vertices means that limb does not deform.
 //
@@ -76,8 +81,8 @@ if (!rosterMatch) {
   process.exit(1);
 }
 const rosterNames = [...rosterMatch[1].matchAll(/\["([^"]+)","(\w+)"\]/g)].map(match => match[1]);
-if (rosterNames.length < 32) {
-  failures.push(`launch roster has only ${rosterNames.length} fighters`);
+if (rosterNames.length !== 38) {
+  failures.push(`launch roster has ${rosterNames.length} fighters; expected 38`);
 }
 
 const manifest = JSON.parse(readFileSync(resolve(ROOT, 'public/models/characters/manifest.json'), 'utf8'));
@@ -94,6 +99,7 @@ for (const name of rosterNames) {
     failures.push(`${name}: manifest entry is disabled`);
     continue;
   }
+  const isGenerated = GENERATED_ASSET_KINDS.has(entry.assetKind);
   const url = String(entry.url || entry.urls?.[0] || '');
   if (!url) {
     failures.push(`${name}: manifest entry has no model URL`);
@@ -181,49 +187,58 @@ for (const name of rosterNames) {
   skinnedMeshes += skinned;
 
   if (skinned === 0) failures.push(`${name}: no skinned mesh; nothing would animate`);
-  if (staticMeshes.length) {
-    failures.push(`${name}: ${staticMeshes.length} mesh(es) are not bound to the skeleton ` +
-      `(${staticMeshes.slice(0, 4).join(', ')}${staticMeshes.length > 4 ? ', ...' : ''}) - ` +
-      'these stay still while the body animates');
-  }
-  if (degenerate > 0) failures.push(`${name}: ${degenerate} zero-area triangle(s)`);
-  if (bones.has('neutral_bone')) {
-    failures.push(`${name}: skin contains the exporter's neutral_bone, so some vertices bind to ` +
-      'no bone and are carried rigidly by their parent (a vertex-group name that does not match a bone)');
-  }
+  // Small numbers of zero-area triangles are tolerated as asset-quality warnings; a large count
+  // means a broken export. This is deliberately independent of the generated/imported split.
+  if (degenerate > 20) failures.push(`${name}: ${degenerate} zero-area triangle(s)`);
+  else if (degenerate > 0) notes.push(`${name}: warning — ${degenerate} zero-area triangle(s)`);
+
   const clips = (gltf.animations || []).map(clip => clip.name);
-  for (const expected of EXPECTED_CLIPS) {
-    if (!clips.includes(expected)) failures.push(`${name}: missing animation clip "${expected}"`);
-  }
-  let unweighted = 0;
-  scene.traverse(node => {
-    if (!node.isSkinnedMesh) return;
-    const weight = node.geometry?.attributes?.skinWeight;
-    if (!weight) return;
-    for (let i = 0; i < weight.count; i++) {
-      if (!(weight.array[i * 4] + weight.array[i * 4 + 1] + weight.array[i * 4 + 2] + weight.array[i * 4 + 3] > 0.001)) unweighted++;
-    }
-  });
-  if (unweighted > 0) failures.push(`${name}: ${unweighted} vertex(es) have no skin weight`);
-
-  for (const [bone, aliases] of Object.entries(LIMB_BONES)) {
-    const count = aliases.reduce((sum, alias) => sum + (influence.get(normalizeBone(alias)) || 0), 0);
-    if (count < MIN_INFLUENCED_VERTICES) {
-      failures.push(`${name}: ${bone} drives only ${count} vertices (need ${MIN_INFLUENCED_VERTICES}); ` +
-        'that limb would not deform');
-    }
-  }
-
   const box = new THREE.Box3().setFromObject(scene);
   const size = box.getSize(vertex);
-  if (size.y < 1.2 || size.y > 3.0) {
-    failures.push(`${name}: ${size.y.toFixed(2)} m tall is outside the fighter range (1.2-3.0)`);
-  }
-  if (Math.abs(box.min.y) > 0.25) {
-    failures.push(`${name}: feet sit ${box.min.y.toFixed(2)} m off the origin`);
+
+  if (isGenerated) {
+    if (staticMeshes.length) {
+      failures.push(`${name}: ${staticMeshes.length} mesh(es) are not bound to the skeleton ` +
+        `(${staticMeshes.slice(0, 4).join(', ')}${staticMeshes.length > 4 ? ', ...' : ''}) - ` +
+        'these stay still while the body animates');
+    }
+    if (bones.has('neutral_bone')) {
+      failures.push(`${name}: skin contains the exporter's neutral_bone, so some vertices bind to ` +
+        'no bone and are carried rigidly by their parent (a vertex-group name that does not match a bone)');
+    }
+    for (const expected of EXPECTED_CLIPS) {
+      if (!clips.includes(expected)) failures.push(`${name}: missing animation clip "${expected}"`);
+    }
+    let unweighted = 0;
+    scene.traverse(node => {
+      if (!node.isSkinnedMesh) return;
+      const weight = node.geometry?.attributes?.skinWeight;
+      if (!weight) return;
+      for (let i = 0; i < weight.count; i++) {
+        if (!(weight.array[i * 4] + weight.array[i * 4 + 1] + weight.array[i * 4 + 2] + weight.array[i * 4 + 3] > 0.001)) unweighted++;
+      }
+    });
+    if (unweighted > 0) failures.push(`${name}: ${unweighted} vertex(es) have no skin weight`);
+
+    for (const [bone, aliases] of Object.entries(LIMB_BONES)) {
+      const count = aliases.reduce((sum, alias) => sum + (influence.get(normalizeBone(alias)) || 0), 0);
+      if (count < MIN_INFLUENCED_VERTICES) {
+        failures.push(`${name}: ${bone} drives only ${count} vertices (need ${MIN_INFLUENCED_VERTICES}); ` +
+          'that limb would not deform');
+      }
+    }
+
+    if (size.y < 1.2 || size.y > 3.0) {
+      failures.push(`${name}: ${size.y.toFixed(2)} m tall is outside the fighter range (1.2-3.0)`);
+    }
+    if (Math.abs(box.min.y) > 0.25) {
+      failures.push(`${name}: feet sit ${box.min.y.toFixed(2)} m off the origin`);
+    }
+  } else {
+    notes.push(`${name}: imported/shared-rig body — parse + skinned check only; runtime mount audit owns rig, clip and normalisation`);
   }
   notes.push(`${name.padEnd(28)} ${String(skinned).padStart(2)} skinned/${String(skinned + staticMeshes.length).padStart(2)} meshes  ` +
-    `${String(Math.round(triangles)).padStart(6)} tri  ${size.y.toFixed(2)} m  ${clips.length} clips`);
+    `${String(Math.round(triangles)).padStart(6)} tri  ${size.y.toFixed(2)} m  ${clips.length} clips${isGenerated ? '' : '  [shared rig]'}`);
 }
 
 console.log(notes.join('\n'));

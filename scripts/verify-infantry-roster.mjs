@@ -93,7 +93,12 @@ const mounted = await page.evaluate(() => {
       if (maps.length) { textured += 1; for (const k of maps) { textures.add(mat[k].uuid); seenMaps.add(k); } }
     }
   });
-  const hud = document.querySelector('#hud')?.textContent || '';
+  // The legacy #hud is hidden after the modern #bbHudLayer adopts the match readouts. Use the
+  // live P1 floating plate, with #hud retained as a fallback for older entrypoints.
+  const hud = [
+    document.querySelector('#bbHudLayer .bb-float.p1 .bb-fname')?.textContent,
+    document.querySelector('#hud')?.textContent
+  ].filter(Boolean).join(' ');
   return {
     identity: f.identity, identityKey: f.identityKey, asset: u.characterAssetUrl || null,
     meshes, triangles: Math.round(tris), texturedMaterials: textured, uniqueTextures: textures.size, maps: [...seenMaps], skinned,
@@ -104,7 +109,7 @@ const mounted = await page.evaluate(() => {
   };
 });
 check('match mounts the imported Infantry body', /infantry_cc0\.glb/.test(mounted.asset || '') && mounted.triangles > 250000, JSON.stringify({ asset: mounted.asset, triangles: mounted.triangles, meshes: mounted.meshes }));
-check('HD PBR maps survive the roster path', mounted.texturedMaterials >= 1 && mounted.uniqueTextures === 3 && mounted.maps.includes('map') && mounted.maps.includes('normalMap'), JSON.stringify({ texturedMaterials: mounted.texturedMaterials, uniqueTextures: mounted.uniqueTextures, maps: mounted.maps }));
+check('HD PBR maps survive the roster path', mounted.texturedMaterials >= 1 && mounted.uniqueTextures >= 3 && mounted.maps.includes('map') && mounted.maps.includes('normalMap') && (mounted.maps.includes('roughnessMap') || mounted.maps.includes('metalnessMap')), JSON.stringify({ texturedMaterials: mounted.texturedMaterials, uniqueTextures: mounted.uniqueTextures, maps: mounted.maps }));
 check('HUD shows Infantry, not Superman', mounted.hudInfantry && !mounted.hudSuperman && mounted.identity === 'Infantry', JSON.stringify({ identity: mounted.identity, hud: mounted.hudText }));
 await page.screenshot({ path: `${out}/2-full-body.png` });
 
@@ -150,7 +155,7 @@ const switched = await page.evaluate(() => ({
   identity: window.fighters[0].identity,
   asset: window.fighters[0].model?.userData?.characterAssetUrl || null
 }));
-check('switching back to Goku restores his own body', switched.identity === 'Goku' && /roster\/goku\.glb/.test(switched.asset || ''), JSON.stringify(switched));
+check('switching back to Goku restores his own body', switched.identity === 'Goku' && /(?:roster|bespoke)\/goku(?:_body)?\.glb/.test(switched.asset || ''), JSON.stringify(switched));
 await page.screenshot({ path: `${out}/6-switched-fighter.png` });
 
 check('no page errors', errors.length === 0, errors.join(' | '));
