@@ -125,8 +125,12 @@ manifest.roster = {
   rebuild: 'npm run build:roster-fighters',
   validate: 'npm run test:roster-models',
   count: files.length,
-  note: 'Every selectable fighter is served by a generated skinned GLB. Kaze keeps the reference ' +
-    'export from assets/blender/build_anime_fighter.py.'
+  // The launch contract is frozen at 38; `count` is the generated-export inventory, not the roster.
+  launchCount: 38,
+  note: `${files.length} generated roster exports are retained in public/models/characters/roster. ` +
+    'The authoritative launch roster is 38 and also includes imported HD bodies, so not every ' +
+    'selectable fighter uses a generated GLB. Kaze keeps the reference export from ' +
+    'assets/blender/build_anime_fighter.py.'
 };
 
 writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n');
