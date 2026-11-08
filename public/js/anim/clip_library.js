@@ -16,35 +16,42 @@ export const LIBRARY_VERSION = 'browser-smash-animation-library-v1-20261022';
 const STANCES = Object.freeze({
   // Neutral standing: weight settled, arms loose at the sides.
   ground: Object.freeze({
-    pelvis: [0, 0, 0], torso: [0.06, 0, 0], head: [-0.04, 0, 0],
-    leftArm: [-0.10, 0, 0.14], leftFore: [-0.26, 0, 0.04],
-    rightArm: [-0.10, 0, -0.14], rightFore: [-0.26, 0, -0.04],
-    leftLeg: [-0.04, 0, 0.05], leftShin: [0.10, 0, 0],
-    rightLeg: [0.05, 0, -0.05], rightShin: [0.09, 0, 0]
+    pelvis: [0, 0, 0], spine: [0.04, 0, 0], torso: [0.06, 0, 0], neck: [0.02, 0, 0], head: [-0.04, 0, 0],
+    leftClavicle: [0, 0, 0.03], rightClavicle: [0, 0, -0.03],
+    leftArm: [-0.10, 0, 0.14], leftFore: [-0.26, 0, 0.04], leftHand: [-0.06, 0, 0.06],
+    rightArm: [-0.10, 0, -0.14], rightFore: [-0.26, 0, -0.04], rightHand: [-0.06, 0, -0.06],
+    leftLeg: [-0.04, 0, 0.05], leftShin: [0.10, 0, 0], leftFoot: [0.02, 0, 0.03],
+    rightLeg: [0.05, 0, -0.05], rightShin: [0.09, 0, 0], rightFoot: [0.02, 0, -0.03]
   }),
   // Combat stance: bladed, hands up, knees loaded.
   fight: Object.freeze({
-    pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], head: [-0.06, 0.18, 0],
-    leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10],
-    rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10],
-    leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0],
-    rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0]
+    pelvis: [0.04, 0.10, 0], spine: [0.05, -0.10, 0], torso: [0.12, -0.20, 0],
+    neck: [0.03, 0, 0], head: [-0.06, 0.18, 0],
+    // The lead shoulder rolls forward and the rear shoulder pulls back: a bladed guard the chest
+    // alone cannot produce.
+    leftClavicle: [-0.12, 0, 0.10], rightClavicle: [0.06, 0, -0.10],
+    leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], leftHand: [-0.18, 0, 0.10],
+    rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], rightHand: [-0.18, 0, -0.10],
+    leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0], leftFoot: [0.04, -0.10, 0.04],
+    rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0], rightFoot: [0.04, 0.10, -0.04]
   }),
   // Airborne: arms out for balance, knees loose.
   air: Object.freeze({
-    pelvis: [-0.06, 0, 0], torso: [0.10, 0, 0], head: [-0.14, 0, 0],
-    leftArm: [-0.55, 0, 0.85], leftFore: [-0.55, 0, 0.10],
-    rightArm: [-0.55, 0, -0.85], rightFore: [-0.55, 0, -0.10],
-    leftLeg: [-0.34, 0, 0.12], leftShin: [0.42, 0, 0],
-    rightLeg: [0.26, 0, -0.12], rightShin: [0.50, 0, 0]
+    pelvis: [-0.06, 0, 0], spine: [0.05, 0, 0], torso: [0.10, 0, 0], neck: [0.02, 0, 0], head: [-0.14, 0, 0],
+    leftClavicle: [0, 0, 0.06], rightClavicle: [0, 0, -0.06],
+    leftArm: [-0.55, 0, 0.85], leftFore: [-0.55, 0, 0.10], leftHand: [-0.12, 0, 0.08],
+    rightArm: [-0.55, 0, -0.85], rightFore: [-0.55, 0, -0.10], rightHand: [-0.12, 0, -0.08],
+    leftLeg: [-0.34, 0, 0.12], leftShin: [0.42, 0, 0], leftFoot: [-0.18, 0, 0.04],
+    rightLeg: [0.26, 0, -0.12], rightShin: [0.50, 0, 0], rightFoot: [-0.18, 0, -0.04]
   }),
   // Hovering flight: arms swept wide, legs trailing under the body.
   fly: Object.freeze({
-    pelvis: [-0.14, 0, 0], torso: [0.18, 0, 0], head: [-0.24, 0, 0],
-    leftArm: [0.30, 0, 1.02], leftFore: [-0.34, 0, 0.12],
-    rightArm: [0.30, 0, -1.02], rightFore: [-0.34, 0, -0.12],
-    leftLeg: [0.30, 0, 0.10], leftShin: [0.34, 0, 0],
-    rightLeg: [0.22, 0, -0.10], rightShin: [0.40, 0, 0]
+    pelvis: [-0.14, 0, 0], spine: [0.06, 0, 0], torso: [0.18, 0, 0], neck: [0.04, 0, 0], head: [-0.24, 0, 0],
+    leftClavicle: [0, 0, 0.08], rightClavicle: [0, 0, -0.08],
+    leftArm: [0.30, 0, 1.02], leftFore: [-0.34, 0, 0.12], leftHand: [-0.10, 0, 0.06],
+    rightArm: [0.30, 0, -1.02], rightFore: [-0.34, 0, -0.12], rightHand: [-0.10, 0, -0.06],
+    leftLeg: [0.30, 0, 0.10], leftShin: [0.34, 0, 0], leftFoot: [-0.34, 0, 0.02],
+    rightLeg: [0.22, 0, -0.10], rightShin: [0.40, 0, 0], rightFoot: [-0.34, 0, -0.02]
   })
 });
 
@@ -80,11 +87,11 @@ export const CLIP_SPECS = Object.freeze({
   run: {
     label: 'Run', category: 'movement', stance: 'ground', loop: true, duration: 0.64, priority: 3,
     keys: [
-      k(0, { torso: [0.24, 0.10, 0], pelvis: [0.04, 0.10, 0], head: [-0.16, 0, 0], leftLeg: [-0.82, 0, 0.05], leftShin: [0.24, 0, 0], rightLeg: [0.62, 0, -0.05], rightShin: [0.82, 0, 0], leftArm: [-1.05, 0, 0.12], leftFore: [-1.30, 0, 0], rightArm: [0.62, 0, -0.12], rightFore: [-1.10, 0, 0] }),
-      k(0.16, { torso: [0.26, 0.0, 0], head: [-0.16, 0, 0], leftLeg: [-0.30, 0, 0.05], leftShin: [0.92, 0, 0], rightLeg: [-0.10, 0, -0.05], rightShin: [1.10, 0, 0], leftArm: [-0.40, 0, 0.12], rightArm: [0.10, 0, -0.12] }),
-      k(0.32, { torso: [0.24, -0.10, 0], pelvis: [0.04, -0.10, 0], head: [-0.16, 0, 0], rightLeg: [-0.82, 0, -0.05], rightShin: [0.24, 0, 0], leftLeg: [0.62, 0, 0.05], leftShin: [0.82, 0, 0], rightArm: [-1.05, 0, -0.12], rightFore: [-1.30, 0, 0], leftArm: [0.62, 0, 0.12], leftFore: [-1.10, 0, 0] }),
-      k(0.48, { torso: [0.26, 0.0, 0], head: [-0.16, 0, 0], rightLeg: [-0.30, 0, -0.05], rightShin: [0.92, 0, 0], leftLeg: [-0.10, 0, 0.05], leftShin: [1.10, 0, 0], rightArm: [-0.40, 0, -0.12], leftArm: [0.10, 0, 0.12] }),
-      k(0.64, { torso: [0.24, 0.10, 0], pelvis: [0.04, 0.10, 0], head: [-0.16, 0, 0], leftLeg: [-0.82, 0, 0.05], leftShin: [0.24, 0, 0], rightLeg: [0.62, 0, -0.05], rightShin: [0.82, 0, 0], leftArm: [-1.05, 0, 0.12], leftFore: [-1.30, 0, 0], rightArm: [0.62, 0, -0.12], rightFore: [-1.10, 0, 0] })
+      k(0, { spine: [0.10, 0.05, 0], torso: [0.24, 0.10, 0], pelvis: [0.04, 0.10, 0], head: [-0.16, 0, 0], leftLeg: [-0.82, 0, 0.05], leftShin: [0.24, 0, 0], rightLeg: [0.62, 0, -0.05], rightShin: [0.82, 0, 0], leftArm: [-1.05, 0, 0.12], leftFore: [-1.30, 0, 0], rightArm: [0.62, 0, -0.12], rightFore: [-1.10, 0, 0] }),
+      k(0.16, { spine: [0.13, 0, 0], torso: [0.26, 0.0, 0], head: [-0.16, 0, 0], leftLeg: [-0.30, 0, 0.05], leftShin: [0.92, 0, 0], rightLeg: [-0.10, 0, -0.05], rightShin: [1.10, 0, 0], leftArm: [-0.40, 0, 0.12], rightArm: [0.10, 0, -0.12] }),
+      k(0.32, { spine: [0.10, -0.05, 0], torso: [0.24, -0.10, 0], pelvis: [0.04, -0.10, 0], head: [-0.16, 0, 0], rightLeg: [-0.82, 0, -0.05], rightShin: [0.24, 0, 0], leftLeg: [0.62, 0, 0.05], leftShin: [0.82, 0, 0], rightArm: [-1.05, 0, -0.12], rightFore: [-1.30, 0, 0], leftArm: [0.62, 0, 0.12], leftFore: [-1.10, 0, 0] }),
+      k(0.48, { spine: [0.13, 0, 0], torso: [0.26, 0.0, 0], head: [-0.16, 0, 0], rightLeg: [-0.30, 0, -0.05], rightShin: [0.92, 0, 0], leftLeg: [-0.10, 0, 0.05], leftShin: [1.10, 0, 0], rightArm: [-0.40, 0, -0.12], leftArm: [0.10, 0, 0.12] }),
+      k(0.64, { spine: [0.10, 0.05, 0], torso: [0.24, 0.10, 0], pelvis: [0.04, 0.10, 0], head: [-0.16, 0, 0], leftLeg: [-0.82, 0, 0.05], leftShin: [0.24, 0, 0], rightLeg: [0.62, 0, -0.05], rightShin: [0.82, 0, 0], leftArm: [-1.05, 0, 0.12], leftFore: [-1.30, 0, 0], rightArm: [0.62, 0, -0.12], rightFore: [-1.10, 0, 0] })
     ]
   },
   sprint: {
@@ -159,7 +166,7 @@ export const CLIP_SPECS = Object.freeze({
   land: {
     label: 'Land', category: 'air', stance: 'ground', loop: false, duration: 0.34, priority: 8,
     keys: [
-      k(0, { pelvis: [0.12, 0, 0], torso: [0.30, 0, 0], head: [0.06, 0, 0], leftLeg: [-0.70, 0, 0.12], leftShin: [1.25, 0, 0], rightLeg: [-0.60, 0, -0.12], rightShin: [1.20, 0, 0], leftArm: [0.45, 0, 0.35], rightArm: [0.45, 0, -0.35] }),
+      k(0, { pelvis: [0.12, 0, 0], spine: [0.18, 0, 0], torso: [0.30, 0, 0], head: [0.06, 0, 0], leftLeg: [-0.70, 0, 0.12], leftShin: [1.25, 0, 0], rightLeg: [-0.60, 0, -0.12], rightShin: [1.20, 0, 0], leftArm: [0.45, 0, 0.35], rightArm: [0.45, 0, -0.35] }),
       k(0.12, { pelvis: [0.06, 0, 0], torso: [0.18, 0, 0], leftLeg: [-0.40, 0, 0.10], leftShin: [0.70, 0, 0], rightLeg: [-0.32, 0, -0.10], rightShin: [0.66, 0, 0], leftArm: [0.10, 0, 0.28], rightArm: [0.10, 0, -0.28] }),
       k(0.34, { torso: [0.06, 0, 0], leftLeg: [-0.04, 0, 0.05], leftShin: [0.10, 0, 0], rightLeg: [0.05, 0, -0.05], rightShin: [0.09, 0, 0] })
     ]
@@ -274,6 +281,65 @@ export const CLIP_SPECS = Object.freeze({
       k(0.5, { torso: [0.12, -0.20, 0], leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0], rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] })
     ]
   },
+  // Spider-Man's own strike clips. The generic jab/heavy poses were authored around a
+  // different shoulder rest and read as a high guard on the imported body. These variants keep
+  // the same timing and stance, but they are built to read from the follow camera as well as in
+  // profile: the striking arm finishes near shoulder height on the opponent line, the off hand
+  // pulls back to the ribs instead of staying beside the chin, and the shoulder line turns far
+  // enough that the punch is a whole-body strike rather than two arms held up.
+  SpiderMan_Jab: {
+    label: 'Spider Jab', category: 'combat', stance: 'fight', loop: false, duration: 0.34, priority: 10, peak: 0.38,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10] }),
+      k(0.06, { torso: [0.16, -0.38, 0.02], pelvis: [0.04, -0.20, 0], head: [-0.04, -0.10, 0], rightArm: [-0.92, 0.26, -0.40], rightFore: [-1.54, 0, -0.08], leftArm: [-1.16, -0.12, 0.32], leftFore: [-1.56, 0, 0.10], leftLeg: [-0.26, 0, 0.12], leftShin: [0.36, 0, 0] }),
+      k(0.13, { torso: [0.26, 0.46, 0.05], pelvis: [0.04, 0.32, 0], head: [-0.06, 0.16, 0], rightArm: [-1.50, -0.02, -0.30], rightFore: [-0.05, 0, -0.02], leftArm: [-0.32, -0.18, 0.36], leftFore: [-1.28, 0, 0.12], rightLeg: [0.18, 0, -0.10], leftLeg: [-0.30, 0, 0.12], leftShin: [0.34, 0, 0] }),
+      k(0.20, { torso: [0.22, 0.38, 0.04], pelvis: [0.04, 0.26, 0], head: [-0.05, 0.12, 0], rightArm: [-1.46, 0.02, -0.32], rightFore: [-0.16, 0, -0.04], leftArm: [-0.40, -0.16, 0.34], leftFore: [-1.20, 0, 0.12] }),
+      k(0.34, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10] })
+    ]
+  },
+  SpiderMan_Cross: {
+    label: 'Spider Cross', category: 'combat', stance: 'fight', loop: false, duration: 0.38, priority: 10, peak: 0.40,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] }),
+      k(0.09, { torso: [0.16, 0.38, -0.02], pelvis: [0.04, 0.20, 0], head: [-0.04, 0.10, 0], leftArm: [-0.92, -0.26, 0.40], leftFore: [-1.54, 0, 0.08], rightArm: [-1.16, 0.12, -0.32], rightFore: [-1.56, 0, -0.10], rightLeg: [0.26, 0, -0.12], rightShin: [0.36, 0, 0] }),
+      k(0.16, { torso: [0.26, -0.50, -0.05], pelvis: [0.04, -0.34, 0], head: [-0.06, -0.16, 0], leftArm: [-1.54, 0.02, 0.30], leftFore: [-0.05, 0, 0.02], rightArm: [-0.32, 0.18, -0.36], rightFore: [-1.28, 0, -0.12], leftLeg: [0.18, 0, 0.12], rightLeg: [-0.28, 0, -0.12], rightShin: [0.32, 0, 0] }),
+      k(0.24, { torso: [0.22, -0.40, -0.04], pelvis: [0.04, -0.28, 0], head: [-0.05, -0.12, 0], leftArm: [-1.48, 0.02, 0.32], leftFore: [-0.18, 0, 0.04], rightArm: [-0.40, 0.16, -0.34], rightFore: [-1.20, 0, -0.12] }),
+      k(0.38, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  SpiderMan_Heavy: {
+    label: 'Spider Heavy', category: 'combat', stance: 'fight', loop: false, duration: 0.62, priority: 12, peak: 0.42,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10] }),
+      k(0.16, { pelvis: [-0.02, -0.34, 0], torso: [0.18, -0.62, 0], head: [-0.02, -0.12, 0], rightArm: [0.22, 0.46, -0.58], rightFore: [-1.14, 0, -0.20], leftArm: [-1.40, -0.20, 0.34], leftFore: [-1.60, 0, 0.10], leftLeg: [-0.30, 0, 0.14], rightLeg: [0.24, 0, -0.14], rightShin: [0.42, 0, 0] }),
+      k(0.26, { pelvis: [0.08, 0.42, 0], torso: [0.28, 0.60, -0.06], head: [-0.06, 0.16, 0], rightArm: [-1.36, 0.04, -0.54], rightFore: [-0.10, 0, -0.04], leftArm: [-0.34, -0.20, 0.40], leftFore: [-1.22, 0, 0.12], leftLeg: [-0.44, 0, 0.16], leftShin: [0.38, 0, 0], rightLeg: [0.32, 0, -0.18], rightShin: [0.20, 0, 0] }),
+      k(0.36, { pelvis: [0.07, 0.34, 0], torso: [0.24, 0.48, -0.05], head: [-0.05, 0.12, 0], rightArm: [-1.30, 0.02, -0.62], rightFore: [-0.30, 0, -0.06], leftArm: [-0.40, -0.18, 0.38], leftFore: [-1.16, 0, 0.12], leftLeg: [-0.38, 0, 0.14], leftShin: [0.34, 0, 0], rightLeg: [0.28, 0, -0.16], rightShin: [0.22, 0, 0] }),
+      k(0.46, { pelvis: [0.05, 0.20, 0], torso: [0.16, 0.26, -0.02], head: [-0.04, 0.06, 0], rightArm: [-1.24, 0.02, -0.38], rightFore: [-0.62, 0, -0.06], leftArm: [-0.62, -0.14, 0.34], leftFore: [-1.36, 0, 0.10] }),
+      k(0.62, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10] })
+    ]
+  },
+  SpiderMan_Kick: {
+    label: 'Spider Kick', category: 'combat', stance: 'fight', loop: false, duration: 0.5, priority: 11, peak: 0.36,
+    keys: [
+      k(0, { rightLeg: [0.14, 0, -0.12], torso: [0.12, -0.20, 0] }),
+      k(0.1, { pelvis: [0.20, 0.06, 0], torso: [0.30, -0.14, 0], rightLeg: [-0.70, 0, -0.10], rightShin: [1.45, 0, 0], leftLeg: [0.02, 0, 0.12], leftShin: [0.20, 0, 0], leftArm: [-0.80, -0.10, 0.55], rightArm: [-0.60, 0.10, -0.55] }),
+      k(0.18, { pelvis: [-0.16, 0.06, 0], torso: [-0.16, -0.10, 0], rightLeg: [-1.55, 0, -0.08], rightShin: [0.06, 0, 0], leftLeg: [0.06, 0, 0.10], leftShin: [0.28, 0, 0], leftArm: [0.10, -0.10, 0.62], rightArm: [0.20, 0.10, -0.60], head: [-0.14, 0, 0] }),
+      k(0.26, { pelvis: [-0.10, 0.06, 0], torso: [-0.08, -0.12, 0], rightLeg: [-1.34, 0, -0.10], rightShin: [0.18, 0, 0], leftLeg: [0.08, 0, 0.10], leftShin: [0.30, 0, 0], leftArm: [-0.10, -0.10, 0.54], rightArm: [0.02, 0.10, -0.52], head: [-0.12, 0, 0] }),
+      k(0.36, { pelvis: [0.02, 0.08, 0], torso: [0.06, -0.14, 0], rightLeg: [-0.60, 0, -0.10], rightShin: [1.10, 0, 0], leftArm: [-0.50, -0.10, 0.44], rightArm: [-0.30, 0.10, -0.44] }),
+      k(0.5, { torso: [0.12, -0.20, 0], leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0], rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] })
+    ]
+  },
+  SpiderMan_Air: {
+    label: 'Spider Air Kick', category: 'combat', stance: 'air', loop: false, duration: 0.5, priority: 11, peak: 0.36,
+    keys: [
+      k(0, { rightLeg: [0.14, 0, -0.12], torso: [0.12, -0.20, 0], leftArm: [-0.55, 0, 0.85], rightArm: [-0.55, 0, -0.85] }),
+      k(0.1, { pelvis: [0.20, 0.06, 0], torso: [0.30, -0.14, 0], rightLeg: [-0.70, 0, -0.10], rightShin: [1.45, 0, 0], leftLeg: [0.02, 0, 0.12], leftShin: [0.20, 0, 0], leftArm: [-0.80, -0.10, 0.55], rightArm: [-0.60, 0.10, -0.55] }),
+      k(0.18, { pelvis: [-0.18, 0.04, 0], torso: [-0.26, -0.08, 0.05], head: [-0.16, 0.02, 0], rightLeg: [-1.62, 0.02, -0.16], rightShin: [0.02, 0, 0], rightFoot: [-0.22, 0, -0.04], leftLeg: [0.10, 0, 0.12], leftShin: [0.56, 0, 0], leftArm: [-0.24, -0.16, 0.78], leftFore: [-0.52, 0, 0.10], rightArm: [0.16, 0.16, -0.78], rightFore: [-0.48, 0, -0.10] }),
+      k(0.28, { pelvis: [-0.06, 0.06, 0], torso: [-0.14, -0.12, 0], head: [-0.12, 0.02, 0], rightLeg: [-1.30, 0.02, -0.14], rightShin: [0.14, 0, 0], rightFoot: [-0.14, 0, -0.04], leftLeg: [0.08, 0, 0.10], leftShin: [0.46, 0, 0], leftArm: [-0.34, -0.12, 0.62], leftFore: [-0.70, 0, 0.10], rightArm: [-0.10, 0.12, -0.60], rightFore: [-0.66, 0, -0.10] }),
+      k(0.38, { pelvis: [0.02, 0.08, 0], torso: [0.06, -0.14, 0], rightLeg: [-0.60, 0, -0.10], rightShin: [1.10, 0, 0], leftArm: [-0.50, -0.10, 0.44], rightArm: [-0.30, 0.10, -0.44] }),
+      k(0.5, { torso: [0.12, -0.20, 0], leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0], rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] })
+    ]
+  },
   spinning_kick: {
     label: 'Spinning Kick', category: 'combat', stance: 'fight', loop: false, duration: 0.66, priority: 13, peak: 0.44,
     keys: [
@@ -314,6 +380,183 @@ export const CLIP_SPECS = Object.freeze({
       k(0.48, { pelvis: [-0.06, 0.30, 0], torso: [-0.10, 0.20, 0], head: [-0.30, 0.05, 0], leftArm: [-1.80, -0.16, 0.16], leftFore: [-0.08, 0, 0.02], rightArm: [-1.80, 0.16, -0.16], rightFore: [-0.08, 0, -0.02], leftLeg: [-0.26, 0, 0.14], leftShin: [0.20, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.16, 0, 0] }),
       k(0.62, { pelvis: [-0.04, 0.22, 0], torso: [-0.04, 0.10, 0], head: [-0.26, 0.02, 0], leftArm: [-1.72, -0.12, 0.20], rightArm: [-1.72, 0.12, -0.20], leftFore: [-0.22, 0, 0.04], rightFore: [-0.22, 0, -0.04] }),
       k(0.92, { pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], head: [-0.06, 0.18, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+
+  // Spider-Man's web kit. These are authored on the same canonical bones as every other clip, so
+  // the Mixamo retargeter can drive them without a second animation system. Web Zip is the
+  // signature lunge; the three kit casts get their own readable reach/pull/kick silhouettes.
+  spider_man_web_zip: {
+    label: 'Web Zip Strike', category: 'combat', stance: 'fight', loop: false,
+    duration: 0.78, priority: 14, peak: 0.42,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] }),
+      k(0.10, { pelvis: [0.10, 0.34, 0], torso: [0.14, 0.36, 0], leftArm: [-0.55, -0.30, 0.40], leftFore: [-1.20, 0, 0.10], rightArm: [0.10, 0.30, -0.55], rightFore: [-1.00, 0, -0.10], leftLeg: [-0.35, 0, 0.14], leftShin: [0.55, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.35, 0, 0] }),
+      k(0.24, { pelvis: [0.08, 0.44, 0], torso: [0.18, 0.48, 0], leftArm: [-1.78, -0.12, 0.16], leftFore: [-0.06, 0, 0.02], rightArm: [-0.30, 0.30, -0.44], rightFore: [-0.80, 0, -0.10], leftLeg: [-0.50, 0, 0.14], leftShin: [0.36, 0, 0], rightLeg: [0.22, 0, -0.14], rightShin: [0.24, 0, 0] }),
+      k(0.38, { pelvis: [0.06, 0.36, 0], torso: [0.14, 0.38, 0], leftArm: [-1.58, -0.10, 0.20], leftFore: [-0.34, 0, 0.04], rightArm: [-0.62, 0.22, -0.38], rightFore: [-1.10, 0, -0.10], leftLeg: [-0.38, 0, 0.14], leftShin: [0.46, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.34, 0, 0] }),
+      k(0.78, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  spider_web_shot: {
+    label: 'Web Shot', category: 'combat', stance: 'fight', loop: false,
+    duration: 0.48, priority: 13, peak: 0.34,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] }),
+      k(0.07, { torso: [0.18, -0.26, 0], pelvis: [0.05, 0.06, 0], rightArm: [-1.08, 0.24, -0.38], rightFore: [-1.22, 0, -0.10], leftArm: [-1.18, -0.14, 0.30], leftFore: [-1.40, 0, 0.10] }),
+      k(0.14, { torso: [0.10, -0.30, 0], pelvis: [0.04, 0.18, 0], rightArm: [-1.70, 0.04, -0.14], rightFore: [-0.08, 0, -0.02], leftArm: [-1.10, -0.18, 0.22], leftFore: [-1.55, 0, 0.10], rightLeg: [0.16, 0, -0.14], rightShin: [0.30, 0, 0] }),
+      k(0.26, { torso: [0.12, -0.24, 0], rightArm: [-1.64, 0.04, -0.16], rightFore: [-0.12, 0, -0.02], leftArm: [-1.16, -0.16, 0.24], leftFore: [-1.48, 0, 0.10] }),
+      k(0.48, { torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  spider_web_pull: {
+    label: 'Web Pull', category: 'combat', stance: 'fight', loop: false,
+    duration: 0.62, priority: 13, peak: 0.40,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] }),
+      k(0.10, { torso: [0.20, -0.10, 0], pelvis: [0.10, 0.10, 0], leftArm: [-1.62, -0.20, 0.24], leftFore: [-0.20, 0, 0.04], rightArm: [-1.58, 0.20, -0.24], rightFore: [-0.20, 0, -0.04], leftLeg: [-0.28, 0, 0.14], leftShin: [0.42, 0, 0], rightLeg: [0.16, 0, -0.14], rightShin: [0.36, 0, 0] }),
+      k(0.24, { torso: [-0.06, 0.10, 0], pelvis: [-0.08, 0.10, 0], leftArm: [-1.18, -0.20, 0.38], leftFore: [-1.38, 0, 0.10], rightArm: [-1.14, 0.20, -0.38], rightFore: [-1.38, 0, -0.10], leftLeg: [-0.38, 0, 0.14], leftShin: [0.58, 0, 0], rightLeg: [0.20, 0, -0.14], rightShin: [0.50, 0, 0] }),
+      k(0.38, { torso: [-0.02, 0.08, 0], pelvis: [-0.04, 0.10, 0], leftArm: [-1.26, -0.18, 0.34], leftFore: [-1.22, 0, 0.08], rightArm: [-1.22, 0.18, -0.34], rightFore: [-1.22, 0, -0.08], leftLeg: [-0.32, 0, 0.14], leftShin: [0.50, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.42, 0, 0] }),
+      k(0.62, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  spider_web_swing: {
+    label: 'Web Swing Strike', category: 'combat', stance: 'fight', loop: false,
+    duration: 0.72, priority: 13, peak: 0.42,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] }),
+      k(0.10, { pelvis: [0.22, 0.08, 0], torso: [0.34, -0.12, 0], head: [-0.08, 0.04, 0], leftArm: [0.16, -0.12, 0.40], rightArm: [0.12, 0.12, -0.40], leftLeg: [-0.56, 0, 0.16], leftShin: [0.82, 0, 0], rightLeg: [0.28, 0, -0.16], rightShin: [0.66, 0, 0] }),
+      k(0.24, { pelvis: [-0.20, 0.12, 0], torso: [-0.18, 0.10, 0], head: [-0.16, 0.02, 0], leftArm: [-2.10, -0.10, 0.40], leftFore: [-0.20, 0, 0.04], rightArm: [-2.00, 0.10, -0.40], rightFore: [-0.20, 0, -0.04], leftLeg: [-0.82, 0, 0.16], leftShin: [0.70, 0, 0], rightLeg: [0.58, 0, -0.16], rightShin: [0.62, 0, 0] }),
+      k(0.36, { pelvis: [-0.06, 0.26, 0], torso: [0.08, 0.30, 0], head: [-0.10, 0.02, 0], leftArm: [-1.40, -0.10, 0.52], leftFore: [-0.62, 0, 0.10], rightArm: [-1.28, 0.10, -0.52], rightFore: [-0.62, 0, -0.10], leftLeg: [-0.26, 0, 0.14], leftShin: [0.62, 0, 0], rightLeg: [-1.82, 0, -0.12], rightShin: [0.06, 0, 0] }),
+      k(0.50, { pelvis: [0.04, 0.16, 0], torso: [0.18, 0.14, 0], leftArm: [-1.18, -0.12, 0.38], rightArm: [-1.06, 0.12, -0.38], leftLeg: [-0.48, 0, 0.14], leftShin: [0.78, 0, 0], rightLeg: [-0.30, 0, -0.14], rightShin: [0.92, 0, 0] }),
+      k(0.72, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  // Spider-Man's ultimate is a real three-beat sequence, not a held stance: fire a webline,
+  // reel the target in, then spend the two follow-ups on a spinning kick and a double-fist slam.
+  // The keys sit on the grab runner's own hit times (0.66 / 1.03 / 1.39 s) so the body moves with
+  // the three damage events rather than firing all three from one frozen pose.
+  spider_web_ultimate: {
+    label: 'Maximum Web Takedown', category: 'combat', stance: 'fight', loop: false,
+    duration: 2.16, priority: 17, peak: 0.64,
+    keys: [
+      k(0, { pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] }),
+      k(0.22, { pelvis: [0.12, -0.22, 0], torso: [0.24, -0.42, 0], head: [-0.12, -0.10, 0], leftArm: [-0.82, -0.30, 0.38], leftFore: [-1.20, 0, 0.10], rightArm: [-0.64, 0.34, -0.42], rightFore: [-1.16, 0, -0.10], leftLeg: [-0.34, 0, 0.14], leftShin: [0.52, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.38, 0, 0] }),
+      k(0.46, { pelvis: [0.06, 0.26, 0], torso: [0.10, 0.34, 0], head: [-0.18, 0.06, 0], leftArm: [-1.88, -0.12, 0.16], leftFore: [-0.10, 0, 0.02], rightArm: [-1.84, 0.12, -0.16], rightFore: [-0.10, 0, -0.02], leftLeg: [-0.46, 0, 0.16], leftShin: [0.34, 0, 0], rightLeg: [0.22, 0, -0.16], rightShin: [0.26, 0, 0] }),
+      k(0.66, { pelvis: [0.02, 0.42, 0], torso: [0.04, 0.58, 0], head: [-0.14, 0.22, 0], leftArm: [-1.42, -0.18, 0.30], leftFore: [-1.28, 0, 0.08], rightArm: [-1.38, 0.18, -0.30], rightFore: [-1.24, 0, -0.08], leftLeg: [-0.56, 0, 0.16], leftShin: [0.62, 0, 0], rightLeg: [0.24, 0, -0.16], rightShin: [0.54, 0, 0] }),
+      k(0.80, { pelvis: [0.18, 0.22, 0], torso: [0.30, 0.18, 0], head: [-0.10, 0.04, 0], leftArm: [-0.74, -0.24, 0.46], leftFore: [-0.90, 0, 0.08], rightArm: [-0.86, 0.24, -0.46], rightFore: [-0.86, 0, -0.08], leftLeg: [-0.82, 0, 0.18], leftShin: [0.90, 0, 0], rightLeg: [0.34, 0, -0.18], rightShin: [0.82, 0, 0] }),
+      k(1.03, { pelvis: [-0.06, 0.54, 0], torso: [0.08, 0.72, 0], head: [-0.16, 0.26, 0], leftArm: [-0.52, -0.22, 0.64], leftFore: [-0.70, 0, 0.12], rightArm: [-0.58, 0.30, -0.56], rightFore: [-0.66, 0, -0.12], leftLeg: [-0.44, 0, 0.18], leftShin: [0.72, 0, 0], rightLeg: [-1.86, 0, -0.16], rightShin: [0.08, 0, 0] }),
+      k(1.18, { pelvis: [0.16, 0.30, 0], torso: [0.26, 0.24, 0], head: [-0.08, 0.06, 0], leftArm: [-0.82, -0.20, 0.40], leftFore: [-1.02, 0, 0.10], rightArm: [-0.90, 0.22, -0.40], rightFore: [-0.98, 0, -0.10], leftLeg: [-0.62, 0, 0.16], leftShin: [0.90, 0, 0], rightLeg: [-0.24, 0, -0.16], rightShin: [0.72, 0, 0] }),
+      k(1.39, { pelvis: [0.22, 0.12, 0], torso: [0.34, -0.04, 0], head: [-0.24, 0, 0], leftArm: [-2.24, -0.08, 0.18], leftFore: [-0.08, 0, 0.02], rightArm: [-2.20, 0.08, -0.18], rightFore: [-0.08, 0, -0.02], leftLeg: [-0.72, 0, 0.18], leftShin: [1.04, 0, 0], rightLeg: [0.48, 0, -0.18], rightShin: [0.92, 0, 0] }),
+      k(1.58, { pelvis: [0.30, 0.02, 0], torso: [0.38, -0.04, 0], head: [-0.18, 0, 0], leftArm: [-2.10, -0.06, 0.22], leftFore: [-0.12, 0, 0.02], rightArm: [-2.06, 0.06, -0.22], rightFore: [-0.12, 0, -0.02], leftLeg: [-0.78, 0, 0.18], leftShin: [1.10, 0, 0], rightLeg: [0.52, 0, -0.18], rightShin: [0.98, 0, 0] }),
+      k(1.82, { pelvis: [0.12, 0.08, 0], torso: [0.20, -0.06, 0], head: [-0.10, 0.02, 0], leftArm: [-1.52, -0.10, 0.30], leftFore: [-0.72, 0, 0.08], rightArm: [-1.48, 0.10, -0.30], rightFore: [-0.72, 0, -0.08], leftLeg: [-0.40, 0, 0.16], leftShin: [0.68, 0, 0], rightLeg: [0.28, 0, -0.16], rightShin: [0.60, 0, 0] }),
+      k(2.16, { pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  // The form's activation is separate from the 8.5 s buff: this is the one-second read where the
+  // spider-sense ring snaps out and the body settles into its faster stance.
+  spider_sense_overdrive: {
+    label: 'Spider-Sense Overdrive', category: 'combat', stance: 'fight', loop: false,
+    duration: 1.0, priority: 13, peak: 0.46,
+    keys: [
+      k(0, { pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] }),
+      k(0.16, { pelvis: [0.18, -0.10, 0], torso: [0.28, -0.16, 0], head: [-0.20, 0.04, 0], leftArm: [-0.72, -0.30, 0.58], leftFore: [-1.12, 0, 0.12], rightArm: [-0.68, 0.30, -0.58], rightFore: [-1.08, 0, -0.12], leftLeg: [-0.42, 0, 0.16], leftShin: [0.70, 0, 0], rightLeg: [0.24, 0, -0.16], rightShin: [0.62, 0, 0] }),
+      k(0.46, { pelvis: [0.08, 0.20, 0], torso: [0.06, 0.24, 0], head: [-0.12, 0.10, 0], leftArm: [-1.56, -0.26, 0.48], leftFore: [-0.54, 0, 0.10], rightArm: [-1.50, 0.26, -0.48], rightFore: [-0.58, 0, -0.10], leftLeg: [-0.30, 0, 0.14], leftShin: [0.42, 0, 0], rightLeg: [0.20, 0, -0.14], rightShin: [0.38, 0, 0] }),
+      k(0.68, { pelvis: [0.02, 0.16, 0], torso: [0.02, 0.18, 0], head: [-0.06, 0.06, 0], leftArm: [-1.22, -0.18, 0.40], leftFore: [-1.02, 0, 0.10], rightArm: [-1.18, 0.18, -0.40], rightFore: [-1.06, 0, -0.10], leftLeg: [-0.20, 0, 0.14], leftShin: [0.30, 0, 0], rightLeg: [0.16, 0, -0.14], rightShin: [0.28, 0, 0] }),
+      k(1.0, { pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
+    ]
+  },
+  web_swing: {
+    label: 'Web Swing', category: 'movement', stance: 'air', loop: true,
+    duration: 1.2, priority: 8,
+    keys: [
+      k(0, { pelvis: [-0.16, 0, 0], torso: [-0.12, 0, 0], head: [-0.10, 0, 0], leftArm: [-2.45, -0.12, 0.18], leftFore: [-0.20, 0, 0.04], rightArm: [-2.36, 0.12, -0.18], rightFore: [-0.20, 0, -0.04], leftLeg: [-0.85, 0, 0.10], leftShin: [0.55, 0, 0], rightLeg: [0.55, 0, -0.10], rightShin: [0.65, 0, 0] }),
+      k(0.55, { pelvis: [-0.10, 0.04, 0], torso: [-0.06, 0.04, 0], head: [-0.06, 0.02, 0], leftArm: [-2.38, -0.14, 0.22], leftFore: [-0.18, 0, 0.04], rightArm: [-2.30, 0.14, -0.22], rightFore: [-0.18, 0, -0.04], leftLeg: [-0.70, 0, 0.10], leftShin: [0.62, 0, 0], rightLeg: [0.62, 0, -0.10], rightShin: [0.55, 0, 0] }),
+      k(1.2, { pelvis: [-0.16, 0, 0], torso: [-0.12, 0, 0], head: [-0.10, 0, 0], leftArm: [-2.45, -0.12, 0.18], leftFore: [-0.20, 0, 0.04], rightArm: [-2.36, 0.12, -0.18], rightFore: [-0.20, 0, -0.04], leftLeg: [-0.85, 0, 0.10], leftShin: [0.55, 0, 0], rightLeg: [0.55, 0, -0.10], rightShin: [0.65, 0, 0] })
+    ]
+  },
+
+  // ------------------------------------------- character signature moves (Phase 23)
+  // Authored per character, not a renamed generic clip. Goku's Kamehameha is a real sequence:
+  // coil and cup the palms at the hip, thrust, sustain the beam, recover. The peak sits on the
+  // thrust so the gameplay retime lands the discharge on the move's active window
+  // (animation_manifest.js maps goku -> this clip).
+  goku_kamehameha: {
+    label: 'Kamehameha', category: 'combat', stance: 'fight', loop: false,
+    duration: 1.15, priority: 14, peak: 0.4,
+    keys: [
+      k(0, { leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] }),
+      k(0.2, { pelvis: [0.10, 0.34, 0], spine: [0.10, 0.16, 0], torso: [0.18, 0.46, 0],
+        head: [-0.04, 0.28, 0], neck: [0.02, 0.10, 0],
+        leftClavicle: [-0.18, 0, 0.16], rightClavicle: [0.10, 0, -0.16],
+        leftArm: [-1.02, -0.10, 0.58], leftFore: [-1.78, 0, 0.30], leftHand: [-0.34, 0, 0.16],
+        rightArm: [-0.72, 0.20, -0.98], rightFore: [-2.02, 0, -0.34], rightHand: [-0.34, 0, -0.16],
+        leftLeg: [-0.34, 0, 0.16], leftShin: [0.54, 0, 0], leftFoot: [0.06, -0.20, 0.05],
+        rightLeg: [0.22, 0, -0.16], rightShin: [0.46, 0, 0], rightFoot: [0.06, 0.22, -0.05] }),
+      k(0.34, { pelvis: [0.12, 0.36, 0], spine: [0.12, 0.18, 0], torso: [0.20, 0.48, 0],
+        head: [-0.02, 0.30, 0], neck: [0.03, 0.10, 0],
+        leftClavicle: [-0.20, 0, 0.18], rightClavicle: [0.12, 0, -0.18],
+        leftArm: [-1.06, -0.10, 0.62], leftFore: [-1.84, 0, 0.32], leftHand: [-0.36, 0, 0.18],
+        rightArm: [-0.76, 0.22, -1.02], rightFore: [-2.06, 0, -0.36], rightHand: [-0.36, 0, -0.18],
+        leftLeg: [-0.36, 0, 0.16], leftShin: [0.58, 0, 0], rightLeg: [0.24, 0, -0.16], rightShin: [0.50, 0, 0] }),
+      k(0.46, { pelvis: [0.02, -0.20, 0], spine: [-0.02, -0.08, 0], torso: [0.02, -0.16, 0],
+        head: [-0.12, -0.04, 0], neck: [0.02, 0, 0],
+        leftClavicle: [-0.06, 0, 0.04], rightClavicle: [-0.06, 0, -0.04],
+        leftArm: [-1.76, 0.16, 0.06], leftFore: [-0.10, 0, 0.02], leftHand: [-0.06, 0, 0],
+        rightArm: [-1.76, -0.16, -0.06], rightFore: [-0.10, 0, -0.02], rightHand: [-0.06, 0, 0],
+        leftLeg: [-0.26, 0, 0.14], leftShin: [0.22, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.20, 0, 0] }),
+      k(0.62, { pelvis: [0.0, -0.22, 0], spine: [-0.04, -0.08, 0], torso: [-0.02, -0.16, 0],
+        head: [-0.14, -0.04, 0],
+        leftArm: [-1.80, 0.16, 0.04], leftFore: [-0.06, 0, 0.02], leftHand: [-0.04, 0, 0],
+        rightArm: [-1.80, -0.16, -0.04], rightFore: [-0.06, 0, -0.02], rightHand: [-0.04, 0, 0],
+        leftLeg: [-0.24, 0, 0.14], leftShin: [0.20, 0, 0], rightLeg: [0.16, 0, -0.14], rightShin: [0.18, 0, 0] }),
+      k(0.86, { pelvis: [0.06, -0.06, 0], spine: [0.04, 0, 0], torso: [0.14, -0.04, 0],
+        head: [-0.08, 0.04, 0],
+        leftArm: [-1.52, 0.02, 0.20], leftFore: [-0.54, 0, 0.08], leftHand: [-0.18, 0, 0.06],
+        rightArm: [-1.46, -0.02, -0.22], rightFore: [-0.60, 0, -0.08], rightHand: [-0.18, 0, -0.06],
+        leftLeg: [-0.24, 0, 0.14], leftShin: [0.34, 0, 0], rightLeg: [0.16, 0, -0.14], rightShin: [0.30, 0, 0] }),
+      k(1.15, { pelvis: [0.04, 0.10, 0], spine: [0.05, -0.10, 0], torso: [0.12, -0.20, 0],
+        head: [-0.06, 0.18, 0], neck: [0.03, 0, 0],
+        leftClavicle: [-0.12, 0, 0.10], rightClavicle: [0.06, 0, -0.10],
+        leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], leftHand: [-0.18, 0, 0.10],
+        rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], rightHand: [-0.18, 0, -0.10],
+        leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0], rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0] })
+    ]
+  },
+  // Iron Man fires from a bladed stance with the palm presented, not a two-handed push: the
+  // armour aims, braces, and the recoil travels back through the chest and clavicle.
+  iron_man_repulsor: {
+    label: 'Repulsor Blast', category: 'combat', stance: 'fight', loop: false,
+    duration: 0.85, priority: 14, peak: 0.35,
+    keys: [
+      k(0, { leftArm: [-1.28, -0.10, 0.26], rightArm: [-1.12, 0.12, -0.30] }),
+      k(0.12, { pelvis: [0.02, 0.14, 0], spine: [0.03, 0.06, 0], torso: [0.06, 0.24, 0],
+        head: [-0.04, 0.12, 0], neck: [0.02, 0.04, 0],
+        leftClavicle: [0.04, 0, 0.12], rightClavicle: [-0.16, 0, -0.16],
+        leftArm: [0.30, -0.10, 0.52], leftFore: [-0.90, 0, 0.12], leftHand: [-0.10, 0, 0.06],
+        rightArm: [-1.62, 0.06, -0.12], rightFore: [-0.14, 0, -0.02], rightHand: [-0.22, 0, -0.04],
+        leftLeg: [-0.26, 0, 0.14], leftShin: [0.40, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.32, 0, 0] }),
+      k(0.26, { pelvis: [0.04, 0.16, 0], spine: [0.04, 0.06, 0], torso: [0.08, 0.26, 0],
+        head: [-0.05, 0.14, 0],
+        leftClavicle: [0.06, 0, 0.14], rightClavicle: [-0.18, 0, -0.18],
+        leftArm: [0.34, -0.10, 0.56], leftFore: [-0.96, 0, 0.12], rightArm: [-1.66, 0.06, -0.12],
+        rightFore: [-0.10, 0, -0.02], rightHand: [-0.26, 0, -0.04], leftLeg: [-0.28, 0, 0.14],
+        leftShin: [0.44, 0, 0], rightLeg: [0.20, 0, -0.14], rightShin: [0.34, 0, 0] }),
+      k(0.32, { pelvis: [-0.05, 0.12, 0], spine: [-0.02, 0.04, 0], torso: [-0.08, 0.18, 0],
+        head: [-0.08, 0.10, 0],
+        rightClavicle: [-0.04, 0, -0.08], rightArm: [-1.48, 0.06, -0.14],
+        rightFore: [-0.20, 0, -0.03], rightHand: [-0.14, 0, -0.03],
+        leftArm: [0.24, -0.10, 0.46], leftFore: [-0.86, 0, 0.12],
+        leftLeg: [-0.24, 0, 0.14], leftShin: [0.36, 0, 0], rightLeg: [0.16, 0, -0.14], rightShin: [0.30, 0, 0] }),
+      k(0.52, { pelvis: [-0.02, 0.12, 0], spine: [0.0, 0.04, 0], torso: [-0.02, 0.18, 0],
+        head: [-0.07, 0.10, 0], rightArm: [-1.52, 0.06, -0.13], rightFore: [-0.16, 0, -0.03],
+        rightHand: [-0.18, 0, -0.03], leftArm: [0.26, -0.10, 0.48], leftFore: [-0.88, 0, 0.12],
+        leftLeg: [-0.24, 0, 0.14], leftShin: [0.38, 0, 0], rightLeg: [0.16, 0, -0.14], rightShin: [0.32, 0, 0] }),
+      k(0.85, { pelvis: [0.04, 0.10, 0], spine: [0.05, -0.10, 0], torso: [0.12, -0.20, 0],
+        head: [-0.06, 0.18, 0], neck: [0.03, 0, 0],
+        leftClavicle: [-0.12, 0, 0.10], rightClavicle: [0.06, 0, -0.10],
+        leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], leftHand: [-0.18, 0, 0.10],
+        rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], rightHand: [-0.18, 0, -0.10],
+        leftLeg: [-0.20, 0, 0.12], leftShin: [0.34, 0, 0], rightLeg: [0.14, 0, -0.12], rightShin: [0.28, 0, 0] })
     ]
   },
 
@@ -428,6 +671,26 @@ export const CLIP_SPECS = Object.freeze({
       k(0.3, { pelvis: [-0.90, 0.20, 0.16], torso: [-1.10, 0.20, 0.16], head: [-0.80, 0.14, 0.06], leftArm: [0.80, -0.3, 1.40], rightArm: [0.80, 0.3, -1.40], leftLeg: [-1.10, 0, 0.26], leftShin: [0.60, 0, 0], rightLeg: [-0.40, 0, -0.26], rightShin: [0.30, 0, 0] }),
       k(0.7, { pelvis: [-1.06, 0.10, 0.10], torso: [-1.30, 0.10, 0.10], head: [-0.90, 0.06, 0.04], leftArm: [0.55, -0.2, 1.45], rightArm: [0.55, 0.2, -1.45], leftLeg: [-1.36, 0, 0.20], leftShin: [0.30, 0, 0], rightLeg: [-1.30, 0, -0.20], rightShin: [0.24, 0, 0] }),
       k(1.35, { pelvis: [-1.06, 0.08, 0.08], torso: [-1.32, 0.08, 0.08], head: [-0.92, 0.04, 0.02], leftArm: [0.50, -0.1, 1.48], rightArm: [0.50, 0.1, -1.48], leftLeg: [-1.38, 0, 0.18], leftShin: [0.26, 0, 0], rightLeg: [-1.32, 0, -0.18], rightShin: [0.22, 0, 0] })
+    ]
+  },
+  victory: {
+    label: 'Victory', category: 'reaction', stance: 'ground', loop: false, duration: 1.6, priority: 12,
+    keys: [
+      k(0, { torso: [0.05, 0, 0] }),
+      k(0.22, { pelvis: [-0.06, 0, 0], torso: [-0.22, 0, 0], head: [-0.16, 0, 0], leftArm: [-2.10, -0.30, 0.55], rightArm: [-2.10, 0.30, -0.55], leftFore: [-0.55, 0, 0], rightFore: [-0.55, 0, 0] }),
+      k(0.5, { torso: [-0.30, 0.06, 0], head: [-0.22, 0.04, 0], leftArm: [-2.45, -0.34, 0.42], rightArm: [-2.45, 0.34, -0.42], leftFore: [-0.30, 0, 0], rightFore: [-0.30, 0, 0], leftLeg: [-0.10, 0, 0.10], rightLeg: [0.12, 0, -0.10] }),
+      k(0.86, { torso: [-0.24, 0.04, 0], head: [-0.18, 0.02, 0], leftArm: [-2.36, -0.32, 0.46], rightArm: [-2.36, 0.32, -0.46] }),
+      k(1.6, { torso: [-0.28, 0.05, 0], head: [-0.20, 0.03, 0], leftArm: [-2.42, -0.33, 0.44], rightArm: [-2.42, 0.33, -0.44], leftFore: [-0.34, 0, 0], rightFore: [-0.34, 0, 0] })
+    ]
+  },
+  defeat: {
+    label: 'Defeat', category: 'reaction', stance: 'ground', loop: false, clamp: true, duration: 1.8, priority: 12,
+    keys: [
+      k(0, { torso: [0.10, 0, 0] }),
+      k(0.28, { pelvis: [-0.30, 0.06, 0], torso: [-0.55, 0.08, 0], head: [-0.40, 0.04, 0], leftArm: [-0.20, -0.10, 0.60], rightArm: [-0.20, 0.10, -0.60] }),
+      k(0.62, { pelvis: [-0.62, 0.10, 0], torso: [-0.92, 0.06, 0], head: [-0.60, 0.02, 0], leftArm: [0.20, -0.10, 0.85], rightArm: [0.20, 0.10, -0.85], leftLeg: [-0.70, 0, 0.16], leftShin: [1.10, 0, 0], rightLeg: [-0.20, 0, -0.16], rightShin: [1.40, 0, 0] }),
+      k(1.05, { pelvis: [-0.86, 0.06, 0], torso: [-1.16, 0.04, 0], head: [-0.72, 0.02, 0], leftArm: [0.30, -0.08, 0.95], rightArm: [0.30, 0.08, -0.95], leftLeg: [-0.95, 0, 0.14], leftShin: [1.30, 0, 0], rightLeg: [-0.55, 0, -0.14], rightShin: [1.60, 0, 0] }),
+      k(1.8, { pelvis: [-0.90, 0.05, 0], torso: [-1.20, 0.03, 0], head: [-0.74, 0.01, 0], leftArm: [0.32, -0.06, 0.98], rightArm: [0.32, 0.06, -0.98], leftLeg: [-0.98, 0, 0.13], leftShin: [1.34, 0, 0], rightLeg: [-0.58, 0, -0.13], rightShin: [1.62, 0, 0] })
     ]
   }
 });
@@ -552,6 +815,42 @@ export function listClips() {
     priority: spec.priority || 1,
     peak: spec.peak ?? (spec.loop === false ? 0.5 : null)
   }));
+}
+
+/**
+ * Sample an authored clip's pose at a normalised point (0..1) of its own timeline.
+ *
+ * The cinematic director needs the clip's real keyframes, not one frozen pose per beat: it drives the
+ * body itself during an ultimate, so a static beat pose threw away the gather, the thrust and the
+ * sustain that are the whole point of the authored move. Stance and keys are merged per bone exactly
+ * as specToClip does, and adjacent keys are blended with a smoothstep so the sampled pose eases.
+ */
+export function sampleClipPose(id, fraction = 0) {
+  const spec = CLIP_SPECS[id];
+  if (!spec) return null;
+  const keys = spec.keys;
+  const duration = spec.duration || keys[keys.length - 1][0];
+  const stance = STANCES[spec.stance] || STANCES.ground;
+  const t = Math.min(1, Math.max(0, fraction)) * duration;
+  let index = 0;
+  while (index < keys.length - 2 && keys[index + 1][0] < t) index++;
+  const [fromTime, fromPose] = keys[index];
+  const [toTime, toPose] = keys[Math.min(index + 1, keys.length - 1)];
+  const span = Math.max(1e-6, toTime - fromTime);
+  const raw = Math.min(1, Math.max(0, (t - fromTime) / span));
+  const weight = raw * raw * (3 - 2 * raw);
+  const bones = new Set([...Object.keys(stance), ...Object.keys(fromPose), ...Object.keys(toPose)]);
+  const out = {};
+  for (const bone of bones) {
+    const a = fromPose[bone] || stance[bone] || [0, 0, 0];
+    const b = toPose[bone] || stance[bone] || [0, 0, 0];
+    out[bone] = [
+      a[0] + (b[0] - a[0]) * weight,
+      a[1] + (b[1] - a[1]) * weight,
+      a[2] + (b[2] - a[2]) * weight
+    ];
+  }
+  return out;
 }
 
 export { STANCES };

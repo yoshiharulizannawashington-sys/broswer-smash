@@ -1,0 +1,48 @@
+// Capture the presentation work: a real Rasengan in flight and a live clone pack.
+import { createServer } from 'node:http';
+import { readFile, mkdir } from 'node:fs/promises';
+import { resolve, normalize, sep, extname } from 'node:path';
+import { chromium } from 'playwright';
+const root = process.cwd();
+const out = 'artifacts/compare/refine7';
+await mkdir(out, { recursive: true });
+const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json', '.glb': 'model/gltf-binary', '.png': 'image/png' };
+const server = createServer(async (req, res) => { try { const p = decodeURIComponent(new URL(req.url || '/', 'http://x').pathname); let rel = normalize(p).replace(/^[/\\]+/, '') || 'index.html'; if (['js','assets','models','data'].some(d => rel === d || rel.startsWith(d + sep))) rel = 'public' + sep + rel; res.writeHead(200, { 'Content-Type': mime[extname(rel).toLowerCase()] || 'application/octet-stream' }); res.end(await readFile(resolve(root, rel))); } catch { if (!res.headersSent) res.writeHead(404); res.end('nf'); } });
+await new Promise(d => server.listen(0, '127.0.0.1', d));
+const origin = 'http://127.0.0.1:' + server.address().port;
+const browser = await chromium.launch({ headless: true, args: ['--no-sandbox','--enable-webgl','--ignore-gpu-blocklist','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+page.setDefaultTimeout(180000);
+await page.goto(origin + '/public/index.html', { waitUntil: 'domcontentloaded' });
+await page.waitForFunction(() => window.__browserSmashAssets?.app?.status === 'running' && window.fighters?.length === 2, null, { timeout: 150000, polling: 250 });
+await page.evaluate(() => {
+  window.__browserSmashTrainingDummy = true;
+  window.__browserSmashSelect?.chooseArena('valley');
+  window.__browserSmashSelect?.select('p1', 'Naruto Uzumaki');
+  window.__browserSmashSelect?.select('p2', 'Thor');
+  document.querySelector('#play').click();
+});
+await page.evaluate(() => window.__browserSmashSkipCinematic?.());
+await page.evaluate(() => {
+  const f = window.fighters[0], t = window.fighters[1];
+  f.position.set(0, .6, 0); f.facing = 1; f.facingZ = 0; f.specialCooldown = 0; f.abilityReadyAt = {}; f.power = 100;
+  t.position.set(4.2, .6, 0); t.percent = 0;
+});
+await page.keyboard.press('h');
+await page.evaluate(() => window.__browserSmashStep(0.18));
+await page.waitForTimeout(450);
+await page.screenshot({ path: `${out}/naruto-rasengan.png` });
+await page.evaluate(() => { const f = window.fighters[0]; f.specialCooldown = 0; });
+await page.keyboard.press('k');
+await page.evaluate(() => window.__browserSmashStep(0.22));
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${out}/naruto-rasenshuriken.png` });
+const state = await page.evaluate(() => ({ shot: window.__browserSmashLastShot, presentation: window.__browserSmashPresentation?.report?.().presenter }));
+console.log('SHOT', JSON.stringify(state).slice(0, 900));
+await page.evaluate(() => window.__browserSmashClearClones?.());
+await page.evaluate(() => window.spawnShadowClones(window.fighters[0], 2));
+await page.evaluate(() => window.__browserSmashStep(0.35));
+await page.waitForTimeout(500);
+await page.screenshot({ path: `${out}/naruto-clones.png` });
+console.log('CLONES', JSON.stringify(await page.evaluate(() => ({ count: window.__browserSmashCloneCount?.(), tracks: window.__browserSmashPresentation?.report?.().presenter.byKind }))));
+await browser.close(); server.close();

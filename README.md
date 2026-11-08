@@ -122,9 +122,19 @@ the loop.
 | Air dive kick | Down + J in the air | Down + `,` |
 | Flight toggle / descend | F / C | `[` / `]` |
 | Web swing (Spider-Man) | G | `\` |
+| Transform / overdrive (when ready) | I | N |
+| Ultimate (full meter) | O | M |
+| Combat debug overlay | F3 | F3 |
+| Pause menu | Esc | Esc |
 
 `2P LOCAL` on the match setup screen hands the second fighter to the second binding set instead
 of the CPU. Gamepad 0 drives P1 and gamepad 1 drives P2.
+
+**Esc** opens the in-match pause menu: resume, restart the series, character select, return to
+title, the control reference and the audio mix. While it is open the simulation, the round clock,
+projectiles, particles and combat audio are all frozen, and any key pressed during the pause is
+discarded, so a queued attack cannot fire on the first frame back. There is nothing to pause before
+a match starts, and in free roam Esc still leaves the world instead.
 
 ### Combat
 
@@ -138,6 +148,12 @@ of the CPU. Gamepad 0 drives P1 and gamepad 1 drives P2.
   characters (Hulk, Doom Slayer) survive longer than light ones (Professor X, Edna Mode).
 - Strong hits freeze the simulation for 50-85 ms (`window.requestHitStop`) while VFX and camera
   shake continue.
+- Every fighter has one **transformation** (`I`, D-pad up) and one **ultimate** (`O`, D-pad down).
+  A form costs 40-50 *power* (earned from damage dealt and taken), lasts 8-10 s, changes real
+  movement/damage/defence numbers and swaps the signature move for an empowered one. An ultimate
+  needs a full 100-meter, is spent once, has a real startup the opponent can punish, and refunds
+  the meter if it is interrupted before connecting. Per-fighter data, costs and move lists live in
+  `public/js/combat/movesets.js`; the roster audit is `CHARACTER_MOVESET_AUDIT.md`.
 
 ### Matches
 
@@ -146,6 +162,14 @@ Rounds are best of three (`roundsToWin: 2`) with an 80-second clock and a 150% k
 drawn round is replayed and awards nothing. Round results show a banner, spawn both fighters at the
 arena's spawn points with 1.1 s of invulnerability, and reset damage. Two round wins end the match,
 return to the setup screen and offer a rematch.
+
+The result screen reports the series score, the match clock, damage dealt and taken, the biggest
+single hit and the number of hits landed, all accumulated by the simulation.
+
+Both of those numbers are configurable per series on the setup screen — first to 1, 2 or 3 rounds,
+and a 60/80/120-second clock. The choice is written straight into the live match state, is applied
+to a match already in progress, and is kept for the rematch. The 150% knockout threshold stays
+fixed in `combat_rules.js`.
 
 ### Arenas and collision
 
@@ -179,6 +203,30 @@ streaming keep using the existing code paths. Choosing an arena loads it behind 
 preview. Selection cards show each fighter's archetype and signature move, and each arena card shows
 its kind and playable size.
 
+A rules row above the roster sets the rounds to win, the round length and the CPU skill level
+(**ROOKIE / FIGHTER / ACE**). Skill is a decision-quality setting and never a stat multiplier:
+`public/js/combat/cpu_skill.js` changes the CPU's attack cooldown, how far away it notices an
+incoming startup, how much of that startup it can read, its parry/block/dodge chances, how often it
+declines an attack that was otherwise available, and how often it spends a special, a
+transformation or its meter. The AI reads the profile on every decision, so a change affects a
+match already in progress, and the level is remembered in `localStorage.browserSmashCpuSkill`. With
+no CPU opponent (`2P LOCAL`) the control is disabled, because there is nothing to apply it to.
+
+### Training and practice
+
+`PRACTICE MODE` on the setup screen runs the same simulation with the round clock and round
+endings switched off and a training overlay on screen (`public/js/ui/training_panel.js`). The
+overlay is a readout of the live simulation, not a second copy of the numbers: damage dealt, hits
+landed, biggest hit, combo count, the fighter's current move and phase, hitstun, power/meter, and
+the dummy's damage, hitstun and knockback speed.
+
+The opponent is configurable — **stand still**, **hold guard**, **pace**, or **fight back** — and
+can be made invulnerable. **Reset positions** (`R`) puts both fighters back on the stage's real
+spawn points, **reset damage** (`T`) clears the counters and both damage totals, and
+**exit training** (Esc opens the pause menu from there). Damage is accumulated by the simulation
+from the live damage totals each step, so a melee hit, a projectile, a signature move and an
+ultimate are all counted by the same rule.
+
 ### Test hooks
 
 The game exposes a few read-only hooks for automated play-testing:
@@ -187,7 +235,17 @@ The game exposes a few read-only hooks for automated play-testing:
 - `window.__browserSmashStep(seconds)` — advance the fixed-step simulation deterministically.
 - `window.__browserSmashTrainingDummy = true` — stop the CPU from blocking or dodging, so hit checks
   are reproducible.
-- `window.__browserSmashSelect` — the setup screen controller (`chooseArena`, `select`, `setMode`).
+- `window.__browserSmashSelect` — the setup screen controller (`chooseArena`, `select`, `setMode`,
+  `setRules`, `setDifficulty`, `showTitle`).
+- `window.__browserSmashPause` — `{ open(), close(), toggle(), paused, menuOpen, stats }`.
+- `window.__browserSmashRules()` — the live round rules, the remaining clock and the CPU level.
+- `window.__browserSmashSetRules({ roundsToWin, roundSeconds })` and
+  `window.__browserSmashSetCpuSkill(level)` — the same paths the setup screen drives.
+- `window.combatAudio.paused` — whether the mix is suspended for a paused match.
+- `window.__browserSmashTraining` — `{ state(), setDummy(mode), setInvulnerable(on),
+  resetPositions(), resetDamage(), panelVisible() }`.
+- `window.__browserSmashStats()` — rounds, wins, match time, damage dealt/taken, biggest hit and
+  hits landed, the same numbers the result screen prints.
 
 ## Validation
 
@@ -203,10 +261,30 @@ The game exposes a few read-only hooks for automated play-testing:
   files. Optional assets that are not installed yet are warnings, not failures.
 - `npm run build` — production build into `dist/`.
 - `npm run test:combat` — node tests for damage, knockback, hit stun, combo chaining, round/match
-  flow, arena bounds, spawn placement and box/circle collision (94 checks, no browser needed).
+  flow, arena bounds, spawn placement and box/circle collision (394 checks, no browser needed).
 - `npm run test:gameplay` — Playwright play-test that chooses two fighters and an arena, starts a
   match, moves, jumps, double jumps, punches, chains, guards, throws, wins two rounds, switches
-  arenas mid-session and verifies local two-player input; 47 checks plus zero page/console errors.
+  arenas mid-session and verifies local two-player input; 48 checks plus zero page/console errors.
+- `npm run test:mechanics` — Playwright test for the fighting mechanics themselves: frame-based
+  move data and the cancel table, combo scaling and the air-juggle limit, attack phases and the
+  fighter state model, armour frames, shield drain/regen/guard break, blocked-hit cost, grab hold
+  and struggle escape, directional throws, melee cover (no hits through walls), dodges and
+  i-frames, flight and hover, swept projectile collision, the F3 overlay and its readout, gamepad
+  mapping, and round-end cleanup (74 assertions). See `docs/COMBAT_SYSTEM_REPORT.md` and
+  `docs/COMBAT_TEST_MATRIX.md`.
+- `npm run test:movesets` — Playwright test for the 38 per-character movesets: coverage of the real
+  roster, form activation/expiry/cleanup and stat swaps, ultimate meter spend/refund/interruption,
+  wall cover, the HUD gauges, keyboard and gamepad bindings, the ultimate/beam telegraphs and
+  hit-stop, the form state on the HUD, and every fighter forming and casting in the running game
+  (79 checks). On a bare machine without Chromium libraries or fonts, run it as
+  `bash scripts/run-browser-test.sh scripts/test-movesets.mjs` (see `scripts/install-browser-libs.sh`).
+- `npm run test:animation` — node test (no browser) for the animation pipeline itself: it loads
+  a generated 11-joint skinned GLB fixture (`scripts/make-rig-fixture.mjs`), binds it to the
+  canonical rig, retargets an external clip, compiles the 39-clip library, proves bones actually
+  rotate and that attack clips are retimed to their active window, then exercises the Iron
+  Spider leg rig and every authored transformation surface (199 checks). Also asserts that the
+  three rigged-character manifest entries stay disabled while their files are absent.
+- `npm run make:rig-fixture` — regenerates `public/models/characters/_fixture/rig-test.glb`.
 - `npm run test:smoke` — Playwright runtime test (needs `npm install --no-save playwright three@0.152.2`
   and `npx playwright install chromium`). Verifies both entrypoints render, the character and
   weapon libraries load, and an authored arena streams in when its map is selected.
@@ -220,13 +298,50 @@ The game exposes a few read-only hooks for automated play-testing:
   surface, movement and attacks still connect, switching world replaces the geometry without
   adding lights, and a classic arena unloads it again.
 - `npm run audit:roster` — Playwright runtime audit that drives the real character select through
-  every launch fighter and asserts the prefab rig (11 joints), its weapon mount and its generated
-  surface detail are all present on the live fighter. Prints a machine-readable summary and fails
-  on the first fighter that does not mount.
+  every launch fighter (38) and asserts the body exported for that identity is the body on the live
+  fighter, one unique asset per fighter, all eleven canonical joints bound on a resolved skeleton,
+  the signature weapon mounted (or the three hand-attack identities unarmed by design), feet on the
+  origin, head above the pelvis and the generated surface detail applied. Prints a machine-readable
+  summary and fails on the first fighter that does not mount.
+- `npm run test:locomotion` — node test (no browser) for per-character movement: every launch
+  identity has an explicit profile in `public/js/combat/locomotion.js`, no key in either profile
+  table is dead data, the profiles differ in the directions the design says they should (fastest,
+  slowest, heaviest, floatiest, best air control), and the movement integration the fighter runs
+  produces those differences when simulated (61 checks).
+- `npm run report:roster` — regenerates `docs/CHARACTER_ROSTER_QUALITY_AUDIT.md` (the per-fighter
+  matrix, the quality scores and the status labels) from the live roster, moveset and locomotion
+  tables, so the audit cannot drift from the code.
+- `bash scripts/run-browser-test.sh scripts/probe-performance.mjs` — measures the running game:
+  frame time (idle match vs both fighters transformed with ultimates and projectiles in flight),
+  scene children, meshes, materials, bones, lights and JS heap, then re-measures after three
+  character switches to catch a leak in the rematch loop. Writes JSON to stdout.
 - `.github/workflows/validate-game.yml` — browser-module, roster, cache-version, asset fixture, and Playwright smoke validation.
 - `.github/workflows/build-character-animations.yml` — optional Blender bake once the real source models are installed.
+- `bash scripts/run-browser-test.sh scripts/probe-boot.mjs [url]` — boot/play regression probe:
+  loads the game, enters free roam, starts a match, fires a form and an ultimate, and fails on any
+  uncaught page or console error. Use it whenever a startup error is reported.
+- `docs/ANIMATION_PIPELINE_READINESS.md` — what the skeletal animation pipeline already does, and
+  the exact files and licences needed to replace the procedural clips with authored ones.
+- `docs/BLENDER_PIPELINE.md` — the Blender → GLB → game pipeline: how to install headless
+  Blender, the generator script for the original fighter Kaze, the GLB inspection gate, and
+  the exact commands to re-export and re-verify a character.
+- `npm run build:fighter` re-exports `public/models/characters/kaze/kaze.glb`; `npm run
+  inspect:glb -- <file.glb>` verifies meshes, skins, the canonical rig and clips.
+- `docs/CHARACTER_MODEL_REPORT.md` — which fighters ship an authored body
+  (`public/js/characters/sculpted.js`), what its geometry and rig actually contain, which
+  transformation surfaces it exposes, and the exact assets/licences still needed for a
+  production-quality model.
 - `node scripts/inspect-animation-pack.mjs <file.glb>` — reads a downloaded GLB's clips, skeleton and
   recognised bones, and with `--pack <id> --install` enables it in the animation manifest.
+
+## Audio
+
+Combat sound is synthesised at runtime with Web Audio (`public/js/audio/combat_audio.js`) — no
+audio files, so no licensing question and nothing extra to download. Nothing plays until you
+press a key or click (browser autoplay policy). **Ctrl+M** mutes/unmutes and the setting persists;
+volume is stored separately in `browserSmashAudioVolume`. `window.combatAudio.describe()` shows
+plays, throttles and dropped voices for QA. The pause menu carries the same mute button and volume
+slider, and suspends the whole mix for as long as the match is paused.
 
 ## Camera modes
 
@@ -470,3 +585,19 @@ export FONTCONFIG_FILE=$HOME/pwlibs/fonts.conf
 
 Without `FONTCONFIG_FILE`, Skia aborts with `SkFontMgr_FontConfigInterface.cpp Not implemented`
 as soon as the HUD renders text.
+
+## Generating the roster bodies
+
+Every selectable fighter ships a generated, rigged body in `public/models/characters/roster/`; see
+`docs/BLENDER_PIPELINE.md` and `docs/CHARACTER_MODEL_REPORT.md` for the kernel, the rig and the
+known limits.
+
+```sh
+bash scripts/install-blender.sh   # once per session; Blender's libraries are not in the image
+npm run build:roster-fighters     # rebuild all 58 bodies from the shared kernel
+node scripts/register-roster-models.mjs
+npm run test:roster-models        # static: every file fully bound, every fighter has a body
+npm run probe:bodies              # runtime: the body on screen is the body the manifest names
+npm run audit:roster              # runtime: all 38 selectable fighters through the live rig gate
+npm run test:geometry             # the geometry kernel's regression suite
+```

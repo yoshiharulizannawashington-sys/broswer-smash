@@ -1,0 +1,18 @@
+{
+  "id": "unrigged_humanoid_repaired",
+  "attribution": "",
+  "notes": "Prepared by scripts/prepare-character.mjs from unrigged-humanoid-repaired.glb (auto-rigged, clips retargeted). Licence metadata is informational only.",
+  "originalFile": "artifacts/dev/prepare/unrigged_humanoid_repaired/unrigged_humanoid_repaired-retargeted.glb",
+  "output": "public/models/characters/imported/unrigged_humanoid_repaired.glb",
+  "scale": 0.9824,
+  "clips": [
+    "Idle",
+    "Jump",
+    "Kamehameha",
+    "Kick",
+    "Punch",
+    "Run",
+    "Walk"
+  ],
+  "ingestedAt": "2026-11-02T06:13:40.285Z"
+}

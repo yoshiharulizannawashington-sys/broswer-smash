@@ -111,3 +111,29 @@ The current bake script authors procedural starter animations based on rig/bone-
 ## Completion standard
 
 A successful first character milestone means the **actual supplied** Goku and Iron Man models load through the normal selection path; both can move, animate, attack, take damage, guard/dodge, use their signature moves, and complete a match; the camera remains pulled back; and browser tests show no critical failures. If the actual source assets are unavailable, report the pipeline as prepared, not the milestone as complete.
+
+## Standing direction - enhance the existing game, do not rebuild it
+
+Browser Bros already has worlds, arenas, a roster, models, animations, combat and a working render
+path. The objective is to make that existing game substantially better, not to replace it.
+
+- Upgrade before replacing. Inspect what exists, keep functioning systems, improve the current
+  implementation, and only swap an asset when the improvement is visible and measurable. Keep
+  backups and a rollback path.
+- Characters: better faces, proportions, materials, armour and equipment; character-specific
+  animations, combos, signature moves, ultimates and transformations. Preserve identity, roster
+  count, movesets and stats unless explicitly authorised.
+- Worlds: better architecture, textures, lighting, atmosphere, landmarks, explorable and
+  interactive space at both ground and aerial scale. Do not discard existing maps.
+- Gameplay: responsiveness, impact, combos, block, dodge, grabs, knockback, recovery, flight and
+  aerial combat, weapons, destruction and environmental interaction.
+- Camera and visual polish: fix real defects with a focused repair plus acceptance test, but never
+  let one polish issue block unrelated character, environment or gameplay production.
+- Work autonomously through routine, reversible, scoped changes. Ask only for destructive,
+  irreversible, ambiguous or permission-dependent decisions. Preserve all dirty work: never reset,
+  clean, discard, commit or push without explicit authorisation.
+- Definition of progress: count better-looking characters, environments, animations, combat,
+  exploration and cinematics. More docs, audits, manifests, tests or placeholder geometry are not a
+  delivered improvement. Every phase must produce playable or visible results with captured
+  evidence, and software-rendered (SwiftShader) captures are composition evidence only - never
+  hardware visual or performance verification.

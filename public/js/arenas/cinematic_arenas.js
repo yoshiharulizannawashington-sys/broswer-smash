@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { tuneAsgardMaterials } from './asgard_materials.js';
+import { tuneArchitecturalStone } from './architectural_materials.js';
+import { buildAsgardArchitecture, buildAsgardCourtyard } from './asgard_architecture.js';
+import { buildHogwartsArchitecture } from './hogwarts_architecture.js';
 
 // The map key is the id the game selects by; `marker` is the node the Blender exporter
 // writes as the arena's root, which is not always the same word (the Stark Tower map is
@@ -96,8 +100,62 @@ export async function setCinematicArena(key, scene) {
         reject(error);
         return;
       }
+      // Asgard is the one authored arena whose look is driven by material balance rather than by
+      // geometry: seven untextured materials, four of them emissive across 87% of the primitives.
+      // `__browserSmashAsgardTuning = false` renders the untouched materials so a before/after can be
+      // shot with an identical camera.
+      if (key === 'asgard' && globalThis.window?.__browserSmashAsgardTuning !== false) {
+        const tuning = tuneAsgardMaterials(group);
+        stateRoot().asgardTuning = tuning;
+        // Real geometry, built on the mounted palace's own measured surfaces: plinths, cornices,
+        // pilasters, panel bands, fountain rim blocks, pier bases and capitals.
+        const architecture = buildAsgardArchitecture(group);
+        stateRoot().asgardArchitecture = architecture;
+        globalThis.window.__browserSmashAsgardArchitecture = architecture;
+        globalThis.window.__browserSmashAsgardArchitectureMeshes = group.userData.asgardArchitectureMeshes || [];
+        // Measured courtyard rim on the real town-square edge. Stays opt-in (?courtyardBand=1) until the
+        // stone reads as monumental Asgardian construction at gameplay distance.
+        // The measured gilt-inlay square (46 x 46) turned out to be a floor motif inside a much larger
+        // marble plaza, not the courtyard edge: in the captured frames the band reads as a low dark
+        // kerb in mid-plaza instead of the retaining wall this pass was meant to build. The geometry
+        // and its tests are kept for the corrected placement, but it must not ship as a visible
+        // defect. Visual architecture only: collision stays with world/arena_layouts.js.
+        const courtyardBand = /(?:^|[?&])courtyardBand=1(?:&|$)/.test(globalThis.location?.search || '');
+        if (courtyardBand) {
+          const courtyard = buildAsgardCourtyard(group);
+          stateRoot().asgardCourtyard = courtyard;
+          globalThis.window.__browserSmashAsgardCourtyard = courtyard;
+          globalThis.window.__browserSmashAsgardCourtyard = courtyard;
+          globalThis.window.__browserSmashAsgardCourtyardMeshes = group.userData.asgardCourtyardMeshes || [];
+        }
+        console.info('Asgard material tuning applied', tuning.tuned.length, 'materials;',
+          architecture.added, 'architecture parts in', architecture.meshCount, 'meshes');
+      }
+      // Hogwarts: real stone geometry on the hall's own named parts (piers, arches, keystones,
+      // capitals, ribs, lancet frames). `__browserSmashHogwartsArchitecture = false` mounts the hall
+      // untouched so a capture can shoot the same camera with and without the detail.
+      if (key === 'hogwarts' && globalThis.window?.__browserSmashHogwartsArchitecture !== false) {
+        const architecture = buildHogwartsArchitecture(group);
+        stateRoot().hogwartsArchitecture = architecture;
+        globalThis.window.__browserSmashHogwartsArchitecture = architecture;
+        globalThis.window.__browserSmashHogwartsArchitectureMeshes = group.userData.hogwartsArchitectureMeshes || [];
+        console.info('Hogwarts architecture built:', architecture.added, 'parts in', architecture.meshCount, 'meshes');
+      }
       group.visible = activeArenaKey === key;
+      // Read-only handle for the title composition and its verification: the title camera has to be
+      // authored against the geometry that actually mounted, not against remembered coordinates.
+      globalThis.window.__browserSmashAuthoredGroup = group;
+      globalThis.window.__browserSmashAuthoredKey = key;
       arenaLayer.add(group);
+      // Architectural stone has to be tuned on the group that actually contains the arena meshes.
+      // The caller used to pass a different container, so the pass traversed an empty tree and every
+      // Great Hall surface kept its flat untextured factor.
+      if (key !== 'asgard' && globalThis.window?.__browserSmashStoneTuning !== false) {
+        const stone = tuneArchitecturalStone(group, key);
+        stateRoot().stoneTuning = stone;
+        globalThis.window.__browserSmashStoneTuning = stone;
+        console.info('Architectural stone applied to ' + key + ':', stone.tuned.length, 'materials');
+      }
       loadedArenas.set(key, { group, meshCount, url: url.href, promise: null });
       stateRoot().arenas[key] = { status: 'loaded', meshCount, url: url.href, cached: false };
       resolve(group);

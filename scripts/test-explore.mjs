@@ -185,7 +185,12 @@ try {
 
   // ---- mouse look, explore only ----------------------------------------------
   await page.evaluate(() => window.smashCamera.resetOrbit());
-  check('the explore camera starts centred', Math.abs((await state()).orbitYaw) < .001);
+  const centred = await state();
+  check('the explore camera starts centred', Math.abs(centred.orbitYaw) < .001);
+  // The camera damps toward its orbit target inside the live loop, so by the time an extra 0.4 s step
+  // runs it has already settled and only residual motion is left to measure. Compare the shot before
+  // the turn with the shot the renderer uses after it — that is the claim the check is making.
+  const beforeTurn = centred.cameraPosition;
   await drag(160);
   const looked = await state();
   check('dragging the mouse turns the explore camera', Math.abs(looked.orbitYaw) > .1,
@@ -194,12 +199,12 @@ try {
   const pitched = await state();
   check('dragging vertically tilts the explore camera', Math.abs(pitched.orbitPitch) > .05,
     `pitch ${pitched.orbitPitch.toFixed(3)}`);
-  const beforeStep = (await state()).cameraPosition;
+  const afterTurn = (await state()).cameraPosition;
   await step(.4);
-  const afterStep = (await state()).cameraPosition;
+  const settledTurn = (await state()).cameraPosition;
   check('the turned camera is the camera actually rendering',
-    distance(beforeStep, afterStep) > .2 || Math.hypot(beforeStep.x - afterStep.x, beforeStep.y - afterStep.y) > .2,
-    `${JSON.stringify(beforeStep)} → ${JSON.stringify(afterStep)}`);
+    distance(beforeTurn, afterTurn) > .2,
+    `${JSON.stringify(beforeTurn)} → ${JSON.stringify(afterTurn)} (settled ${JSON.stringify(settledTurn)})`);
   check('the mouse does not steal keyboard movement', looked.exploring === true);
 
   // ---- leaving free roam -----------------------------------------------------

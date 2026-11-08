@@ -1,0 +1,29 @@
+{
+  "note": "Real HDRI skies used as the scene lighting environment. All CC0 1.0 (public domain): no attribution required, commercial use and modification permitted. Downloaded from Poly Haven's public CDN.",
+  "assets": [
+    {
+      "file": "sunflowers_puresky_1k.hdr",
+      "name": "Sunflowers Pure Sky",
+      "author": "Greg Zaal / Poly Haven",
+      "source": "https://polyhaven.com/a/sunflowers_puresky",
+      "download": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/sunflowers_puresky_1k.hdr",
+      "licence": "CC0 1.0",
+      "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "resolution": "1024x512",
+      "bytes": 1482923,
+      "used_for": "valley"
+    },
+    {
+      "file": "kloofendal_48d_partly_cloudy_puresky_1k.hdr",
+      "name": "Kloofendal 48d Partly Cloudy (Pure Sky)",
+      "author": "Greg Zaal / Poly Haven",
+      "source": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky",
+      "download": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/kloofendal_48d_partly_cloudy_puresky_1k.hdr",
+      "licence": "CC0 1.0",
+      "licence_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "resolution": "1024x512",
+      "bytes": 1435119,
+      "used_for": "tournament, asgard, hogwarts, deathstar"
+    }
+  ]
+}

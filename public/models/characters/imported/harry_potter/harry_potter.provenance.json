@@ -1,0 +1,29 @@
+{
+  "source": "Sketchfab \"Harry Potter (rigged) Character\" by RRB STUDIOS, https://sketchfab.com/3d-models/harry-potter-rigged-character-250a590d181e4f6cb0aec4a0c55e293c",
+  "uid": "250a590d181e4f6cb0aec4a0c55e293c",
+  "creator": "RRB STUDIOS",
+  "license": "CC BY 4.0 (CC Attribution)",
+  "retrieved": "2026-11-07",
+  "downloadedWith": "scripts/fetch-sketchfab-model.mjs — official Sketchfab download endpoint, GLB archive, owner's token (never logged)",
+  "bytes": 5178160,
+  "assetKind": "imported-licensed",
+  "rosterSlot": "lord_voldemort",
+  "displayName": "Harry Potter",
+  "status": "IMPORTED, RIGGED, ZERO CLIPS — deliberately NOT enabled in manifest.json. The skeleton is usable but the model ships no animation, so activating it now would produce a static replacement skin.",
+  "verified": {
+    "height": 1.877,
+    "feetY": -0.001,
+    "triangles": 16320,
+    "skinned": true,
+    "clips": 0,
+    "meshNotes": "498 open boundary edges on the welded character (budget 80) and 4 zero-area triangles on Object_15.",
+    "inspection": "node scripts/inspect-character-glb.mjs public/models/characters/imported/harry_potter/harry_potter.glb",
+    "result": "Rig present and feet grounded at the origin; no animation clips. Boundary-edge and zero-area defects need a cleanup pass before export."
+  },
+  "requiredBeforeActivation": [
+    "Map the imported skeleton to the roster's canonical bone roles (or retarget the authored clips onto it).",
+    "Author wand-draw, wand-aim, cast, Protego, movement, reactions, knockdown/get-up, victory/defeat and the ultimate.",
+    "Attach a real wand mesh to the right hand bone with measured grip offset, and animate it through casting.",
+    "Clean the open boundary edges / zero-area triangles and verify per-clip deformation in the browser."
+  ]
+}

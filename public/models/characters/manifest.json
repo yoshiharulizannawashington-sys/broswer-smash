@@ -1,26 +1,1327 @@
 {
-  "version": 1,
-  "characters": {
-    "goku": {
-      "url": "/models/characters/goku/Goku.fbx",
-      "format": "fbx",
-      "textureSet": "goku",
-      "enabled": false
-    },
-    "iron_man_tony_stark": {
-      "url": "/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf",
-      "format": "gltf",
-      "enabled": false
-    },
-    "iron_spider": {
-      "url": "/models/characters/iron_spider/iron_spider.glb",
-      "format": "gltf",
-      "enabled": false,
-      "yawOffset": 0,
-      "source": "https://sketchfab.com/3d-models/iron-spider-avengers-infinity-war-99e52e57a8dc4feda750af87b87d2955",
-      "creator": "Kabiidev (https://sketchfab.com/kabiidev)",
-      "license": "CC Attribution (exact version unconfirmed - check the licence link on the model page)",
-      "notes": "Staged, not bundled. Download the model from Sketchfab while signed in, then run: node scripts/install-character-model.mjs <downloaded .glb> --identity \"Iron Spider\" --facing 0 --attribution \"<credit>\" --license \"<licence>\" --source <model url>. The installer copies it here, enables this entry and prints the credit line to paste into public/ATTRIBUTIONS.md."
-    }
+ "version": 2,
+ "characters": {
+  "hd_soldier_cc0": {
+   "url": "/models/characters/roster_hd/quaternius_soldier.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "licensed-development-fixture",
+   "source": "Quaternius — Ultimate Modular Women Pack (Soldier body), retrieved from the Quaternius pack CDN mirror. Pack page: https://quaternius.com/packs/ultimatemodularwomen.html",
+   "creator": "Quaternius (laulhet@gmail.com)",
+   "license": "CC0 1.0 Universal (public domain dedication), Quaternius pack page.",
+   "notes": "DEV FIXTURE, not roster. Low-poly CC0 Quaternius body: 7,900 triangles, 62 joints per skin, six flat-colour materials and NO texture images (the exported GLB carries UVs but no maps). Use ?showcaseCharacter=hd_soldier_cc0. Superseded for the HD review by hd_infantry_cc0.",
+   "retrieved": "2026-11-06",
+   "verified": {
+    "bytes": 2802536,
+    "vertices": 15864,
+    "triangles": 7900,
+    "skinnedMeshes": 11,
+    "joints": 62,
+    "materials": 6,
+    "textures": 0,
+    "clips": 24
+   }
+  },
+  "link_test": {
+   "url": "/models/characters/original/link-original.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "development-test-fixture",
+   "source": "Pre-existing local file public/models/characters/original/link-original.glb (15,972 tris, 19 bones, 1.79 m x 0.543 m, gate PASSED).",
+   "creator": "Unknown third party",
+   "license": "UNVERIFIED - recognisable third-party game character. Development test fixture only; NOT cleared for distribution and must not be shipped.",
+   "notes": "DEV ONLY. Reached through ?showcaseCharacter=link_test to prove the existing 19-bone loader, animation and combat path. Never promote to the production roster; do not relabel as CC0."
+  },
+  "goku": {
+   "url": "/models/characters/bespoke/goku_body.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Sketchfab \"Goku model rig\" by Oup77, https://sketchfab.com/3d-models/goku-model-rig-75b88c3bf6a446df87680b8e7d4ba8e0, CC BY 4.0, downloaded through the Sketchfab API with the owner's token and repacked losslessly by scripts/pack-gltf-to-glb.mjs: geometry, skin weights, inverse bind matrices, UVs and textures unchanged.",
+   "creator": "Oup77 (Sketchfab)",
+   "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "notes": "VERIFIED PLAYABLE BODY. 73 joints, 19/19 canonical roles, 77,860 triangles, 21,713 weighted vertices, two 2048x2048 diffuse maps. Materials were converted from KHR_materials_pbrSpecularGlossiness to core metallic-roughness by scripts/convert-specgloss-to-pbr.mjs: three.js no longer implements the spec/gloss extension, which is why this body rendered pure white in a live match. Motion is 46 clips authored on this exact skeleton by scripts/author-goku-clips.mjs (grounded via measured forward kinematics, two-handed Kamehameha solved with scripts/probe-goku-pose.mjs). Blender cannot pose this skeleton without rebuilding it (bone heads import 95 m from a 1.9 m mesh), so three-phase animation evidence is captured in the runtime; see scripts/verify-goku-hd-match.mjs and artifacts/goku-hd/. The previous 19-bone original body remains registered as goku_roster19 for rollback.",
+   "verified": {
+    "bytes": 3255592,
+    "joints": 73,
+    "clips": 46,
+    "inspectedWith": "node scripts/audit-goku-animation.mjs && node scripts/validate-goku-clips.mjs",
+    "runtimeTest": "node scripts/verify-goku-hd-match.mjs"
+   }
+  },
+  "goku_roster19": {
+   "url": "/models/characters/roster/goku.glb",
+   "format": "gltf",
+   "enabled": false,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ROLLBACK BODY, disabled on purpose. This was the selectable Goku before the imported 73-joint body was promoted. Kept registered so the previous look can be restored by switching goku.url back to this path.",
+   "verified": {
+    "bytes": 622796,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/goku.glb"
+   }
+  },
+  "iron_man_tony_stark": {
+   "url": "/models/characters/roster/iron_man_tony_stark.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "pendingLicensedAsset": "/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf (not supplied; this original body stands in until it is)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 582160,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/iron_man_tony_stark.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "iron_spider": {
+   "url": "/models/characters/roster/iron_spider.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (19-bone armature, seventeen clips). The approved Kabiidev model was downloaded but rejected at runtime.",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository own script (no third-party model, texture or scan)",
+   "notes": "APPROVED IMPORT REJECTED, ROLLED BACK. The approved Iron Spider - Avengers: Infinity War by Kabiidev (Sketchfab uid 99e52e57a8dc4feda750af87b87d2955, CC BY 4.0) was downloaded and installed at public/models/characters/iron_spider/iron_spider.glb: 107 bones, 6 skinned meshes, 5,181 vertices, 32 author clips on the Marvel Future Fight Bip001 rig with the attached spider legs. The runtime rig gate rejected the mount (the fighter fell back to its sculpted body) because the authored root places the body 56.978 m below the origin at 58.989 m height and normalisation did not recover it. The file is preserved for a dedicated normalisation pass; until then this slot ships the generated 19-bone body so the roster stays mounted and playable.",
+   "verified": {
+    "bytes": 10973124,
+    "bones": 107,
+    "clips": 32,
+    "authoredHeight": 58.989,
+    "feetY": -56.978,
+    "runtimeStatus": "rejected — generated body retained",
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/iron_spider/iron_spider.glb"
+   }
+  },
+  "kaze": {
+   "url": "/models/characters/kaze/kaze.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "source": "Authored in this repository by assets/blender/build_anime_fighter.py",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party assets)",
+   "notes": "Reference fighter for the Blender -> GLB -> game pipeline: original geometry, skeleton, skin weights, seventeen clips and materials, all authored by assets/blender/build_anime_fighter.py. Regenerate with `npm run build:fighter`, then verify with `node scripts/inspect-character-glb.mjs public/models/characters/kaze/kaze.glb` and `npm run test:kaze` (skinned-vertex displacement per clip). Verified: 13 skinned primitives, 13 materials, 12864 triangles, 19 deform bones, 17 clips, all vertices weighted, authored UVs, 1.77 m tall, feet on origin. Stylised loft geometry, not production art; see docs/CHARACTER_MODEL_REPORT.md section 10 for the rework and the remaining visual defects.",
+   "verified": {
+    "triangles": 11556,
+    "materials": 13,
+    "bones": 19,
+    "clips": 17,
+    "height": 1.772,
+    "multiWeightVertices": 815,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/kaze/kaze.glb",
+    "animationTest": "npm run test:kaze"
+   }
+  },
+  "aang": {
+   "url": "/models/characters/roster/aang.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 567232,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/aang.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "aladdin": {
+   "url": "/models/characters/roster/aladdin.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 657628,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/aladdin.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "all_might": {
+   "url": "/models/characters/roster/all_might.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 623028,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/all_might.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "aquaman": {
+   "url": "/models/characters/aquaman/aquaman.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Aquaman(Textured)(Rigged) by 3D MODELS on Sketchfab, https://sketchfab.com/3d-models/aquamantexturedrigged-65cd2553e7dc4e9faf0afbf5a43e2e19, CC Attribution 4.0, downloaded through the Sketchfab download API with the account owner's token.",
+   "creator": "3D MODELS (Sketchfab)",
+   "license": "CC Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "attribution": "Aquaman(Textured)(Rigged) by 3D MODELS on Sketchfab, CC Attribution",
+   "notes": "APPROVED AQUAMAN MODEL IMPORTED (approved additional candidate; the Injustice 2 collection primary has not been imported yet). One skinned mesh, 4,031 vertices, 56 bones and 43 author clips including CombatIdle, CombatBlockFront, HitReactLight, HitReactKnockDown, GroundDeathB, LeapCrouch/LeapAir/LeapLand, DashIntro/Loop/Outro, BeamIn/BeamOut, VictoryFlying01 and punch-adjacent combat states. Authored height 0.024 m (not in metres); the fighter pipeline normalises scale and ground contact. Runtime roster audit mounts this file.",
+   "verified": {
+    "bytes": 6705396,
+    "meshes": 1,
+    "skinnedMeshes": 1,
+    "vertices": 4031,
+    "bones": 56,
+    "clips": 43,
+    "authoredHeight": 0.024,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/aquaman/aquaman.glb"
+   }
+  },
+  "ariel": {
+   "url": "/models/characters/roster/ariel.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 575304,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/ariel.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "arnold_schwarzenegger": {
+   "url": "/models/characters/roster/arnold_schwarzenegger.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 631308,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/arnold_schwarzenegger.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "bruce_lee": {
+   "url": "/models/characters/roster/bruce_lee.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 636656,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/bruce_lee.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "burt_reynolds": {
+   "url": "/models/characters/roster/burt_reynolds.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 542128,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/burt_reynolds.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "captain_jack_sparrow": {
+   "url": "/models/characters/roster/captain_jack_sparrow.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 604432,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/captain_jack_sparrow.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "doctor_strange": {
+   "url": "/models/characters/doctor_strange/doctor_strange.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Doctor Strange (Textured) (Rigged) by 3D MODELS on Sketchfab, https://sketchfab.com/3d-models/doctor-strange-textured-rigged-c6ed186eec494c2e8f435b2c4f341c1a, CC Attribution 4.0, downloaded through the Sketchfab download API with the account owner's token.",
+   "creator": "3D MODELS (Sketchfab)",
+   "license": "CC Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "attribution": "Doctor Strange (Textured) (Rigged) by 3D MODELS on Sketchfab, CC Attribution",
+   "notes": "APPROVED DOCTOR STRANGE MODEL IMPORTED. Five skinned meshes, 10,426 vertices, 228 bones, no author clips: the controller poses the skeleton procedurally through the canonical 19 roles. Authored height 0.765 m (the source is not in metres); the fighter pipeline normalises scale. The generated 19-bone roster body remains at roster/doctor_strange.glb as the rollback body.",
+   "verified": {
+    "bytes": 1537004,
+    "meshes": 5,
+    "skinnedMeshes": 5,
+    "vertices": 10426,
+    "bones": 228,
+    "clips": 0,
+    "authoredHeight": 0.765,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/doctor_strange/doctor_strange.glb"
+   }
+  },
+  "doom_slayer": {
+   "url": "/models/characters/roster/doom_slayer.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 503004,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/doom_slayer.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "edna_mode": {
+   "url": "/models/characters/roster/edna_mode.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 573448,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/edna_mode.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "edward_elric": {
+   "url": "/models/characters/roster/edward_elric.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 582228,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/edward_elric.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "geralt_of_rivia": {
+   "url": "/models/characters/roster/geralt_of_rivia.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 684684,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/geralt_of_rivia.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "grace_jones": {
+   "url": "/models/characters/roster/grace_jones.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 585524,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/grace_jones.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "green_lantern_hal_jordan": {
+   "url": "/models/characters/green_lantern_hal_jordan/green_lantern_hal_jordan.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Green Lantern(Textured)(Rigged) by 3D MODELS on Sketchfab, https://sketchfab.com/3d-models/green-lanterntexturedrigged-89362a83a6834d068d05ee5c7589cf33, CC Attribution 4.0, downloaded through the Sketchfab download API with the account owner's token.",
+   "creator": "3D MODELS (Sketchfab)",
+   "license": "CC Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "attribution": "Green Lantern(Textured)(Rigged) by 3D MODELS on Sketchfab, CC Attribution",
+   "notes": "APPROVED GREEN LANTERN MODEL IMPORTED. One skinned mesh, 4,594 vertices, 59 bones and four author clips (IDLE001, IDLE002, IDLE001_1, IDLE003). The author authored the model at centimetre scale (measured height 0.019 m), so the fighter pipeline normalises it to roster height. The generated 19-bone roster body remains at roster/green_lantern_hal_jordan.glb as the rollback body.",
+   "verified": {
+    "bytes": 1683952,
+    "meshes": 1,
+    "skinnedMeshes": 1,
+    "vertices": 4594,
+    "bones": 59,
+    "clips": 4,
+    "authoredHeight": 0.019,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/green_lantern_hal_jordan/green_lantern_hal_jordan.glb"
+   }
+  },
+  "han_solo": {
+   "url": "/models/characters/roster/han_solo.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 585616,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/han_solo.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "hashirama_senju": {
+   "url": "/models/characters/roster/hashirama_senju.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 661256,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/hashirama_senju.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "hulk_bruce_banner": {
+   "url": "/models/characters/imported/hulk/hulk.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Hulk (Brand New Day) - Marvel Future Fight by Kabiidev on Sketchfab, https://sketchfab.com/3d-models/ce63f355567040f598107c137fd60718 (model uid ce63f355567040f598107c137fd60718), CC BY 4.0, downloaded through the Sketchfab download API with the account owner's token.",
+   "creator": "Kabiidev (Sketchfab)",
+   "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "notes": "IMPORTED 65-BONE BODY, not the generated 19-bone roster body this entry used to describe. Five skinned meshes, 15,252 triangles, 11,437 vertices, five textured materials (hero_hulk01_S09_01..04 plus the kingpin weapon material), 65 bones on the Marvel Future Fight Bip001 rig, and 19 author-supplied clips (idle, walk, dash, atk01, atk02, hit, stun, die, skill01..05, succ_cam, wait). The canonical 19-role map is stored in imported/hulk/hulk_bone_map.json and binds 19/19 roles with no missing or duplicate entries. Measured height 2.541 m, feet at y=0.033. Known defect: the project's watertightness gate, which was calibrated for the generated bodies, reports 1,686 open boundary edges and 35 non-manifold edges; there are no degenerate triangles, and the model is an open-shell game asset rather than a closed solid. Runtime coverage is documented by the Hulk match, combo, debris, equipment and victory scripts.",
+   "verified": {
+    "bytes": 6361632,
+    "meshes": 5,
+    "skinnedMeshes": 5,
+    "vertices": 11437,
+    "triangles": 15252,
+    "materials": 5,
+    "bones": 65,
+    "clips": 19,
+    "canonicalRolesBound": 19,
+    "height": 2.541,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/imported/hulk/hulk.glb",
+    "watertight": "open shell: 1686 boundary edges / 35 non-manifold edges (generated-body budget 80)"
+   }
+  },
+  "indiana_jones": {
+   "url": "/models/characters/roster/indiana_jones.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 670944,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/indiana_jones.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "jean_claude_van_damme": {
+   "url": "/models/characters/roster/jean_claude_van_damme.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 585588,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/jean_claude_van_damme.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "jotaro_kujo": {
+   "url": "/models/characters/roster/jotaro_kujo.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 555344,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/jotaro_kujo.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "keanu_reeves": {
+   "url": "/models/characters/roster/keanu_reeves.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 582352,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/keanu_reeves.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "kratos": {
+   "url": "/models/characters/roster/kratos.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 496448,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/kratos.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "l_death_note_style": {
+   "url": "/models/characters/roster/l_death_note_style.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 570972,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/l_death_note_style.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "lara_croft": {
+   "url": "/models/characters/roster/lara_croft.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 588444,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/lara_croft.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "levi_ackerman": {
+   "url": "/models/characters/roster/levi_ackerman.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 680384,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/levi_ackerman.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "link": {
+   "url": "/models/characters/roster/link.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "model-upgrade",
+   "source": "KayKit Character Pack: Adventurers (Knight.glb) by Kay Lousberg, retrieved from the KayKit GitHub mirror; body re-skinned onto this repository's roster rig, which keeps the original seventeen gameplay clips.",
+   "creator": "Browser Smash project",
+   "license": "CC0 1.0 Universal (KayKit Character Pack: Adventurers)",
+   "notes": "MODEL/SKIN UPGRADE of an existing fighter, generated by scripts/blender_reskin.py: Knight body parts bound to the roster 19-bone rig with computed per-vertex weights and the existing seventeen clips untouched, so no retargeting is involved. Verified with scripts/blender_check_deform.py: 19 bones move and skinned vertices travel 0.53 m (idle), 0.75 m (walk), 1.04 m (run), 0.76 m (jab), 1.08 m (heavy punch). Rollback: copy the backup file back over the roster path.",
+   "verified": {
+    "bytes": 661756,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/link.glb",
+    "rosterTest": "npm run test:roster-models"
+   },
+   "backup": "/public/models/characters/original/link-original.glb",
+   "updated": "2026-11-02"
+  },
+  "lord_voldemort": {
+   "url": "/models/characters/roster/lord_voldemort.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 508920,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/lord_voldemort.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "lucy_liu": {
+   "url": "/models/characters/roster/lucy_liu.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 589848,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/lucy_liu.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "luigi": {
+   "url": "/models/characters/roster/luigi.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 595756,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/luigi.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "madara_uchiha": {
+   "url": "/models/characters/roster/madara_uchiha.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 690628,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/madara_uchiha.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "mario": {
+   "url": "/models/characters/roster/mario.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 595680,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/mario.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "master_chief": {
+   "url": "/models/characters/roster/master_chief.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 554116,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/master_chief.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "naruto_uzumaki": {
+   "url": "/models/characters/naruto_uzumaki/naruto_uzumaki.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported",
+   "source": "https://sketchfab.com/3d-models/naruto-sasuke-low-poly-rig-texture-b650b60a7bbd4f11b05a435e65116168",
+   "creator": "ronildo.facanha",
+   "license": "CC BY 4.0",
+   "notes": "IMPORTED body, not a repository-generated stand-in. Downloaded 2026-11-06 from the project folder published in the description of Sketchfab model b650b60a7bbd4f11b05a435e65116168 (CC BY 4.0). The package is one FBX holding Naruto and Sasuke on separate 567-bone Rigify rigs plus external PNGs. assets/blender/naruto_from_fbx.py keeps Naruto, rebuilds each material around its supplied texture, removes the inverted-hull ink shell (glTF cannot mark it back-side, so it rendered the body as a black silhouette) and normalises the 6.15 m source to 1.80 m. assets/blender/naruto_animations.py adds 19 clips authored on this rig. Geometry 3,989 tris after the outline strip, 5 materials with 5 embedded PNGs (tex01 922x922, tex02 922x922, face 128x128 from smiling.png, hands 64x64, palms 64x64). Fan-made art of a copyrighted character: CC BY covers the creator's work only and does not clear Naruto franchise rights, so it is local-prototype-only. Evidence, source package and digests: artifacts/asset-fetch/naruto_sasuke/ and artifacts/naruto-roster/.",
+   "verified": {
+    "bytes": 10500700,
+    "sha256": "9b968ebd95c847f23b4b46142e8ea6802b832aa340d2bfda2c0bc66b7445a1a4",
+    "inspectedWith": "node scripts/inspect-animation-glb.mjs public/models/characters/naruto_uzumaki/naruto_uzumaki.glb",
+    "triangles": 3989,
+    "skinnedMeshes": 5,
+    "bones": 567,
+    "embeddedTextures": 5,
+    "clips": [
+     "idle",
+     "walk",
+     "run",
+     "jump",
+     "fall",
+     "land",
+     "jab",
+     "heavy_punch",
+     "front_kick",
+     "spinning_kick",
+     "hit_light",
+     "hit_heavy",
+     "knockdown",
+     "block",
+     "victory",
+     "defeat",
+     "rasengan",
+     "shadow_clone",
+     "transformation"
+    ],
+    "extraction": "bash scripts/blender.sh -b --python assets/blender/naruto_from_fbx.py",
+    "clips_build": "bash scripts/blender.sh -b --python assets/blender/naruto_animations.py",
+    "browserTest": "bash scripts/run-browser-test.sh scripts/verify-naruto-roster.mjs"
+   },
+   "attribution": "Naruto & Sasuke Low Poly + Rig + Texture by ronildo.facanha (Sketchfab), CC BY 4.0",
+   "retrieved": "2026-11-06"
+  },
+  "norman_bates": {
+   "url": "/models/characters/roster/norman_bates.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 585512,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/norman_bates.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "professor_x_charles_xavier": {
+   "url": "/models/characters/roster/professor_x_charles_xavier.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 501716,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/professor_x_charles_xavier.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "roronoa_zoro": {
+   "url": "/models/characters/roster/roronoa_zoro.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 643896,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/roronoa_zoro.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "saitama": {
+   "url": "/models/characters/roster/saitama.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 475704,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/saitama.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "samuel_l_jackson": {
+   "url": "/models/characters/roster/samuel_l_jackson.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 651356,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/samuel_l_jackson.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "sasuke_uchiha": {
+   "url": "/models/characters/roster/sasuke_uchiha.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 633080,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/sasuke_uchiha.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "sephiroth": {
+   "url": "/models/characters/roster/sephiroth.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 606260,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/sephiroth.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "sesshomaru": {
+   "url": "/models/characters/roster/sesshomaru.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 606708,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/sesshomaru.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "shrek": {
+   "url": "/models/characters/roster/shrek.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 468648,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/shrek.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "sigourney_weaver": {
+   "url": "/models/characters/roster/sigourney_weaver.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 680428,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/sigourney_weaver.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "solid_snake": {
+   "url": "/models/characters/roster/solid_snake.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 657388,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/solid_snake.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "spider_man": {
+   "url": "/models/characters/roster/spider_man.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-character",
+   "source": "https://sketchfab.com/3d-models/the-amazing-spider-man-2-rigged-model-fd9385343d14477a979d0269b3015e1e (original); itch.io mirror https://yasso3mk.itch.io/spider-man",
+   "creator": "Shitlock_Homeless (Sketchfab); itch.io mirror by yasso3mk",
+   "license": "CC BY 4.0 (http://creativecommons.org/licenses/by/4.0/) — model by Shitlock_Homeless; itch mirror by yasso3mk. Does not grant rights to the Spider-Man character.",
+   "notes": "Imported Spider-Man body by Shitlock_Homeless: 7 skinned meshes, 13,400 triangles, 66 Mixamo bones, 4 embedded PNG textures. The source clip was zero-duration and referenced a missing Hips node, so it was stripped; locomotion, attacks and reactions are driven by the game authored clip library through the Mixamo rig. Fallback: original-alternative body backed up at /public/models/characters/original/spider_man-original.glb.",
+   "verified": {
+    "bytes": 11481472,
+    "meshes": 7,
+    "skinnedMeshes": 7,
+    "vertices": 8229,
+    "triangles": 13400,
+    "materials": 7,
+    "textures": 4,
+    "bones": 66,
+    "clips": 0,
+    "sourceClipStripped": "Spidey (zero duration, broken Hips track)",
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/spider_man.glb",
+    "rosterTest": "bash scripts/run-browser-test.sh scripts/verify-spider-man-import.mjs"
+   },
+   "backup": "/public/models/characters/original/spider_man-original.glb",
+   "updated": "2026-11-06"
+  },
+  "superman": {
+   "url": "/models/characters/superman/superman.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Superman - DC by Chechorams16 on Sketchfab, https://sketchfab.com/3d-models/superman-dc-ccad133a5a684003a059a01c89216780, CC Attribution 4.0, downloaded through the Sketchfab download API with the account owner's token and packed to a self-contained GLB.",
+   "creator": "Chechorams16 (Sketchfab)",
+   "license": "CC Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "notes": "APPROVED SUPERMAN MODEL IMPORTED. Four skinned meshes, 19,926 triangles, 11,197 vertices, two embedded base-colour textures, 82 joints on the author Bip001 rig, no author clips: the controller poses the skeleton procedurally through the canonical 19 roles. Measured height 1.924 m, feet 0.005 m below the origin. Runtime roster audit mounts this file and binds 19/19 canonical roles. The generated 19-bone roster body remains at roster/superman.glb as the rollback body.",
+   "verified": {
+    "bytes": 1395884,
+    "meshes": 4,
+    "skinnedMeshes": 4,
+    "vertices": 11197,
+    "triangles": 19926,
+    "bones": 82,
+    "clips": 0,
+    "height": 1.924,
+    "feetY": -0.005,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/superman/superman.glb"
+   },
+   "attribution": "Superman - DC by Chechorams16 on Sketchfab, CC Attribution"
+  },
+  "the_flash_barry_allen": {
+   "url": "/models/characters/the_flash_barry_allen/the_flash_barry_allen.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "The Flash Rigged (HatchXR) by nitwit.friends on Sketchfab, https://sketchfab.com/3d-models/the-flash-rigged-hatchxr-1261cf0905be44c09f278533d2149c4c, CC Attribution 4.0, downloaded through the Sketchfab download API with the account owner's token. The Injustice 2 primary is a separate collection download and has not been imported yet.",
+   "creator": "nitwit.friends (Sketchfab)",
+   "license": "CC Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "attribution": "The Flash Rigged (HatchXR) by nitwit.friends on Sketchfab, CC Attribution",
+   "notes": "APPROVED FLASH ALTERNATIVE IMPORTED. Two skinned meshes, 6,224 vertices, 66 bones, twelve Mixamo-family clips (stand, walk, run, jumpUp, jumpDown, strafeLeft/Right, punch, waveHello). Robots are procedurally posed where a gameplay state has no matching clip. Authored height 3.214 m; normalised at mount. Runtime roster audit mounts this file.",
+   "verified": {
+    "bytes": 1519544,
+    "meshes": 2,
+    "skinnedMeshes": 2,
+    "vertices": 6224,
+    "bones": 66,
+    "clips": 12,
+    "height": 3.214,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/the_flash_barry_allen/the_flash_barry_allen.glb"
+   }
+  },
+  "the_rock": {
+   "url": "/models/characters/roster/the_rock.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 483508,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/the_rock.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "thor": {
+   "url": "/models/characters/thor/thor.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "imported-licensed",
+   "source": "Thor(Textured)(Rigged) by 3D MODELS on Sketchfab, https://sketchfab.com/3d-models/thortexturedrigged-7fc395b9b26c4d40bafa0d5221b26e9c, CC Attribution 4.0, downloaded through the Sketchfab download API with the account owner's token.",
+   "creator": "3D MODELS (Sketchfab)",
+   "license": "CC Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)",
+   "attribution": "Thor(Textured)(Rigged) by 3D MODELS on Sketchfab, CC Attribution",
+   "notes": "APPROVED THOR MODEL IMPORTED. Five skinned meshes, 10,213 vertices, 121 bones, no author clips: the controller poses the skeleton procedurally through the canonical 19 roles. Authored height 2.096 m, feet 0.036 m below the origin (corrected at mount). The generated 19-bone roster body remains at roster/thor.glb as the rollback body.",
+   "verified": {
+    "bytes": 2178224,
+    "meshes": 5,
+    "skinnedMeshes": 5,
+    "vertices": 10213,
+    "bones": 121,
+    "clips": 0,
+    "height": 2.096,
+    "feetY": -0.036,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/thor/thor.glb"
+   }
+  },
+  "ursula": {
+   "url": "/models/characters/roster/ursula.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 508652,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/ursula.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "vegeta": {
+   "url": "/models/characters/roster/vegeta.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 676684,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/vegeta.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "wolverine_logan": {
+   "url": "/models/characters/roster/wolverine_logan.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 676872,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/wolverine_logan.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "wonder_woman": {
+   "url": "/models/characters/roster/wonder_woman.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_fighters.py (Blender lofted geometry, skinned to a 19-bone armature, eight clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "ORIGINAL stylised body generated by the shared Blender kernel that produces the reference fighter Kaze: the same lofted anatomy, layered garments with measured clearance between layers, a 19-bone armature, hybrid skin weights and seventeen clips (idle, walk, run, sprint, jump, land, dodge, charge, beam, launcher, jab, heavy_punch, block, hit_light, knockdown, get_up, fly). It is not a licensed character model: that source has never been supplied and unlicensed copies are not used. Regenerate with `npm run build:roster-fighters`; validate with `npm run test:roster-models`. The garment layer, head treatment, hair silhouette, palette and build are per-fighter; the anatomy underneath is shared with Kaze.",
+   "verified": {
+    "bytes": 661628,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/roster/wonder_woman.glb",
+    "rosterTest": "npm run test:roster-models"
+   }
+  },
+  "goku-alt": {
+   "url": "/models/characters/original/goku-alt.glb",
+   "format": "gltf",
+   "enabled": false,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_models.py",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "pendingLicensedAsset": "/models/characters/goku/Goku.fbx",
+   "notes": "SUPERSEDED and disabled on purpose: this export from the earlier roster generator renders worse than the body that replaced it (sphere shoulders and knees, and the undershirt shell z-fighting across the chest), so it is retained only as the record of that finding. The active, validated body for this fighter is /models/characters/roster/goku.glb.",
+   "verified": {
+    "bytes": 425688,
+    "rendersWorseThan": "public/js/characters/sculpted.js",
+    "supersededBy": "/models/characters/roster/goku.glb"
+   }
+  },
+  "iron-man-alt": {
+   "url": "/models/characters/original/iron-man-alt.glb",
+   "format": "gltf",
+   "enabled": false,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_models.py",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "pendingLicensedAsset": "/models/characters/iron-man-mark-v-rig/Iron Man Mark V Rig Materials.gltf",
+   "notes": "SUPERSEDED and disabled on purpose: this export from the earlier roster generator renders worse than the body that replaced it (sphere shoulders and knees, and the undershirt shell z-fighting across the chest), so it is retained only as the record of that finding. The active, validated body for this fighter is /models/characters/roster/iron_man_tony_stark.glb.",
+   "verified": {
+    "bytes": 368388,
+    "rendersWorseThan": "public/js/characters/sculpted.js",
+    "supersededBy": "/models/characters/roster/iron_man_tony_stark.glb"
+   }
+  },
+  "iron-spider-alt": {
+   "url": "/models/characters/original/iron-spider-alt.glb",
+   "format": "gltf",
+   "enabled": false,
+   "yawOffset": 0,
+   "assetKind": "original-alternative",
+   "source": "Original stylised body authored in this repository by assets/blender/build_roster_models.py",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "pendingLicensedAsset": "/models/characters/iron_spider/iron_spider.glb",
+   "notes": "SUPERSEDED and disabled on purpose: this export from the earlier roster generator renders worse than the body that replaced it (sphere shoulders and knees, and the undershirt shell z-fighting across the chest), so it is retained only as the record of that finding. The active, validated body for this fighter is /models/characters/roster/iron_spider.glb.",
+   "verified": {
+    "bytes": 351916,
+    "rendersWorseThan": "public/js/characters/sculpted.js",
+    "supersededBy": "/models/characters/roster/iron_spider.glb"
+   }
+  },
+  "goku_licensed": {
+   "url": "/models/characters/showcase/goku_licensed.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "licensed-review-candidate",
+   "source": "Sketchfab \"Goku model rig\" by Oup77, https://sketchfab.com/3d-models/goku-model-rig-75b88c3bf6a446df87680b8e7d4ba8e0, downloaded through the Sketchfab API and repacked losslessly by scripts/pack-gltf-to-glb.mjs: geometry, skin weights, inverse bind matrices and UVs are copied unchanged, only the container and the 19 canonical bone names changed.",
+   "creator": "Oup77 (https://sketchfab.com/vaclelenmenttin77)",
+   "license": "CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/) - attribution to Oup77 is required",
+   "notes": "REVIEW CANDIDATE, NOT the roster body: roster/goku.glb stays the default and character select is untouched. 77,860 triangles, 73 joints, 19/19 canonical roles, 4 materials, two 2048x2048 base-colour maps, hair rigidly parented to the head, 12,346 non-manifold edges. Bind pose verified with scripts/analyze-bind-pose.mjs: 55/55 deform joints agree with their inverse bind matrices (spread 0.0001 m / 0.01 deg), bind skeleton centre is 0.17 m from the mesh centre. The 47.64 m armature offset in the original candidate report was a Blender importer artifact, not an asset defect. NO animation clips yet: motion comes from the runtime canonical motion sets, so every gameplay state still needs authored clips before this can be promoted. Stylised low-detail materials, not HD. Review with ?showcaseCharacter=goku_licensed.",
+   "verified": {
+    "bytes": 3255848,
+    "triangles": 77860,
+    "vertices": 45732,
+    "bones": 73,
+    "canonicalRoles": 19,
+    "skinnedMeshes": 4,
+    "rigidAttachedMeshes": 1,
+    "textures": 2,
+    "clips": 0,
+    "bindPoseConsistent": true,
+    "inspectedWith": "node scripts/analyze-bind-pose.mjs artifacts/goku-repair/repaired/goku.glb",
+    "repairReport": "artifacts/goku-repair/REPORT.md"
+   }
+  },
+  "goku_showcase": {
+   "url": "/models/characters/showcase/goku_showcase.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 0,
+   "assetKind": "showcase-export",
+   "source": "Original stylised body authored in this repository by assets/blender/showcase_goku.py (procedural primitives, 20-bone armature, seven clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own script (no third-party model, texture or scan)",
+   "notes": "OPT-IN showcase body. Not the roster Goku: roster/goku.glb stays the default. This is the Phase-1 Blender pipeline export (44 parts, 20 bones, 7 clips: Idle, Walk, Run, Jump, Punch, Kick, Kamehameha). It is a stylised blockout with flat Principled materials and no texture maps; it is registered to prove the export loads through the real character pipeline, not as a visual upgrade. Enable with ?showcaseGoku=1 or localStorage.browserSmashShowcaseGoku=1.",
+   "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Punch",
+    "Kick",
+    "Kamehameha"
+   ],
+   "verified": {
+    "bytes": 3124580,
+    "bones": 20,
+    "clips": 7,
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/showcase/goku_showcase.glb"
+   }
+  },
+  "goku_sculpt": {
+   "url": "/models/characters/showcase/goku_sculpt.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 180,
+   "assetKind": "showcase-sculpt",
+   "source": "Original stylised body authored in this repository by assets/blender/model_goku_sculpt.py (implicit-surface body, lofted garments, curve hair, 40-bone rig, seven clips).",
+   "creator": "Browser Smash project",
+   "license": "Original work generated by this repository's own scripts (no third-party model, texture or scan)",
+   "notes": "OPT-IN sculpted body. Not the roster Goku. Body is one fused implicit surface with boolean eye sockets, lofted garment surfaces with clean hems, ribbon hair locks, smooth proximity skin weights and base-colour + roughness + normal maps. Stylised game art, not photoreal. Enable with ?showcaseGoku=sculpt or localStorage.browserSmashShowcaseGoku=sculpt.",
+   "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Punch",
+    "Kick",
+    "Kamehameha"
+   ],
+   "verified": {
+    "bytes": 3182108,
+    "bones": 40,
+    "clips": 7
+   }
+  },
+  "quaternius_base": {
+   "url": "/models/characters/ingested/quaternius_base.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 180,
+   "assetKind": "ingested-licensed",
+   "source": "\"Animated Base Character\" by Quaternius, downloaded from Poly Pizza",
+   "creator": "Quaternius",
+   "license": "CC BY 3.0",
+   "attribution": "\"Animated Base Character\" by Quaternius, via Poly Pizza — https://poly.pizza/m/cwYvO5UauX — CC BY 3.0. Bones remapped and clips renamed; geometry unchanged.",
+   "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+   "sourceUrl": "https://poly.pizza/m/cwYvO5UauX",
+   "notes": "REVIEW ONLY — not a roster body. Prepared by scripts/ingest-character.mjs from assets/ingest/quaternius-base-character.json. Passes the ingestion gate (19/19 canonical bones, feet at 0, seven states) but FAILS the geometry gate: 6,584 zero-area triangles in the Mannequin_2 mesh. Kick is a substituted punch clip; no real kick or Kamehameha exists in the source pack. Facing: the source faces -Z, so the manifest carries a 180 degree yaw correction (verified from a live capture, not assumed).",
+   "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Punch",
+    "Kick",
+    "Kamehameha"
+   ],
+   "verified": {
+    "bones": 53,
+    "canonicalBones": 19,
+    "clips": 7,
+    "tris": 13744,
+    "bytes": 2017652
+   }
+  },
+  "licence_free_import": {
+   "url": "/models/characters/ingested/licence_free_import.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 180,
+   "assetKind": "ingested-unlicensed",
+   "source": "User-provided model file, ingested without licence metadata",
+   "notes": "REVIEW ONLY — not a roster body. Imported to prove that licence metadata is informational and does not gate character ingestion: this profile carries no creator, no licence, no licence URL and no provenance. Technical gate: 19/19 canonical bones bound, feet grounded at 0 m, seven states present. Geometry inherits the source export, so its known zero-area triangles are still reported by scripts/inspect-character-glb.mjs.",
+   "clips": [
+    "Idle",
+    "Walk",
+    "Run",
+    "Jump",
+    "Punch",
+    "Kick",
+    "Kamehameha"
+   ]
+  },
+  "hd_infantry_cc0": {
+   "url": "/models/characters/roster_hd/infantry_cc0.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 180,
+   "assetKind": "licensed-development-fixture",
+   "source": "Grab3D — Soldier (rigged, walk + run), downloaded from https://grab3d.com/dl/soldier-rigged/soldier-rigged.glb",
+   "creator": "Grab3D (publisher)",
+   "license": "CC0 1.0 Universal (public domain dedication): commercial use, modification and redistribution permitted, no attribution required (publisher page + schema.org license field).",
+   "notes": "REVIEW CANDIDATE. 278,969 triangles, one skinned mesh with embedded base-colour, normal and metallic-roughness textures, 24-joint rig, walk and run clips. Review with ?showcaseCharacter=hd_infantry_cc0. Provenance and the publisher-only rights caveat: roster_hd/infantry_cc0.provenance.json. yawOffset 180 because the exported body faces -Z.",
+   "retrieved": "2026-11-06",
+   "verified": {
+    "bytes": 13566236,
+    "vertices": 171277,
+    "triangles": 278969,
+    "skinnedMeshes": 1,
+    "joints": 24,
+    "textures": 3,
+    "materials": 1,
+    "clips": 2,
+    "sha256": "b1f32017868a6f951c21c45b84646696431e6b4c813d563af37944123f673a59"
+   }
+  },
+  "infantry": {
+   "url": "/models/characters/roster_hd/infantry_cc0.glb",
+   "format": "gltf",
+   "enabled": true,
+   "yawOffset": 180,
+   "assetKind": "roster-body",
+   "source": "Grab3D — Soldier (rigged, walk + run), downloaded from https://grab3d.com/dl/soldier-rigged/soldier-rigged.glb",
+   "creator": "Grab3D (publisher)",
+   "license": "CC0 1.0 Universal (public domain dedication): commercial use, modification and redistribution permitted, no attribution required (publisher page + schema.org license field).",
+   "notes": "SELECTABLE ROSTER BODY. Imported Grab3D soldier (CC0): 280,417 triangles, 3 embedded PBR maps, 24-joint skin. The identity slug is `infantry`, so the select preview and the match loader resolve this entry through the normal manifest path. Provenance: roster_hd/infantry_cc0.provenance.json.",
+   "retrieved": "2026-11-06",
+   "verified": {
+    "bytes": 13566236,
+    "vertices": 171277,
+    "triangles": 278969,
+    "skinnedMeshes": 1,
+    "joints": 24,
+    "textures": 3,
+    "materials": 1,
+    "clips": 2,
+    "sha256": "b1f32017868a6f951c21c45b84646696431e6b4c813d563af37944123f673a59"
+   }
   }
+ },
+ "roster": {
+  "generator": "assets/blender/build_roster_fighters.py",
+  "rebuild": "npm run build:roster-fighters",
+  "validate": "npm run test:roster-models",
+  "count": 58,
+  "note": "Every selectable fighter is served by a generated skinned GLB. Kaze keeps the reference export from assets/blender/build_anime_fighter.py."
+ }
 }

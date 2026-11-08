@@ -3,6 +3,17 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, normalize, sep, extname } from 'node:path';
 import { chromium } from 'playwright';
+import { CLIP_SPECS } from '../public/js/anim/clip_library.js';
+import { CANONICAL_BONES, CORE_BONES } from '../public/js/anim/rig_map.js';
+
+// Expected animation coverage, taken from the library itself so it cannot drift.
+const expectedLibrarySize = Object.keys(CLIP_SPECS).length;
+// Bone binding is a property of the rig, not a constant. CORE_BONES is the eleven joints every rig
+// must have for the library to drive it; EXTENSION_BONES adds spine, clavicles, neck, hands and
+// feet on rigs that expose them. A hardcoded 11 therefore failed any body that bound all nineteen
+// canonical joints - a better binding reported as a regression. The gate now asserts the invariant
+// that matters instead: every canonical joint is either bound or declared missing, and no rig is
+// allowed to lose a core joint.
 
 // Use the exact Three.js release already referenced by the project, but serve it locally
 // during CI so a transient unpkg network/TLS issue cannot hide real game failures.
@@ -49,6 +60,13 @@ const mime = {
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname);
+    // The optional model-import API exists only behind the Vite plugin. A static host answers 404,
+    // which Chromium logs as a console error for a URL the game is designed to run without.
+    if (pathname === '/api/models/sources') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ sources: [], roster: { launch: [], manifestKeys: [] } }));
+      return;
+    }
     let relative = normalize(pathname).replace(/^[/\\]+/, '');
     if (!relative) relative = 'index.html';
     // Match Vite's public/ behavior: /js, /assets, /models and /data are served from public/.
@@ -132,9 +150,13 @@ try {
           && state.finalValley?.status === 'loaded'
           && state.finalValley.meshCount > 0
           && fighters.length === 2
+          // Three fighters ship a hand-authored body instead of a prefab; they must still be
+          // fully articulated, so the same gate checks their joints rather than a node name.
           && fighters.every(f => f.characterModelLoaded
             ? !!f.model?.userData?.humanMixer
-            : f.model?.name?.startsWith('Blender fighter ') && !!f.model?.userData?.equippedWeaponRight)
+            : f.model?.userData?.sculptedBody
+              ? !!f.model?.userData?.rightArm && !!f.model?.userData?.rightFore && !!f.model?.userData?.leftLeg
+              : f.model?.name?.startsWith('Blender fighter ') && !!f.model?.userData?.equippedWeaponRight)
           && state.lastCharacter?.upright === true;
       }, null, { timeout: 60_000, polling: 250 });
 
@@ -156,26 +178,58 @@ try {
         }
       }));
 
-      // The clip pipeline must actually drive the rig, not just bind to it.
+      // The animation pipeline must actually drive the rig, not just bind to it. Two systems can
+      // own a fighter: the shared 39-clip library over a prefab body's eleven canonical bones, or
+      // the clips a character's own exported GLB ships, driven by its named-action mixer. The gate
+      // names which one owns each fighter and then requires that fighter to be moving.
       const animation = await page.evaluate(async () => {
+        const state = f => {
+          const controller = f.animationController?.describe?.() ?? null;
+          const actions = f.model?.userData?.animationActions;
+          return {
+            system: controller ? 'clip-library' : actions ? 'baked-clips' : 'none',
+            clips: controller ? controller.clips : actions ? Object.keys(actions).length : 0,
+            boundBones: controller ? controller.boundBones : null,
+            missingBones: controller ? (controller.missingBones || []).length : null,
+            active: controller ? controller.active : !!f.model?.userData?.idleAction,
+            // Whatever owns the animation, the mounted body has to expose the canonical limb
+            // joints: the weapon mount, the rig gate and the audit all read them by name.
+            joints: !!(f.model?.userData?.leftArm && f.model?.userData?.leftLeg)
+          };
+        };
         const pose = () => (window.fighters || []).map(f => ({
           arm: f.model?.userData?.leftArm?.rotation.x ?? null,
           leg: f.model?.userData?.leftLeg?.rotation.x ?? null,
-          time: f.animationController?.currentTime ?? null
+          time: f.animationController?.currentTime ?? f.model?.userData?.humanMixer?.time ?? null
         }));
         const before = pose();
-        await new Promise(done => setTimeout(done, 900));
+        const states = (window.fighters || []).map(state);
+        // Software WebGL can need more than a second per frame, so wait for the loop to actually
+        // advance instead of assuming a fixed wall-clock window contains any frames at all. The
+        // assertions stay strict: the mixer and the joints still have to move.
+        const startFrames = window.__browserSmashAssets?.app?.frames ?? 0;
+        const deadline = performance.now() + 15000;
+        while (performance.now() < deadline) {
+          await new Promise(done => setTimeout(done, 200));
+          if ((window.__browserSmashAssets?.app?.frames ?? 0) > startFrames + 2) break;
+        }
         const after = pose();
-        return {
-          before,
-          after,
-          states: (window.fighters || []).map(f => f.animationController?.describe?.() ?? null)
-        };
+        return { before, after, states };
       });
-      assert.ok(animation.states.every(state => state && state.clips === 39),
-        route + ': a fighter has no 39-clip animation library: ' + JSON.stringify(animation.states));
-      assert.ok(animation.states.every(state => state.boundBones === 11),
-        route + ': animation rig did not bind all 11 bones');
+      assert.ok(animation.states.every(state => state.system !== 'none'),
+        route + ': a fighter has no animation system: ' + JSON.stringify(animation.states));
+      // Compare against the live library size rather than the number that happened to be current
+      // when this was written: Phase 11 added the victory and defeat clips, so the fighter was
+      // correctly bound to all 41 while the assertion still demanded 39.
+      assert.ok(animation.states.every(state => state.system !== 'clip-library'
+        || (state.clips >= expectedLibrarySize
+          && state.boundBones >= CORE_BONES.length
+          && state.boundBones + state.missingBones === CANONICAL_BONES.length)),
+      route + `: the clip-library fighter owns fewer than the shared ${expectedLibrarySize} clips or does not account for all ${CANONICAL_BONES.length} canonical bones (${CORE_BONES.length} core required): ` + JSON.stringify(animation.states));
+      assert.ok(animation.states.every(state => state.system !== 'baked-clips' || state.clips >= 8),
+        route + ': a fighter that ships its own clips is missing them: ' + JSON.stringify(animation.states));
+      assert.ok(animation.states.every(state => state.joints),
+        route + ': the mounted body does not expose the canonical limb joints: ' + JSON.stringify(animation.states));
       assert.ok(animation.states.some(state => state.active),
         route + ': no clip is playing');
       assert.ok(animation.after.some((entry, index) =>

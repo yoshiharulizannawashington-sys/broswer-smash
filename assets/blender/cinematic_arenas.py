@@ -3,6 +3,7 @@
 import bpy
 import math
 import os
+import sys
 import random
 from pathlib import Path
 from mathutils import Matrix
@@ -192,6 +193,62 @@ def build_asgard(root):
         cylinder(root, "Palace colonnade capital", (x,14.3,-116), .95, .8, pale, 12)
     for x in (-60,-40,-20,0,20,40,60):
         box(root, "Royal bridge deck", (x*.45,2.2,-93), (18,.35,5.5), gold, bevel=.15)
+    # ---- Dressing the existing city for gameplay framing -------------------------
+    # The square was one flat 126 x 90 slab and the avenue a single crystal strip, so at
+    # fighter height the plaza read as empty floor between two rows of halls. Everything
+    # below is added to geometry that already exists - inlays, street furniture and trim.
+    # No layout, stage bound or camera collider moves, so the authored framing still holds.
+    box(root, "Plaza gilt inlay", (0, .04, 4), (46, .05, 46), pale, bevel=.06)
+    for ring_radius in (6.9, 8.4):
+        torus(root, "Fountain inlay ring", (-14, .06, 4), ring_radius, .13, pale, major_segments=48)
+    for side in (-1, 1):
+        box(root, "Avenue gilded kerb", (side * 5.9, .05, -40), (.55, .09, 96), pale, bevel=.04)
+        box(root, "Avenue crystal channel", (side * 4.35, .05, -40), (.28, .08, 96), glass)
+    for step in range(10):
+        box(root, "Avenue transverse inlay", (0, .05, 24 - step * 9), (11.4, .07, .5), pale, bevel=.03)
+    # Braziers give the avenue a readable rhythm of warm light at ground level.
+    for side in (-1, 1):
+        for i in range(6):
+            z = 22 - i * 11
+            x = side * 7.4
+            cylinder(root, "Avenue brazier stem", (x, 1.05, z), .26, 2.1, gold, 12)
+            cone(root, "Avenue brazier bowl", (x, 2.5, z), .62, .55, pale, 12)
+            sphere(root, "Avenue brazier flame", (x, 2.95, z), (.34, .5, .34), glow, 12, 8)
+    # Market stalls line the walk between the halls and the avenue: counters, backboards,
+    # awnings and a lantern, so the inhabited city has something at human height.
+    for side in (-1, 1):
+        for i in range(4):
+            z = 16 - i * 12
+            x = side * 12.6
+            box(root, "Market stall counter", (x, .55, z), (3.0, 1.1, 2.2), marble, bevel=.08)
+            box(root, "Market counter top", (x, 1.15, z), (3.3, .14, 2.5), gold, bevel=.05)
+            box(root, "Market backboard", (x + side * 1.2, 1.6, z), (.2, 1.6, 2.4), roof, bevel=.05)
+            for awning in (-1, 1):
+                box(root, "Market awning", (x, 2.35, z + awning * .9), (3.4, .12, 1.6), roof, bevel=.04)
+            sphere(root, "Market lantern", (x - side * 1.5, 2.5, z), (.2, .24, .2), glow, 10, 8)
+    # Bifrost gate: the avenue previously began in nothing. Two piers carry a crystal.
+    for side in (-1, 1):
+        cylinder(root, "Bifrost gate pier", (side * 9.5, 5.2, 44), 1.5, 10.4, marble, 16)
+        cylinder(root, "Bifrost gate capital", (side * 9.5, 10.9, 44), 1.9, .9, gold, 16)
+    box(root, "Bifrost gate lintel", (0, 11.4, 44), (22.4, 1.4, 3.0), pale, bevel=.2)
+    sphere(root, "Bifrost gate crystal", (0, 12.9, 44), (1.7, 2.1, 1.7), glass, 20, 14)
+    # Colonnade trim: the 11 shafts carried nothing, so the palace front read as a picket.
+    box(root, "Colonnade architrave", (0, 15.0, -116), (78, 1.3, 3.0), pale, bevel=.18)
+    box(root, "Colonnade gilt frieze", (0, 15.9, -116), (78.5, .35, 3.3), gold, bevel=.06)
+    for i in range(7):
+        box(root, "Colonnade pediment block", (-45 + i * 15, 16.6, -116), (4.6, 1.0, 1.2), gold, bevel=.08)
+    # Hanging banners break up the palace face between the shafts.
+    for i in range(9):
+        x = -44 + i * 11
+        box(root, "Palace banner", (x, 10.6, -114.2), (2.0, 5.2, .12), roof, bevel=.03)
+        box(root, "Banner gilt hem", (x, 8.1, -114.1), (2.1, .28, .16), pale, bevel=.02)
+    # A horizon of secondary towers behind the palace, so the skyline does not stop at the keep.
+    for i in range(9):
+        x = -152 + i * 38
+        h = 58 + (i * 23) % 46
+        z = -212 - (i % 3) * 26
+        box(root, "Horizon tower", (x, h * .5, z), (16, h, 16), gold, bevel=.4)
+        cone(root, "Horizon spire", (x, h + 16, z), 5.4, 32, pale, 8)
     root["landmark"]="monumental golden palace and inhabited Asgardian plaza"
 
 def build_helicarrier(root):
@@ -414,8 +471,8 @@ def build_hogwarts(root):
     root["landmark"]="Gothic Great Hall nave, house banners, candlelight and enchanted sky"
 
 def build_tournament(root):
-    tile=mat("Tournament · warm limestone",0xe7ddc8,.04,.83)
-    tileShade=mat("Tournament · tiled joints",0xafa18d,.04,.92)
+    tile=mat("Tournament · warm limestone",0xb9ad94,.04,.86)
+    tileShade=mat("Tournament · tiled joints",0x8a7f6b,.04,.93)
     red=mat("Tournament · vermilion rails",0x912b24,.2,.48)
     redLight=mat("Tournament · lacquer highlights",0xb34a36,.22,.4)
     wood=mat("Tournament · dark timber",0x523a2b,.02,.9)
@@ -505,9 +562,21 @@ def export_asset(key, label, builder):
     print(f"  GLB: {glb_path} ({glb_path.stat().st_size/1024/1024:.2f} MiB)")
 
 def main():
+    # Rebuilding one arena used to mean rebuilding all five. `--only=tournament` (or a
+    # comma-separated list) rebuilds just those, so a material tweak cannot silently churn the
+    # other four GLBs.
+    only = None
+    if "--" in sys.argv:
+        for arg in sys.argv[sys.argv.index("--") + 1:]:
+            if arg.startswith("--only="):
+                only = {name.strip() for name in arg.split("=", 1)[1].split(",") if name.strip()}
+    built = 0
     for key, (label, builder) in BUILDERS.items():
+        if only and key not in only:
+            continue
         export_asset(key, label, builder)
-    print(f"Built {len(BUILDERS)} cinematic arena assets")
+        built += 1
+    print(f"Built {built} cinematic arena assets")
 
 if __name__ == "__main__":
     main()

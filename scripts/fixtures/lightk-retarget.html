@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>html,body{margin:0;background:#1c2530}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { retargetClipBindPose } from '/js/anim/bind_pose_retargeter.js';
+const loader = new GLTFLoader();
+const load = async url => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('HTTP ' + response.status + ' ' + url);
+  const data = await response.arrayBuffer();
+  return new Promise((resolve, reject) => loader.parse(data, '', resolve, reject));
+};
+try {
+  const source = await load('/models/characters/bespoke/goku_animated.glb');
+  const target = await load('/models/characters/bespoke/lightk_test.glb');
+  const wanted = [['idle', /Goku_Idle/i], ['jab', /Goku_Jab/i], ['kamehameha', /^Goku_Kamehameha$/i]];
+  const originals = new Map();
+  target.scene.traverse(node => { if (node.isBone) originals.set(node, node.quaternion.clone()); });
+
+  const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#c'), antialias: true, preserveDrawingBuffer: true });
+  renderer.setSize(720, 720, false);
+  renderer.setPixelRatio(1);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color('#1c2530');
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 2.5));
+  const sun = new THREE.DirectionalLight(0xffffff, 2); sun.position.set(3, 6, 4); scene.add(sun);
+  target.scene.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  scene.add(target.scene);
+
+  const rows = [];
+  const images = {};
+  let camera = null;
+  for (const [label, pattern] of wanted) {
+    const sourceClip = source.animations.find(c => pattern.test(c.name));
+    if (!sourceClip) throw new Error('missing source clip ' + label);
+    for (const [bone, q] of originals) bone.quaternion.copy(q);
+    target.scene.updateMatrixWorld(true);
+    const result = retargetClipBindPose(sourceClip, source.scene, target.scene, {
+      fps: 30, name: sourceClip.name + '_LightK', calibrateArms: true
+    });
+    const mixer = new THREE.AnimationMixer(target.scene);
+    const action = mixer.clipAction(result.clip); action.play();
+    const handMap = result.mappings.find(m => /Hand$/.test(m.slot));
+    const hand = handMap ? target.scene.getObjectByName(handMap.target) : null;
+    const pose = t => {
+      mixer.setTime(t); scene.updateMatrixWorld(true);
+      const p = hand ? hand.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3();
+      return { x: p.x, y: p.y, z: p.z, q: hand ? hand.quaternion.toArray() : null };
+    };
+    const p0 = pose(0);
+    const p1 = pose(result.clip.duration * 0.45);
+    const p0b = pose(0);
+    if (!camera) {
+      const box = new THREE.Box3().setFromObject(target.scene);
+      const size = box.getSize(new THREE.Vector3()), center = box.getCenter(new THREE.Vector3());
+      camera = new THREE.PerspectiveCamera(34, 1, 0.01, 1000);
+      camera.position.set(center.x, center.y + size.y * 0.08, center.z + Math.max(size.y, size.x) * 1.9);
+      camera.lookAt(center);
+      rows.bounds = { x: +size.x.toFixed(2), y: +size.y.toFixed(2), z: +size.z.toFixed(2) };
+    }
+    mixer.setTime(result.clip.duration * 0.45); scene.updateMatrixWorld(true);
+    renderer.render(scene, camera);
+    images[label] = renderer.domElement.toDataURL('image/png');
+    const finite = [p0, p1].every(p => [p.x, p.y, p.z].every(Number.isFinite));
+    rows.push({
+      label, sourceClip: sourceClip.name, duration: +sourceClip.duration.toFixed(2),
+      sourceTracks: sourceClip.tracks.length, targetTracks: result.clip.tracks.length,
+      mapped: result.report.mappedBones, missing: result.report.missingTargets,
+      nonFinite: result.report.nonFinite, maxStep: +result.report.maxStepRadians.toFixed(5),
+      handTravel: +Math.hypot(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z).toFixed(4),
+      hand: [+p1.x.toFixed(2), +p1.y.toFixed(2), +p1.z.toFixed(2)],
+      finite, repeat: p0.x === p0b.x && p0.y === p0b.y && p0.z === p0b.z
+    });
+    action.stop(); mixer.stopAllAction();
+  }
+  window.__result = { rows, images };
+} catch (error) {
+  window.__error = String(error?.stack || error?.message || error);
+}
+</script></body></html>

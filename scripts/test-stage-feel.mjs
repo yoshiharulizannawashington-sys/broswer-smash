@@ -29,6 +29,13 @@ const mime = {
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname);
+    // The optional model-import API exists only behind the Vite plugin. A static host answers 404,
+    // which Chromium logs as a console error for a URL the game is designed to run without.
+    if (pathname === '/api/models/sources') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ sources: [], roster: { launch: [], manifestKeys: [] } }));
+      return;
+    }
     let relative = normalize(pathname).replace(/^[/\\]+/, '');
     if (!relative) relative = 'index.html';
     if (['js', 'assets', 'models', 'data'].some(dir => relative === dir || relative.startsWith(dir + sep))) {

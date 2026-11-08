@@ -153,3 +153,15 @@ artifacts/
 
 # Local (root-free) browser shared libraries materialised by scripts/setup-browser-libs.sh
 .browser-libs/
+
+# local dev server log
+.dev-server.log
+
+# Blender autosave backups and Python bytecode
+*.blend1
+__pycache__/
+*.pyc
+
+# Headless Blender install (scripts/install-blender.sh) and build logs
+.tools/
+artifacts/kaze-build.json

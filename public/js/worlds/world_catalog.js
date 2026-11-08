@@ -10,6 +10,8 @@
 // and its battle areas without a browser (scripts/test-worlds.mjs). The renderer in
 // world_builder.js turns the same part descriptors into merged geometry.
 
+import { buildHagridsHut, buildHogwartsApproaches, buildHogwartsInterior, buildHogwartsWallWalkStair, HOGWARTS_INTERIOR_LOCATIONS } from './hogwarts_interior.js';
+
 const TAU = Math.PI * 2;
 
 /** Small deterministic PRNG so worlds look identical on every load and in tests. */
@@ -1480,9 +1482,12 @@ function buildHogwarts() {
   box(parts, 0, GROUND + 11, cz - 42, 132, 22, 3, 'stone', solid({ bottom: GROUND }));
   box(parts, -66, GROUND + 11, cz, 3, 22, 84, 'stone', solid({ bottom: GROUND }));
   box(parts, 66, GROUND + 11, cz, 3, 22, 84, 'stone', solid({ bottom: GROUND }));
-  for (const side of [-1, 1]) {
-    box(parts, side * 45, GROUND + 11, cz + 42, 42, 22, 3, 'stone', solid({ bottom: GROUND }));
-  }
+  box(parts, 45, GROUND + 11, cz + 42, 42, 22, 3, 'stone', solid({ bottom: GROUND }));
+  // The west curtain wall carries a gate at x = -34 that opens onto the dungeon passage, so
+  // the underground rooms are reached from the courtyard on foot.
+  box(parts, -51, GROUND + 11, cz + 42, 30, 22, 3, 'stone', solid({ bottom: GROUND }));
+  box(parts, -28, GROUND + 11, cz + 42, 8, 22, 3, 'stone', solid({ bottom: GROUND }));
+  box(parts, -34, (GROUND + 5.7 + GROUND + 22.3) / 2, cz + 42, 4.4, 16.6, 3.2, 'stoneDark', solid({ bottom: GROUND + 5.7 }));
   box(parts, 0, GROUND + 16, cz + 42, 24, 6, 3, 'stoneDark');
   // Battlements, buttresses and tall window rows. The curtain walls were smooth slabs; the
   // crenellations and piers give the castle the jagged skyline of the reference.
@@ -1495,15 +1500,13 @@ function buildHogwarts() {
       box(parts, side * 65.7, GROUND + 15.9, z, .4, .4, 2.4, 'stoneLight');
     }
     for (let i = 0; i < 5; i++) {
-      tower(parts, side * (44 + (i % 2) * 8), cz - 44 + i * 20, { r: 3.4, h: 22 + (i % 3) * 5, base: GROUND, mat: 'stone', roof: 'roofCastle' });
+      tower(parts, side * (72 + (i % 2) * 6), cz - 44 + i * 20, { r: 3.4, h: 22 + (i % 3) * 5, base: GROUND, mat: 'stone', roof: 'roofCastle' });
     }
   }
-  for (let i = 0; i < 7; i++) {
-    const x = -54 + i * 18;
-    // Skip the middle of the south range: that is the gate between the Great Hall and the courtyard.
-    if (Math.abs(x) < 24) continue;
-    tower(parts, x, cz + 40, { r: 6.5, h: 30 + (i % 3) * 8, base: GROUND, mat: 'stone', roof: 'roofCastle', win: 'glassWarm' });
-  }
+  // The three south-range towers that used to stand at cz + 40 (x = -54, 36 and 54) are gone.
+  // Their 6.5 m drums stood *inside* the castle range and cut the battlement wall walk in three
+  // places, so the walk could never be a route and the rooms behind them had stone lumps in
+  // their floors. The silhouette keeps the keep, the north towers and the two corner turrets.
   for (let i = 0; i < 4; i++) {
     tower(parts, -60 + i * 40, cz - 40, { r: 7.5, h: 34 + (i % 2) * 10, base: GROUND, mat: 'stone', roof: 'roofCastle' });
   }
@@ -1564,7 +1567,7 @@ function buildHogwarts() {
     torus(parts, -30, GROUND + 5.2, -62 + i * 6, 2.2, .22, 'stoneLight', { ry: Math.PI / 2 });
   }
   box(parts, -30, GROUND + 5.8, -47, 4, .6, 44, 'stoneDark');
-  for (const [x, z, w, d] of [[34, -46, 16, 12], [34, -58, 12, 10]]) {
+  for (const [x, z, w, d] of [[42, -42, 16, 12], [56, -38, 12, 10]]) {
     box(parts, x, GROUND + 1.8, z, w, 3.6, d, 'glassCool', { transparent: true });
     box(parts, x, GROUND + .25, z, w, .5, d, 'stone', solid({ bottom: GROUND }));
     box(parts, x, GROUND + 3.7, z, w + 1, .4, d + 1, 'stoneDark');
@@ -1576,7 +1579,16 @@ function buildHogwarts() {
   const hallZ = -100, floorY = GROUND + .22;
   box(parts, 0, floorY - .2, hallZ, 42, .5, 72, 'floorHall', solid({ bottom: GROUND }));
   for (const side of [-1, 1]) {
-    box(parts, side * 21, GROUND + 9, hallZ, 1.6, 18, 72, 'stoneDark', solid({ bottom: GROUND }));
+    // The east wall is pierced by the doorway into the castle range, so the two interiors are
+    // joined by an actual opening rather than a painted door.
+    if (side === 1) {
+      const doorZ = -94, half = 3, wallTop = GROUND + 18.3;
+      box(parts, 21, GROUND + 9, (hallZ - 36 + doorZ - half) / 2, 1.6, 18, (doorZ - half) - (hallZ - 36), 'stoneDark', solid({ bottom: GROUND }));
+      box(parts, 21, GROUND + 9, (doorZ + half + hallZ + 36) / 2, 1.6, 18, (hallZ + 36) - (doorZ + half), 'stoneDark', solid({ bottom: GROUND }));
+      box(parts, 21, (GROUND + 3.4 + wallTop) / 2, doorZ, 1.9, wallTop - (GROUND + 3.4), half * 2, 'stoneDark', solid({ bottom: GROUND + 3.4 }));
+    } else {
+      box(parts, side * 21, GROUND + 9, hallZ, 1.6, 18, 72, 'stoneDark', solid({ bottom: GROUND }));
+    }
     for (let i = 0; i < 7; i++) {
       const z = hallZ - 30 + i * 10;
       box(parts, side * 19.8, GROUND + 9, z, .4, 16, 4, 'glassCool');
@@ -1630,10 +1642,8 @@ function buildHogwarts() {
     box(parts, x, GROUND + 12, hallZ - 18 + (i % 2) * 22, 3.2, 8, .16, ['bannerRed', 'bannerBlue', 'bannerGold', 'bannerGreen'][i]);
   }
 
-  // Hagrid's Hut.
-  cyl(parts, -96, GROUND + 1.6, 6, 6, 6.4, 4.4, 'brick', solid({ bottom: GROUND, seg: 14 }));
-  cone(parts, -96, GROUND + 6.4, 6, 7.8, 4.6, 'thatch', { seg: 14 });
-  box(parts, -96, GROUND + 1.4, 12.6, 1.6, 2.6, .3, 'wood');
+  // Hagrid's Hut: hollow, with a walkable door. See worlds/hogwarts_interior.js.
+  buildHagridsHut(parts);
   for (let i = 0; i < 4; i++) rock(parts, -88 + i * 4, 14, .7, GROUND, rng);
   // Pumpkin patch and a fence around Hagrid's garden.
   for (let i = 0; i < 9; i++) {
@@ -1718,34 +1728,45 @@ function buildHogwarts() {
     // The cloister starts outside the courtyard stage (x = 30) so the fight rectangle stays
     // clear, and runs to the curtain wall.
     const cx = dir * 49;
-    box(parts, cx, GROUND + .12, -58, 34, .6, 9, 'cobble', solid({ bottom: GROUND }));
-    box(parts, cx, GROUND + 7.6, -58, 34, .7, 9.4, 'stoneDark', solid({ bottom: GROUND + 7.2 }));
+    // The east walk is split around the stair turret (x 34.5..43.5), so no floor, roof, pier or
+    // bay crosses its interior; the turret closes the gap with its own walls and doors.
+    const turret = dir > 0 ? [34.4, 43.6] : null;
+    const spans = turret ? [[32, turret[0]], [turret[1], 66]] : [[cx - 17, cx + 17]];
+    for (const [x0, x1] of spans) {
+      box(parts, (x0 + x1) / 2, GROUND + .12, -58, x1 - x0, .6, 9, 'cobble', solid({ bottom: GROUND }));
+      box(parts, (x0 + x1) / 2, GROUND + 7.6, -58, x1 - x0, .7, 9.4, 'stoneDark', solid({ bottom: GROUND + 7.2 }));
+    }
     for (let i = 0; i < 6; i++) {
       const px = dir * (34 + i * 6);
+      if (turret && px > turret[0] && px < turret[1]) continue;
       // Courtyard-side piers with arches between them.
       cyl(parts, px, GROUND + 3.6, -53.6, .55, .72, 7.2, 'stone', solid({ bottom: GROUND, seg: 8 }));
       if (i < 5) torus(parts, px + dir * 3, GROUND + 6.4, -53.6, 2.6, .24, 'stone', { ry: Math.PI / 2 });
-      // Outer wall against the curtain wall, with a tall lancet window.
-      box(parts, px, GROUND + 4, -62.4, 6.2, 7.6, 1, 'stone', solid({ bottom: GROUND }));
-      box(parts, px, GROUND + 4.2, -61.9, 1.6, 3.8, .16, 'glassWarm');
+      if (turret && px + 3.1 > turret[0] && px - 3.1 < turret[1]) continue;
+      // Outer wall against the curtain wall, with a tall lancet window. The bay at x = -34 is
+      // the gate where the dungeon passage comes through.
+      if (px === -34) {
+        for (const side of [-1, 1]) box(parts, px + side * 3.1, GROUND + 2.85, -62.4, 1.2, 5.7, 1, 'stone', solid({ bottom: GROUND }));
+        box(parts, px, GROUND + 8.9, -62.4, 8.6, 1.6, 1, 'stone', solid({ bottom: GROUND + 7.4 }));
+        box(parts, px, GROUND + 6.4, -62.1, 3.8, .5, .5, 'stoneDark');
+      } else {
+        box(parts, px, GROUND + 4, -62.4, 6.2, 7.6, 1, 'stone', solid({ bottom: GROUND }));
+        box(parts, px, GROUND + 4.2, -61.9, 1.6, 3.8, .16, 'glassWarm');
+      }
     }
     for (let i = 0; i < 4; i++) {
-      ball(parts, dir * (37 + i * 8), GROUND + 6.6, -58, .34, 'flame', { seg: 6 });
-      box(parts, dir * (37 + i * 8), GROUND + 6.9, -58, .1, .9, .1, 'dark');
+      const lx = dir * (37 + i * 8);
+      if (turret && lx > turret[0] && lx < turret[1]) continue;
+      ball(parts, lx, GROUND + 6.6, -58, .34, 'flame', { seg: 6 });
+      box(parts, lx, GROUND + 6.9, -58, .1, .9, .1, 'dark');
     }
-    railing(parts, cx, GROUND + .4, -58, 34, 'x', 'stoneLight');
+    if (turret) for (const [x0, x1] of spans) railing(parts, (x0 + x1) / 2, GROUND + .4, -58, x1 - x0, 'x', 'stoneLight');
+    else railing(parts, -52, GROUND + .4, -58, 28, 'x', 'stoneLight');
   }
-  // Switchback stair tower in the courtyard's east side, up to the battlement walk.
-  const stx = 39, stz = -63;
-  box(parts, stx, (GROUND + 23) / 2, stz, 9, 23, 9, 'stone', solid({ bottom: GROUND }));
-  for (let flight = 0; flight < 4; flight++) {
-    const alongX = flight % 2 === 0 ? 1 : -1;
-    for (let i = 0; i < 13; i++) {
-      const stepY = GROUND + .35 + flight * 5.6 + i * .4;
-      box(parts, stx + (alongX * (i - 6)) * .58, stepY, stz + (flight % 2 ? -2 : 2),
-        0.62, .4, 3.4, 'stoneDark', solid({ bottom: GROUND }));
-    }
-  }
+  // East cloister stair turret: hollow, with doors onto the walk, and a five-flight switchback
+  // up to the battlement wall walk. The old tower was a solid block with its stairs modelled
+  // inside the solid, so the wall walk and its tower decks could never be reached.
+  buildHogwartsWallWalkStair(parts);
   // The wall-walk along the south curtain wall, with crenellations and a doorway down into
   // the courtyard. This is the roof route: it links the stair tower to both ranges.
   box(parts, 0, GROUND + 22.1, -65.4, 128, .8, 3.6, 'stoneDark', solid({ bottom: GROUND + 21.7 }));
@@ -1757,11 +1778,10 @@ function buildHogwarts() {
     cyl(parts, x, GROUND + 23.1, -66.6, .16, .22, 1.6, 'dark', { seg: 6 });
     ball(parts, x, GROUND + 24, -66.6, .3, 'flame', { seg: 6 });
   }
-  // Stair-head door on the walk, with a lamp either side.
-  box(parts, stx, GROUND + 24, -65.4, 3, 3.4, .4, 'wood');
-  for (const s of [-1, 1]) ball(parts, stx + s * 2.4, GROUND + 24, -64.4, .3, 'flame', { seg: 6 });
+  // Lamps either side of the turret's opening onto the walk.
+  for (const s of [-1, 1]) ball(parts, 39 + s * 4.2, GROUND + 23, -64.4, .3, 'flame', { seg: 6 });
   // Two tower decks at wall-walk level, so the route ends in fighting platforms.
-  for (const tx of [-52, 52]) {
+  for (const tx of [-20, 20]) {
     cyl(parts, tx, GROUND + 22.4, -69.6, 7, 7, .6, 'wood', solid({ bottom: GROUND + 22, seg: 12 }));
     railing(parts, tx - 6.4, GROUND + 23, -69.6, 12, 'x', 'stoneDark');
     railing(parts, tx, GROUND + 23, -75.2, 11, 'z', 'stoneDark');
@@ -1798,9 +1818,14 @@ function buildHogwarts() {
   // wall towers, not a pit under the terrain (a sunken stage put the camera outside the world).
   const dgx = -38, dgz = -94, dgy = GROUND;
   box(parts, dgx, dgy - .3, dgz, 26, .6, 31, 'cobble', solid({ bottom: dgy - .6 }));
-  for (const [x, z, w, d] of [[dgx - 12, dgz, 1.6, 28], [dgx + 12, dgz, 1.6, 28], [dgx, dgz - 14, 25.6, 1.6], [dgx, dgz + 14, 25.6, 1.6]]) {
+  for (const [x, z, w, d] of [[dgx - 12, dgz, 1.6, 28], [dgx + 12, dgz, 1.6, 28], [dgx, dgz - 14, 25.6, 1.6]]) {
     box(parts, x, dgy + 6.5, z, w, 13, d, 'brick', solid({ bottom: dgy }));
   }
+  // The south wall carries a doorway now: the dungeons used to be sealed and reachable only
+  // through a travel ring. `-34` is the passage centre used below.
+  box(parts, -43.4, dgy + 6.5, dgz + 14, 14.8, 13, 1.6, 'brick', solid({ bottom: dgy }));
+  box(parts, -28.6, dgy + 6.5, dgz + 14, 6.8, 13, 1.6, 'brick', solid({ bottom: dgy }));
+  box(parts, -34, dgy + 9.4, dgz + 14, 4.2, 4.2, 1.6, 'brick', solid({ bottom: dgy + 7.1 }));
   box(parts, dgx, dgy + 13.4, dgz, 26, .8, 30, 'brick', solid({ bottom: dgy + 13 }));
   for (let i = 0; i < 3; i++) {
     for (const side of [-1, 1]) {
@@ -1825,9 +1850,32 @@ function buildHogwarts() {
   box(parts, dgx, dgy + .06, dgz + 3, 18, .12, 3, 'water');
   railing(parts, dgx, dgy, dgz + 1.5, 18, 'x', 'dark');
   railing(parts, dgx, dgy, dgz + 4.5, 18, 'x', 'dark');
-  // Stair shaft up towards the courtyard gate.
-  stairs(parts, dgx + 9, dgz + 8, { steps: 10, width: 5, rise: .62, run: .9, base: dgy, mat: 'stoneDark', dir: 'z' });
+  // Passage to the courtyard. The old version was a ten-step stair that climbed into a wall
+  // and stopped; this is a lit corridor with a doorway at each end, so the dungeons are a walk
+  // away from the courtyard instead of a travel ring.
+  const passageX = -34, passageZ0 = dgz + 15, passageZ1 = -61, passageMid = (passageZ0 + passageZ1) / 2, passageLen = passageZ1 - passageZ0;
+  box(parts, passageX, dgy - .15, passageMid, 4.6, .3, passageLen, 'cobble', solid({ bottom: dgy - .3 }));
+  for (const side of [-1, 1]) {
+    box(parts, passageX + side * 2.9, dgy + 2.6, passageMid, 1.2, 5.2, passageLen, 'brick', solid({ bottom: dgy }));
+  }
+  box(parts, passageX, dgy + 5.4, passageMid, 7, .6, passageLen, 'stoneDark', solid({ bottom: dgy + 5.1 }));
+  for (let i = 0; i < 4; i++) {
+    const z = passageZ0 + 2.4 + i * 4.2;
+    for (const side of [-1, 1]) {
+      cyl(parts, passageX + side * 2.2, dgy + 2.1, z, .12, .16, .8, 'wood', { seg: 6 });
+      ball(parts, passageX + side * 2.2, dgy + 2.66, z, .22, 'flame', { seg: 6 });
+    }
+  }
+  box(parts, passageX, dgy + 3.9, passageZ1 + .2, 5.8, .5, .9, 'stoneLight');
+  for (const side of [-1, 1]) box(parts, passageX + side * 2.4, dgy + 1.6, passageZ1 + .2, .8, 3.2, .9, 'stoneLight', solid({ bottom: dgy }));
   box(parts, dgx, dgy + 13, dgz, 1.2, .3, 1.2, 'gold');
+
+  // The castle range behind the Great Hall: halls, classrooms, common rooms, the library, a
+  // hospital wing and a three-storey stair well. Then the outside approaches that join the
+  // courtyard to the viaduct and the bridge to the north lawn. See worlds/hogwarts_interior.js.
+  buildHogwartsInterior(parts);
+  buildHogwartsApproaches(parts);
+
   return parts;
 }
 
@@ -1841,22 +1889,170 @@ function buildKonoha() {
   const parts = [];
   const GROUND = 0.6;
 
-  /** Tiled Japanese roof: wide eave, a pyramid of tiles above it, gold ridge finial. */
-  function house(x, z, { w = 10, d = 8, h = 5, base = GROUND, mat = 'building', roof = 'roof', door = true } = {}) {
-    box(parts, x, base + h / 2, z, w, h, d, mat, solid({ bottom: base }));
-    box(parts, x, base + h + .18, z, w + 1.8, .36, d + 1.8, roof);
-    cone(parts, x, base + h + 2.1, z, Math.min(w, d) * .95, 3.1, roof, { seg: 4, ry: Math.PI / 4 });
-    box(parts, x, base + h + 3.8, z, Math.min(w, d) * .28, .3, .3, 'gold');
-    if (door) {
-      box(parts, x, base + 1.1, z + d / 2 + .05, 1.6, 2.2, .08, 'wood');
-      for (const dx of [-w * .3, w * .3]) box(parts, x + dx, base + Math.max(2.2, h - .7), z + d / 2 + .05, 1.7, 1.2, .08, 'glassWarm');
+  /**
+   * A gabled tiled roof: two sloped tile planes meeting at a ridge, deep eaves, exposed
+   * rafters and timber bargeboards. The old house was a flat slab under a four-sided cone,
+   * so every shop read as a pyramid from the street.
+   */
+  function gableRoof(x, z, { w = 10, d = 8, eaveY = 5, pitch = .46, roof = 'roof', overhang = 1.25 } = {}) {
+    const half = d / 2 + overhang;
+    const rise = Math.tan(pitch) * half;
+    const slope = Math.hypot(half, rise);
+    for (const side of [-1, 1]) {
+      box(parts, x, eaveY + rise / 2, z + side * half / 2, w + overhang * 2, .28, slope, roof, { rx: side * pitch });
+      box(parts, x, eaveY - .02, z + side * half, w + overhang * 2 + .55, .2, .42, 'wood');
+      for (let i = -w / 2; i <= w / 2; i += 1.8) {
+        box(parts, x + i, eaveY - .18, z + side * (half - .2), .13, .16, .82, 'wood');
+      }
+      for (const bx of [-1, 1]) {
+        box(parts, x + bx * (w / 2 + overhang - .04), eaveY + rise / 2, z + side * half / 2,
+          .2, .34, slope, 'wood', { rx: side * pitch });
+      }
     }
+    box(parts, x, eaveY + rise + .12, z, w + overhang * 2 + .45, .3, .52, roof);
+    box(parts, x, eaveY + rise + .37, z, w * .2, .17, .7, 'gold');
+    for (const side of [-1, 1]) box(parts, x + side * (w / 2 + overhang), eaveY + rise + .14, z, .42, .32, .64, 'gold');
+    return { rise, half };
+  }
+
+  /** A lit lattice window with a timber frame, sill and muntins. */
+  function timberWindow(x, y, z, w = 1.9, h = 1.35) {
+    box(parts, x, y, z, w, h, .08, 'glassWarm');
+    box(parts, x, y + h / 2 + .06, z + .06, w + .24, .13, .18, 'wood');
+    box(parts, x, y - h / 2 - .06, z + .06, w + .24, .13, .18, 'wood');
+    for (const side of [-1, 1]) box(parts, x + side * (w / 2 + .06), y, z + .06, .13, h + .26, .18, 'wood');
+    const bars = Math.max(2, Math.round(w / .48));
+    for (let i = 1; i < bars; i++) box(parts, x - w / 2 + i * w / bars, y, z + .11, .07, h, .08, 'wood');
+    box(parts, x, y, z + .12, w, .06, .07, 'wood');
+    box(parts, x, y - h / 2 - .17, z + .2, w + .42, .12, .48, 'stoneDark');
+  }
+
+  /** A lit lattice window facing the rear alley (-Z). */
+  function backWindow(x, y, z, w = 1.9, h = 1.35) {
+    box(parts, x, y, z, w, h, .08, 'glassWarm');
+    box(parts, x, y + h / 2 + .06, z - .06, w + .24, .13, .18, 'wood');
+    box(parts, x, y - h / 2 - .06, z - .06, w + .24, .13, .18, 'wood');
+    for (const side of [-1, 1]) box(parts, x + side * (w / 2 + .06), y, z - .06, .13, h + .26, .18, 'wood');
+    const bars = Math.max(2, Math.round(w / .48));
+    for (let i = 1; i < bars; i++) box(parts, x - w / 2 + i * w / bars, y, z - .11, .07, h, .08, 'wood');
+    box(parts, x, y, z - .12, w, .06, .07, 'wood');
+    box(parts, x, y - h / 2 - .17, z - .2, w + .42, .12, .48, 'stoneDark');
+  }
+
+  /**
+   * A machiya-style Leaf shophouse. Its collision body is still exactly the original wall box;
+   * the plaster, timber frame, noren, awning and tiled roof are visual layers around it, so
+   * spawns and the camera's walkable rectangle do not move.
+   */
+  function house(x, z, { w = 10, d = 8, h = 5, base = GROUND, mat = 'building', roof = 'roof', door = true } = {}) {
+    const frontZ = z + d / 2 + .08;
+    box(parts, x, base + .24, z, w + .5, .48, d + .5, 'stoneDark');
+    box(parts, x, base + h / 2, z, w, h, d, mat, solid({ bottom: base }));
+    // Timber frame: corner posts, mid rail and head beam on the street and back faces.
+    for (const sx of [-1, 1]) {
+      box(parts, x + sx * (w / 2 - .17), base + h / 2, frontZ + .02, .34, h - .2, .2, 'wood');
+      box(parts, x + sx * (w / 2 - .17), base + h / 2, z - d / 2 - .1, .34, h - .2, .2, 'wood');
+      box(parts, x + sx * (w / 2 + .04), base + h / 2, z, .18, h - .2, d - .2, 'wood');
+    }
+    for (const zz of [frontZ + .01, z - d / 2 - .09]) {
+      box(parts, x, base + 2.92, zz, w + .02, .2, .2, 'wood');
+      box(parts, x, base + h * .62, zz, w + .1, .19, .2, 'wood');
+      box(parts, x, base + h - .3, zz, w + .24, .24, .2, 'wood');
+    }
+    // Lower timber bands either side of the shop opening.
+    for (const sx of [-1, 1]) box(parts, x + sx * (w * .22 + (door ? 1.5 : 0)), base + 1.52, frontZ + .04, Math.max(1.2, w * .28), 2.2, .14, 'wood');
+
+    if (door) {
+      box(parts, x, base + 1.2, frontZ + .1, 1.9, 2.4, .12, 'wood');
+      box(parts, x, base + 1.18, frontZ + .17, 1.52, 2.18, .06, 'dark');
+      for (const sx of [-1, 1]) box(parts, x + sx * .42, base + 2.28, frontZ + .25, .72, .78, .06, 'cloth');
+      box(parts, x, base + 2.72, frontZ + .25, 2.15, .16, .08, 'wood');
+      box(parts, x, base + 3.42, frontZ + .2, Math.min(3.1, w * .34), .74, .18, 'dark');
+      box(parts, x, base + 3.42, frontZ + .31, Math.min(2.7, w * .28), .46, .06, 'gold');
+      box(parts, x, base + 3.36, frontZ + 1.02, Math.min(4.8, w * .56), .14, 1.9, 'cloth', { rx: .18 });
+      for (const sx of [-1, 1]) box(parts, x + sx * Math.min(2.2, w * .24), base + 1.65, frontZ + 1.82, .12, 2.6, .12, 'wood');
+    } else {
+      timberWindow(x, base + 2.35, frontZ + .12, Math.min(4.4, w * .56), 2.4);
+      box(parts, x, base + 3.58, frontZ + .2, Math.min(4.7, w * .62), .22, .4, 'wood');
+    }
+
+    // Street-facing lattice windows. Tall houses get a second storey band.
+    const rows = h >= 8 ? 2 : 1;
+    const slots = Math.max(2, Math.round(w / 4));
+    const winW = Math.min(2.15, Math.max(1.1, (w - 1.3) / slots - .55));
+    for (let row = 0; row < rows; row++) {
+      const wy = base + (row ? h * .72 : (door ? 2.98 : 4.3));
+      for (let i = 0; i < slots; i++) {
+        const wx = x - w / 2 + (i + .5) * w / slots;
+        if (door && row === 0 && Math.abs(wx - x) < 1.4) continue;
+        if (!door && row === 0) continue;
+        timberWindow(wx, wy, frontZ + .1, winW, 1.35);
+      }
+    }
+    // Rear facade. The smash camera looks at the backs of the near-side shops as often as
+    // their fronts, so the alley side gets the same lattice rhythm instead of a blank wall.
+    const rearZ = z - d / 2 - .14;
+    for (let row = 0; row < rows; row++) {
+      const wy = base + (row ? h * .72 : (door ? 2.98 : 4.3));
+      for (let i = 0; i < slots; i++) {
+        const wx = x - w / 2 + (i + .5) * w / slots;
+        backWindow(wx, wy, rearZ, winW, 1.35);
+      }
+    }
+    box(parts, x, base + 3.42, rearZ - .12, Math.min(3.1, w * .34), .74, .18, 'dark');
+    box(parts, x, base + 3.42, rearZ - .23, Math.min(2.7, w * .28), .46, .06, 'gold');
+    for (const sx of [-1, 1]) box(parts, x + sx * (w / 2 - .17), base + h / 2, rearZ - .02, .34, h - .2, .2, 'wood');
+
+    // Side facades, turned to face the alley rather than the street. Large buildings get a
+    // repeating bay rhythm instead of one blank end wall: posts, rails, lit lattice windows
+    // and a hanging shop banner.
+    for (const sx of [-1, 1]) {
+      const sideX = x + sx * (w / 2 + .06);
+      const faceX = sideX + sx * .28;
+      const sideSlots = Math.max(2, Math.round(d / 3.8));
+      const sideWin = Math.min(2.1, Math.max(1.2, d / sideSlots - .9));
+      box(parts, faceX, base + 2.92, z, .2, .2, d - .2, 'wood');
+      box(parts, faceX, base + h * .62, z, .22, .19, d - .2, 'wood');
+      box(parts, faceX, base + h - .3, z, .22, .24, d - .2, 'wood');
+      box(parts, faceX, base + 1.42, z, .18, 2.5, d - .2, 'wood');
+      for (let i = 0; i < sideSlots; i++) {
+        const wz = z - d / 2 + (i + .5) * d / sideSlots;
+        if (i > 0) box(parts, faceX, base + h / 2, z - d / 2 + i * d / sideSlots, .2, h - .2, .28, 'wood');
+        const rows = h >= 8 ? [base + h * .5, base + h * .73] : [base + h * .62];
+        for (const wy of rows) {
+          box(parts, faceX + sx * .06, wy, wz, .13, 1.35, sideWin, 'glassWarm');
+          box(parts, faceX + sx * .12, wy + .76, wz, .16, .13, sideWin + .3, 'wood');
+          box(parts, faceX + sx * .12, wy - .76, wz, .16, .13, sideWin + .3, 'wood');
+          for (const dz2 of [-.36, .36]) box(parts, faceX + sx * .12, wy, wz + dz2, .12, 1.5, .1, 'wood');
+        }
+      }
+      banner(parts, faceX + sx * .42, base + 3.55, z + d * .24, .85, 2.9, 'banner', Math.PI / 2);
+    }
+
+    const { rise } = gableRoof(x, z, { w, d, eaveY: base + h + .15, pitch: .46, roof, overhang: 1.25 });
+    box(parts, x + w * .29, base + h + rise * .58, z - d * .16, 1.2, 1.45, 1.2, 'stoneDark');
+    cyl(parts, x + w / 2 - .38, base + h * .56, frontZ + .25, .08, .09, h * .92, 'dark', { seg: 5 });
+    if (w > 8) banner(parts, x + w / 2 + .35, base + 3.55, frontZ + .18, .95, 2.8, 'banner');
   }
   function lantern(x, y, z) {
     cyl(parts, x, y + .7, z, .1, .13, 1.4, 'wood', { seg: 6 });
     ball(parts, x, y + 1.62, z, .32, 'glassWarm', { seg: 8 });
   }
-  function parkTree(x, z, scale, base = GROUND) { tree(parts, x, z, scale, base, rng); }
+  /** Broadleaf village tree: visible limbs under clustered, irregular crown masses. */
+  function parkTree(x, z, scale, base = GROUND) {
+    const h = (6.2 + rng() * 2.4) * scale;
+    cyl(parts, x, base + h * .3, z, .3 * scale, .5 * scale, h * .6, 'trunk', { seg: 7 });
+    for (let i = 0; i < 4; i++) {
+      const a = i * TAU / 4 + .5;
+      box(parts, x + Math.cos(a) * 1.1 * scale, base + h * .58, z + Math.sin(a) * 1.1 * scale,
+        .22 * scale, 2.2 * scale, .22 * scale, 'trunk', { rz: Math.cos(a) * .45, rx: Math.sin(a) * .45 });
+    }
+    const clusters = [[0, .78, 0, 2.6], [-1.5, .7, .7, 1.9], [1.6, .72, .5, 2.0], [.4, .9, -1.5, 1.8], [-.7, .62, -1.2, 1.6]];
+    for (const [cx, cy, cz, r] of clusters) {
+      ball(parts, x + cx * scale, base + h * cy, z + cz * scale, r * scale, 'leaf', { sx: 1.15, sy: .78, sz: 1.05, seg: 8 });
+    }
+    ball(parts, x - 1.2 * scale, base + h * .64, z - .2 * scale, 1.25 * scale, 'moss', { sx: 1.1, sy: .5, sz: 1.1, seg: 7 });
+  }
   /**
    * Forest-of-Death giant: a 26-40 m trunk whose crown starts about 18 m up, above the
    * overhead camera. The old 5-8 m conifers put their canopy exactly at camera height, so the
@@ -1909,36 +2105,172 @@ function buildKonoha() {
     const x = -96 + i * 16;
     ball(parts, x, 24.5, -134.4 + (i % 3) * 1.6, 1.15, 'moss', { sx: 1.5, sy: .55, sz: 1.3, seg: 7 });
   }
-  // The four carved Hokage faces on the south face of the cliff.
+  // The four carved Hokage faces on the south face of the cliff. Each is a recessed stone
+  // slab with a projecting head, brow, nose, eyes and mouth, so the monument reads as carved
+  // portraits from the village instead of four beige rectangles.
   const FACE_Z = -103.5;
-  for (const fx of [-45, -15, 15, 45]) {
-    box(parts, fx, 14.6, FACE_Z, 22, 15, 1.4, 'stoneLight');
-    box(parts, fx, 16.6, FACE_Z + .95, 13.5, 2.6, .8, 'stoneDark');
-    box(parts, fx - 6.6, 15.2, FACE_Z + 1.05, 3.2, 2.2, .7, 'stoneDark');
-    box(parts, fx + 6.6, 15.2, FACE_Z + 1.05, 3.2, 2.2, .7, 'stoneDark');
-    box(parts, fx, 13.3, FACE_Z + 1.15, 3.4, 4.6, .9, 'stoneDark');
-    box(parts, fx, 10.3, FACE_Z + 1.05, 7.4, 1.3, .8, 'stoneDark');
-    box(parts, fx, 19.9, FACE_Z + .7, 17.5, 1.6, .7, 'rock');
+  for (let face = 0; face < 4; face++) {
+    const fx = -45 + face * 30;
+    box(parts, fx, 14.8, FACE_Z - .55, 23, 16, 1.2, 'cliff');
+    // Head and jaw: a shallow oval set proud of the cliff.
+    ball(parts, fx, 14.9, FACE_Z + 1.05, 7.7, 'stoneLight', { sx: .84, sy: 1.02, sz: .34, seg: 14 });
+    box(parts, fx, 11.1, FACE_Z + 1.62, 9.2, 3.4, .95, 'stoneLight');
+    box(parts, fx, 9.55, FACE_Z + 1.75, 6.1, .7, .85, 'stoneDark');
+    // Ears, hair mass and heavy carved brow.
+    for (const side of [-1, 1]) ball(parts, fx + side * 7.45, 14.4, FACE_Z + 1.35, 1.3, 'stoneLight', { sx: .45, sy: 1.15, sz: .45, seg: 8 });
+    ball(parts, fx, 19.25, FACE_Z + .9, 8.1, 'stoneDark', { sx: .9, sy: .43, sz: .42, seg: 12 });
+    box(parts, fx, 17.55, FACE_Z + 2.0, 13.4, 1.05, .55, 'stoneDark');
+    // Eye sockets, sclera, pupils and angled brows.
+    for (const side of [-1, 1]) {
+      box(parts, fx + side * 3.2, 15.95, FACE_Z + 2.42, 3.45, 1.2, .22, 'stoneDark');
+      box(parts, fx + side * 3.2, 15.95, FACE_Z + 2.55, 2.55, .78, .12, 'stoneLight');
+      box(parts, fx + side * 3.05, 15.92, FACE_Z + 2.66, 1.05, .52, .1, 'dark');
+      box(parts, fx + side * 3.25, 16.82, FACE_Z + 2.55, 3.9, .38, .35, 'stoneDark', { rz: side * .09 });
+    }
+    // Nose bridge and nostrils.
+    box(parts, fx, 14.3, FACE_Z + 2.72, 1.7, 4.0, .55, 'stoneLight');
+    box(parts, fx, 12.5, FACE_Z + 2.86, 2.5, .65, .35, 'stoneDark');
+    // Mouth, lower lip and cheek planes.
+    box(parts, fx, 11.62, FACE_Z + 2.68, 6.2, .38, .3, 'stoneDark');
+    box(parts, fx, 11.22, FACE_Z + 2.86, 4.7, .62, .3, 'stoneLight');
+    for (const side of [-1, 1]) ball(parts, fx + side * 5.7, 12.9, FACE_Z + 2.15, 2.2, 'stoneDark', { sx: .48, sy: .9, sz: .25, seg: 8 });
+    // Distinct hair silhouettes: spiked, side-swept, topknot and a broad mane.
+    if (face === 0) {
+      for (let i = 0; i < 5; i++) cone(parts, fx - 5.2 + i * 2.6, 22.2, FACE_Z + .8, 1.15, 3.4, 'stoneDark', { seg: 6, rz: (i - 2) * .18 });
+    } else if (face === 1) {
+      for (const side of [-1, 1]) box(parts, fx + side * 6.0, 17.8, FACE_Z + 1.6, 3.0, 6.2, 1.1, 'stoneDark', { rz: side * .1 });
+      box(parts, fx, 21.4, FACE_Z + 1.0, 12.4, 2.2, 1.3, 'stoneDark');
+    } else if (face === 2) {
+      box(parts, fx, 21.2, FACE_Z + .9, 12.0, 2.6, 1.2, 'stoneDark');
+      ball(parts, fx, 23.1, FACE_Z + 1.1, 1.9, 'stoneDark', { sx: .85, sy: 1.2, sz: .7, seg: 8 });
+    } else {
+      for (const side of [-1, 1]) box(parts, fx + side * 6.3, 16.8, FACE_Z + 1.35, 3.4, 8.4, 1.0, 'stoneDark', { rz: side * .16 });
+      box(parts, fx, 21.1, FACE_Z + 1.0, 13.8, 2.4, 1.2, 'stoneDark');
+    }
+    // Weathering cracks at the edge of the carving.
+    for (let i = 0; i < 3; i++) box(parts, fx - 8.4 + i * 1.4, 8.2 + i * 1.9, FACE_Z + 1.3, .16, 1.8, .2, 'stoneDark', { rz: .22 });
   }
   railing(parts, 0, 24, -108.6, 62, 'x', 'wood');
+  // Paved summit: a stone field with dark joints, edge kerbs and four stone lanterns. The
+  // terrace was a bare cliff cap, so the playable shelf had no architectural identity.
+  plane(parts, 0, 24.04, -119, 62, 17, 'stone');
+  for (let x = -30; x <= 30; x += 6) box(parts, x, 24.06, -119, .1, .03, 16.6, 'stoneDark');
+  for (let z = -126.5; z <= -111.5; z += 3.8) box(parts, 0, 24.06, z, 61, .03, .1, 'stoneDark');
+  box(parts, 0, 24.1, -110.5, 63, .16, .4, 'stoneDark');
+  box(parts, 0, 24.1, -127.5, 63, .16, .4, 'stoneDark');
+  for (const [x, z] of [[-29, -112], [29, -112], [-29, -126], [29, -126]]) {
+    box(parts, x, 24.4, z, 1.2, .8, 1.2, 'stoneDark');
+    cyl(parts, x, 25.55, z, .18, .28, 2.2, 'stoneDark', { seg: 6 });
+    box(parts, x, 26.75, z, 1.45, .3, 1.45, 'stoneDark');
+    ball(parts, x, 27.0, z, .34, 'flame', { seg: 6 });
+  }
+  // Leaf emblem in the paved shelf and stone edge guards: the terrace now reads as a
+  // designed Hokage overlook rather than a bare cliff cap.
+  cyl(parts, 0, 24.08, -119, 5.3, 5.3, .08, 'stoneDark', { seg: 24 });
+  torus(parts, 0, 24.14, -119, 4.65, .18, 'gold', { rx: Math.PI / 2 });
+  ball(parts, 0, 24.16, -119, 2.7, 'leaf', { sx: 1.25, sy: .16, sz: .68, seg: 9 });
+  box(parts, 0, 24.18, -119, .18, .08, 3.5, 'trunk', { ry: .55 });
+  for (const side of [-1, 1]) {
+    box(parts, side * 31.2, 24.45, -119, .45, 1.0, 17.4, 'stoneDark');
+    for (const z of [-126, -119, -112]) box(parts, side * 31.2, 25.15, z, .72, .35, 1.1, 'stoneLight');
+  }
+  for (const [x, z] of [[-34, -124], [35, -118]]) parkTree(x, z, .8, 24);
   stairs(parts, -70, -100, { steps: 22, width: 8, rise: .95, run: 1.4, base: 3, mat: 'stoneDark', dir: 'z' });
 
   // ---- Hokage Administration Building --------------------------------------
   const HZ = -74;
+  const HFZ = HZ + 10.5;
   box(parts, 0, 9.6, HZ - 10.5, 28, 18, 1, 'stoneDark', solid({ bottom: GROUND }));
   for (const side of [-1, 1]) box(parts, side * 9.4, 9.6, HZ + 10.5, 9.2, 18, 1, 'stoneDark', solid({ bottom: GROUND }));
   box(parts, -13.5, 9.6, HZ, 1, 18, 22, 'stoneDark', solid({ bottom: GROUND }));
   box(parts, 13.5, 9.6, HZ, 1, 18, 22, 'stoneDark', solid({ bottom: GROUND }));
   for (let row = 0; row < 4; row++) for (const dx of [-8, -4, 0, 4, 8]) box(parts, dx, 3.4 + row * 3.8, HZ + 11.04, 2.4, 1.8, .08, 'glassWarm');
-  box(parts, 0, 18.4, HZ, 33, .8, 27, 'roof', solid({ bottom: 18 }));
-  cone(parts, 0, 21.3, HZ, 16.5, 5, 'roof', { seg: 4, ry: Math.PI / 4 });
+  // The facade was a dark stone box with five lit slots. Cream plaster panels, red posts and
+  // gold bands give it the layered Hokage administration frontage visible down the boulevard.
+  box(parts, 0, 1.25, HFZ + .08, 28.5, 1.3, .5, 'stoneLight');
+  box(parts, 0, 17.15, HFZ + .08, 29, .65, .55, 'gold');
+  for (const dx of [-13.1, -9.35, -4.75, 4.75, 9.35, 13.1]) {
+    box(parts, dx, 9.55, HFZ + .14, .55, 17.2, .3, 'banner');
+    box(parts, dx, 18.05, HFZ + .14, 1.15, .4, .58, 'gold');
+  }
+  for (const side of [-1, 1]) {
+    // Broad cream plaster fields between the red posts, with a dark timber rail at each floor.
+    box(parts, side * 9.4, 9.15, HFZ + .12, 7.7, 15.6, .18, 'buildingWarm');
+    box(parts, side * 9.4, 5.25, HFZ + .22, 7.9, .48, .24, 'wood');
+    box(parts, side * 9.4, 13.55, HFZ + .22, 7.9, .35, .24, 'wood');
+    box(parts, side * 9.4, 17.35, HFZ + .22, 7.9, .3, .24, 'gold');
+  }
+  // Projecting timber balcony above the entrance, with its own tiled cap.
+  box(parts, 0, 12.0, HFZ + 1.3, 28.6, .5, 2.7, 'wood', solid({ bottom: 11.6 }));
+  for (let x = -12; x <= 12; x += 2.4) box(parts, x, 12.75, HFZ + 2.45, .12, 1.3, .12, 'wood');
+  box(parts, 0, 13.45, HFZ + 2.45, 28.8, .16, .18, 'wood');
+  box(parts, 0, 12.75, HFZ + 1.4, 30, .18, 3.3, 'roofBlue');
+  // Entrance stairs, canopy and paired red columns sit south of the playable shell.
+  stairs(parts, 0, HZ + 11.3, { steps: 6, width: 13, rise: .26, run: 1.0, base: GROUND, mat: 'stoneDark', dir: 'z' });
+  for (const side of [-1, 1]) {
+    box(parts, side * 4.4, 3.2, HZ + 13.7, .5, 5.4, .5, 'banner');
+    box(parts, side * 4.4, 5.95, HZ + 13.7, 1.2, .32, 1.2, 'gold');
+  }
+  box(parts, 0, 5.55, HZ + 13.7, 10.2, .38, 4.8, 'roofBlue');
+  box(parts, 0, 5.9, HZ + 13.7, 10.8, .18, 5.3, 'gold');
   banner(parts, 0, 15.2, HZ + 11.3, 7, 4.4, 'banner');
+  for (const side of [-1, 1]) banner(parts, side * 8.2, 14.0, HFZ + 2.6, 2.2, 5.2, 'banner');
   plane(parts, 0, .64, HZ, 8, 20, 'banner');
   box(parts, 0, 1.35, HZ - 8.2, 10, .7, 2.4, 'wood', solid({ bottom: GROUND }));
   box(parts, 0, 2.1, HZ - 9.2, 4.2, 1.3, 1.5, 'wood');
   for (const [dx, dz] of [[-10.5, -5.5], [10.5, -5.5], [-10.5, 6], [10.5, 6]]) {
     box(parts, dx, 1.25, HZ + dz, 3, 1.3, 1.6, 'wood', solid({ bottom: GROUND }));
   }
+  // Keep the original solid roof deck for collision, then build the two-tier roof over it.
+  box(parts, 0, 18.4, HZ, 33, .8, 27, 'roof', solid({ bottom: 18 }));
+  gableRoof(0, HZ, { w: 34, d: 28, eaveY: 18.85, pitch: .36, roof: 'roofBlue', overhang: 1.8 });
+  box(parts, 0, 22.9, HZ, 17, 7, 13, 'buildingWarm');
+  for (const side of [-1, 1]) {
+    box(parts, side * 5.7, 23.2, HZ + 6.58, .08, 3.6, 2.0, 'glassWarm');
+    box(parts, side * 5.7, 23.2, HZ - 6.58, .08, 3.6, 2.0, 'glassWarm');
+    box(parts, side * 8.55, 23.2, HZ, .08, 3.6, 4.2, 'glassWarm');
+  }
+  gableRoof(0, HZ, { w: 19, d: 15, eaveY: 26.4, pitch: .5, roof: 'roofBlue', overhang: 1.35 });
+  // Hokage monument frieze on both faces of the tower. The south face is visible from Main
+  // Street above the administration roof; the north face frames the Hokage Rock terrace. Each
+  // head is carved stone with a hair mass, brow, eyes, nose and mouth, not a painted label.
+  // The old frieze was four 1.45 m ovals on a 4.3 m panel: blank dots at the terrace's
+  // viewing distance. These are 3.9 m carved portraits with a heavy brow, recessed eyes,
+  // nose, mouth and four distinct hair silhouettes, so the monument reads from the play camera.
+  for (const dir of [1, -1]) {
+    const fz = HZ + dir * 6.58;
+    box(parts, 0, 23.95, fz + dir * .1, 16.4, 4.9, .28, 'stoneDark');
+    box(parts, 0, 26.34, fz + dir * .11, 17, .24, .4, 'gold');
+    for (let i = 0; i < 4; i++) {
+      const fx = -6 + i * 4;
+      ball(parts, fx, 23.75, fz + dir * .3, 1.95, 'stoneLight', { sx: .8, sy: 1.05, sz: .32, seg: 12 });
+      ball(parts, fx, 25.0, fz + dir * .24, 2.0, 'stoneDark', { sx: .88, sy: .42, sz: .34, seg: 10 });
+      box(parts, fx, 24.45, fz + dir * .5, 3.0, .2, .16, 'stoneDark');
+      for (const side of [-1, 1]) {
+        box(parts, fx + side * .75, 24.0, fz + dir * .52, 1.05, .44, .14, 'stoneDark');
+        box(parts, fx + side * .75, 24.0, fz + dir * .57, .74, .3, .1, 'stoneLight');
+        box(parts, fx + side * .72, 23.98, fz + dir * .62, .34, .22, .08, 'dark');
+        box(parts, fx + side * .9, 24.72, fz + dir * .55, 1.2, .14, .12, 'stoneDark', { rz: side * .14 });
+        ball(parts, fx + side * 1.45, 23.35, fz + dir * .4, .62, 'stoneLight', { sx: .5, sy: .8, sz: .3, seg: 8 });
+      }
+      box(parts, fx, 23.5, fz + dir * .58, .48, 1.4, .22, 'stoneLight');
+      box(parts, fx, 22.85, fz + dir * .62, .78, .2, .12, 'stoneDark');
+      box(parts, fx, 22.55, fz + dir * .57, 1.65, .2, .12, 'stoneDark');
+      box(parts, fx, 22.3, fz + dir * .55, 1.15, .3, .1, 'stoneLight');
+      if (i === 0) {
+        for (let s = 0; s < 5; s++) cone(parts, fx - 1.0 + s * .5, 25.55, fz + dir * .2, .34, .95, 'stoneDark', { seg: 5, rz: (s - 2) * .16 });
+      } else if (i === 1) {
+        for (const side of [-1, 1]) box(parts, fx + side * 1.35, 24.7, fz + dir * .22, .65, 2.1, .5, 'stoneDark', { rz: side * .12 });
+      } else if (i === 2) {
+        box(parts, fx, 25.5, fz + dir * .2, 2.4, .55, .55, 'stoneDark');
+        ball(parts, fx, 26.0, fz + dir * .24, .5, 'stoneDark', { sx: .8, sy: 1.0, sz: .7, seg: 7 });
+      } else {
+        for (const side of [-1, 1]) box(parts, fx + side * 1.5, 24.35, fz + dir * .22, .9, 2.7, .55, 'stoneDark', { rz: side * .18 });
+      }
+    }
+  }
+  box(parts, 0, 31.2, HZ, .7, 2.4, .7, 'gold');
+  ball(parts, 0, 32.6, HZ, .55, 'gold', { seg: 8 });
   for (const [dx, dz] of [[-12.9, -7], [-12.9, 7], [12.9, -7], [12.9, 7]]) lantern(dx, GROUND, HZ + dz);
 
   // ---- village perimeter, boulevard and plaza ------------------------------
@@ -1976,6 +2308,45 @@ function buildKonoha() {
     lantern(-13.4, GROUND, z); lantern(13.4, GROUND, z);
   }
   for (const [x, z] of [[-20, -36], [20, -26], [-20, 2], [20, 12], [-20, 26]]) stall(parts, x, z, GROUND, x > 0 ? Math.PI : 0);
+  // The boulevard was a bare cobble plane. Kerb bands, cross joints, timber poles, overhead
+  // wires, planters, benches and shop clutter give it street depth without adding collision
+  // inside the fighting rectangle.
+  for (const side of [-1, 1]) {
+    box(parts, side * 12.7, .665, -8, .72, .05, 96, 'stoneDark');
+    box(parts, side * 12.98, .68, -8, .18, .07, 96, 'moss');
+    for (let z = -48; z <= 32; z += 16) {
+      cyl(parts, side * 15.0, GROUND + 3.1, z, .13, .18, 6.2, 'wood', { seg: 6 });
+      box(parts, side * 15.0, GROUND + 5.9, z, 2.2, .13, .13, 'wood');
+      for (const wx of [-.8, .8]) box(parts, side * 15.0 + wx, GROUND + 6.14, z, .08, .22, .08, 'dark');
+      ball(parts, side * 14.3, GROUND + 4.8, z + 1.2, .25, 'glassWarm', { seg: 6 });
+      box(parts, side * 14.3, GROUND + 5.05, z + 1.2, .34, .08, .34, 'dark');
+    }
+    box(parts, side * 15.0, GROUND + 6.02, -8, .05, .05, 82, 'dark');
+    for (const z of [-38, -14, 10, 30]) {
+      box(parts, side * 14.5, GROUND + .35, z, 1.7, .7, 1.1, 'stoneDark');
+      ball(parts, side * 14.5, GROUND + 1.02, z, .68, 'leaf', { sx: 1.1, sy: .8, sz: 1.1, seg: 7 });
+      box(parts, side * 14.5, GROUND + .4, z + 1.5, 1.7, .8, .45, 'wood');
+    }
+  }
+  for (let z = -52; z <= 40; z += 6) box(parts, 0, .665, z, 25.4, .035, .24, 'stoneDark');
+  for (const z of [-36, -10, 22]) {
+    box(parts, 0, GROUND + 6.4, z, 30, .05, .05, 'dark');
+    for (let i = -4; i <= 4; i++) ball(parts, i * 3.0, GROUND + 6.25, z, .16, i % 2 ? 'glassWarm' : 'flame', { seg: 5 });
+  }
+  // Notice board and delivery clutter at the west edge; barrels and crates at the east.
+  for (const sx of [-1, 1]) {
+    const px = sx * 15.6;
+    for (const dz of [-1.8, 1.8]) cyl(parts, px, GROUND + 1.4, -2 + dz, .1, .13, 2.8, 'wood', { seg: 5 });
+    box(parts, px, GROUND + 2.4, -2, 4.2, 2.3, .18, 'wood');
+    box(parts, px, GROUND + 2.4, -1.88, 3.8, 1.9, .1, 'cloth2');
+    box(parts, px, GROUND + 3.72, -2, 4.7, .25, .9, 'roof');
+    for (let i = 0; i < 3; i++) box(parts, px - 1.2 + i * 1.2, GROUND + 2.55, -1.78, .75, .75, .08, i % 2 ? 'glassWarm' : 'dark');
+  }
+  for (const [x, z] of [[-16.5, -24], [16.5, -28], [-16.5, 8], [16.5, 16]]) {
+    cyl(parts, x, GROUND + .55, z, .42, .38, 1.1, 'crate', { seg: 8 });
+    box(parts, x, GROUND + 1.13, z, .9, .08, .9, 'wood');
+    box(parts, x + 1.25, GROUND + .45, z + .5, 1.3, .9, 1.3, 'crate');
+  }
   for (const z of [-52, 34]) for (const side of [-1, 1]) banner(parts, side * 11.6, 6.2, z, 2.4, 5, side > 0 ? 'bannerBlue' : 'banner', side > 0 ? 0 : Math.PI);
   parkTree(-18, -50, .9); parkTree(19, 38, 1.05);
   for (const [x, z] of [[-9, -46], [9, 30]]) { box(parts, x, GROUND + .45, z, 2.4, .9, .8, 'wood'); }
@@ -2016,8 +2387,19 @@ function buildKonoha() {
   // ---- ninja academy -------------------------------------------------------
   house(-68, -18, { w: 20, d: 32, h: 11, mat: 'building', roof: 'roofBlue', door: false });
   box(parts, -58.05, 3.1, -18, .1, 2.4, 3.4, 'wood');
-  banner(parts, -58.1, 8.4, -18, 1.8, 4.2, 'bannerBlue', Math.PI / 2);
+  banner(parts, -57.64, 8.4, -18, 2.2, 4.6, 'banner', Math.PI / 2);
   for (let i = 0; i < 3; i++) for (const dz of [-30, -18, -6]) box(parts, -58.02, 5.4 + i * 2.6, -18 + dz, .08, 1.3, 2, 'glassWarm');
+  // Academy entrance portico on the yard side, with a tiled cap, timber posts and a school
+  // banner. It sits just outside the playable rectangle (x < -56), so it frames the campus
+  // without becoming cover inside the fight.
+  for (const dz of [-4.8, 4.8]) {
+    box(parts, -57.7, 3.2, -18 + dz, .55, 6.4, .55, 'banner');
+    box(parts, -57.7, 6.35, -18 + dz, 1.15, .28, 1.15, 'gold');
+  }
+  box(parts, -57.7, 6.2, -18, .9, .42, 11.4, 'roofBlue');
+  box(parts, -57.7, 6.5, -18, 1.35, .18, 12.2, 'gold');
+  box(parts, -57.7, 8.2, -18, .5, 1.2, 5.8, 'wood');
+  for (let i = 0; i < 3; i++) box(parts, -57.45 + i * .38, .65, -18, .38, .18, 8.2, 'stoneLight');
   parkTree(-43, -30, 1.25);
   for (const [x, z] of [[-52.5, -6.5], [-48.5, -6.5]]) box(parts, x, GROUND + 2.2, z, .35, 4.4, .35, 'wood');
   box(parts, -50.5, GROUND + 4.3, -6.5, 4.4, .25, .3, 'wood');
@@ -2094,16 +2476,50 @@ function buildKonoha() {
   // gate passage put a 13 m tower and its roof between the camera and the fight.
   for (const side of [-1, 1]) {
     box(parts, side * 11, 5.2, 101, 7, 10.4, 8, 'stoneDark', solid({ bottom: GROUND }));
-    cone(parts, side * 11, 13.4, 101, 6.6, 4.6, 'roofBlue', { seg: 4, ry: Math.PI / 4 });
-    cyl(parts, side * 11, 5.4, 101, 3.2, 3.6, 10.8, 'stoneDark', { seg: 8 });
-    for (const dz of [-2.6, 2.6]) box(parts, side * 7.4, 10.4, 101 + dz, .14, 2.4, 1.8, 'glassWarm');
+    // Stone guardhouse below, plastered timber watch room above, then a tiled gable.
+    box(parts, side * 11, 8.8, 101, 7.3, 3.8, 8.3, 'buildingWarm');
+    box(parts, side * 11, 5.45, 105.08, 6.5, 9.4, .18, 'buildingWarm');
+    for (const dx of [-2.0, 2.0]) timberWindow(side * 11 + dx, 8.9, 105.16, 1.75, 1.55);
+    for (const dx of [-3.25, 3.25]) box(parts, side * 11 + dx, 5.4, 105.2, .35, 8.8, .3, 'wood');
+    box(parts, side * 11, 2.9, 105.2, 6.6, .22, .28, 'wood');
+    box(parts, side * 11, 7.3, 105.2, 6.6, .22, .28, 'wood');
+    box(parts, side * 11, 10.15, 105.2, 6.8, .3, .32, 'wood');
+    box(parts, side * 11, 1.95, 105.26, 2.1, 2.8, .14, 'banner');
+    box(parts, side * 11, 1.95, 105.36, 1.45, 2.3, .06, 'dark');
+    gableRoof(side * 11, 101, { w: 8.4, d: 8.4, eaveY: 10.9, pitch: .5, roof: 'roofBlue', overhang: 1.2 });
+    for (const sx of [-1, 1]) for (const dz of [-3.8, 3.8]) {
+      box(parts, side * 11 + sx * 3.35, 6.0, 101 + dz, .32, 8.8, .32, 'wood');
+      box(parts, side * 11 + sx * 3.35, 10.45, 101 + dz, .8, .32, .8, 'gold');
+    }
     box(parts, side * 30, 3.4, 101, 31, 5.6, 3, 'stone', solid({ bottom: GROUND }));
+    // Tiled cap and timber wall plate turn the long perimeter wall into a village wall.
+    box(parts, side * 30, 6.35, 101, 32, .45, 3.7, 'roofBlue');
+    box(parts, side * 30, 6.66, 101, 32.4, .16, .55, 'gold');
     for (let i = 0; i < 3; i++) box(parts, side * (22 + i * 8), 5.4, 101.4, 4, 2.4, .2, 'glassWarm');
+    for (let i = 0; i < 4; i++) box(parts, side * (17 + i * 7.6), 1.05, 102.55, 2.2, 1.8, .18, 'wood');
     house(side * 40, 120, { w: 8, d: 8, h: 5, mat: 'buildingWarm', roof: 'roof' });
   }
+  // The gate itself: a broad timber lintel, tiled cap and the village name banner.
   box(parts, 0, 9.4, 101, 30, 1.4, 2, 'wood');
   box(parts, 0, 10.6, 101, 34, .9, 3.2, 'roofBlue');
+  box(parts, 0, 11.1, 101, 34.6, .22, .6, 'gold');
   banner(parts, 0, 7.5, 100.4, 14, 3.4, 'banner');
+  // A red torii rises behind the gatehouse, visible above its roof from the courtyard. It is
+  // deliberately outside the fight bounds (z 98) so it frames the checkpoint without becoming
+  // an invisible wall in the playable rectangle.
+  for (const side of [-1, 1]) {
+    const px = side * 13.2;
+    cyl(parts, px, GROUND + 4.7, 107.2, .52, .7, 9.4, 'banner', { seg: 8 });
+    box(parts, px, GROUND + .38, 107.2, 2.1, .76, 2.1, 'stoneDark');
+    box(parts, px, GROUND + 9.55, 107.2, 2.1, .42, 2.1, 'dark');
+    for (const sz of [-1, 1]) box(parts, px, GROUND + 7.6, 107.2 + sz * 1.15, .34, .42, 2.3, 'banner');
+  }
+  box(parts, 0, GROUND + 8.35, 107.2, 28, .72, 1.15, 'banner');
+  box(parts, 0, GROUND + 9.35, 107.2, 31, .52, 1.5, 'banner');
+  box(parts, 0, GROUND + 9.86, 107.2, 34, .22, 1.85, 'dark');
+  for (const side of [-1, 1]) box(parts, side * 9.6, GROUND + 8.83, 107.2, .4, 1.15, .5, 'banner');
+  box(parts, 0, GROUND + 7.25, 107.2, 12.4, .85, .45, 'stoneLight');
+  box(parts, 0, GROUND + 7.25, 107.45, 9.6, .46, .1, 'gold');
   for (const side of [-1, 1]) { lantern(side * 8, GROUND, 108); lantern(side * 9, GROUND, 118); }
   plane(parts, 0, .64, 120, 40, 36, 'cobble');
   // Courtyard dressing: the checkpoint booth, two market stalls, benches and notice banners.
@@ -2296,15 +2712,49 @@ function buildKonoha() {
   for (let i = 0; i < 18; i++) {
     const a = rng() * TAU;
     const r = 220 + rng() * 90;
-    box(parts, Math.cos(a) * r, 6 + rng() * 8, Math.sin(a) * r - 10, 12 + rng() * 12, 12 + rng() * 16, 12 + rng() * 12, 'building');
-    cone(parts, Math.cos(a) * r, 16 + rng() * 8, Math.sin(a) * r - 10, 10, 4, 'roof', { seg: 4, ry: Math.PI / 4 });
+    const bx = Math.cos(a) * r, bz = Math.sin(a) * r - 10;
+    const bw = 12 + rng() * 12, bd = 12 + rng() * 12, bh = 12 + rng() * 16;
+    box(parts, bx, 6 + bh / 2, bz, bw, bh, bd, 'building');
+    gableRoof(bx, bz, { w: bw, d: bd, eaveY: 6 + bh + .15, pitch: .42, roof: i % 3 ? 'roof' : 'roofBlue', overhang: 1.4 });
+    for (let wy = 9; wy < 5 + bh; wy += 5.5) {
+      box(parts, bx, wy, bz + bd / 2 + .06, bw * .62, .55, .08, 'glassWarm');
+    }
+    box(parts, bx + bw * .28, 6 + bh + 2.2, bz - bd * .2, 1.4, 2.4, 1.4, 'stoneDark');
   }
   for (let i = 0; i < 14; i++) {
     const a = rng() * TAU;
     ball(parts, Math.cos(a) * (190 + rng() * 170), 74 + rng() * 52, Math.sin(a) * (190 + rng() * 170) - 10, 16 + rng() * 22, 'cloud', { sx: 1.7, sy: .48, sz: 1.7, seg: 8 });
   }
 
-  return parts;
+    // ---- konohaNaturalVegetation ---------------------------------------------
+  // Game-ready low-poly trees and rocks from the same generators the other worlds use, placed as a
+  // forest edge around the village instead of an empty plane. Nothing is placed inside the village
+  // rectangle, so every battle location, street, gate and exit stays clear and walkable.
+  const vegFree = (x, z, pad) => !(x > -78 - pad && x < 78 + pad && z > -100 - pad && z < 105 + pad);
+  const treeBelt = (count, x0, x1, z0, z1, s0, s1) => {
+    for (let i = 0; i < count; i++) {
+      const x = x0 + rng() * (x1 - x0), z = z0 + rng() * (z1 - z0);
+      if (!vegFree(x, z, 8)) continue;
+      tree(parts, x, z, s0 + rng() * (s1 - s0), GROUND, rng);
+    }
+  };
+  treeBelt(46, -210, -86, -120, 210, 1.0, 1.7);
+  treeBelt(46, 86, 210, -120, 210, 1.0, 1.7);
+  treeBelt(40, -150, 150, 116, 235, .9, 1.5);
+  treeBelt(18, -120, 120, -150, -104, 1.1, 1.8);
+  for (let i = 0; i < 34; i++) {
+    const a = rng() * TAU, r = 96 + rng() * 88;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r - 6;
+    if (!vegFree(x, z, 6)) continue;
+    rock(parts, x, z, 1.1 + rng() * 2.6, GROUND, rng);
+  }
+  for (let i = 0; i < 120; i++) {
+    const a = rng() * TAU, r = 84 + rng() * 52;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r - 4;
+    if (!vegFree(x, z, 3)) continue;
+    ball(parts, x, GROUND + .28, z, .7 + rng() * 1.1, rng() < .5 ? 'leaf' : 'moss', { sx: 1.5, sy: .55, sz: 1.5, seg: 6 });
+  }
+return parts;
 }
 
 
@@ -3015,23 +3465,50 @@ export const WORLDS = {
     id: 'hogwarts', label: 'Hogwarts', subtitle: 'Castle and Grounds', paletteKey: 'hogwarts',
     build: buildHogwarts, ground: 0.3,
     locations: [
-      loc('hogwarts_great_hall', 'Great Hall', 'interior', [-19, -132, 19, -64], [-8, -100, 0.57, 8, -92, 0.57], { interior: true, ground: 0.57, exits: [{ x: 0, z: -66, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }] }),
+      loc('hogwarts_great_hall', 'Great Hall', 'interior', [-19, -132, 19, -64], [-8, -100, 0.57, 8, -92, 0.57], { interior: true, ground: 0.57, exits: [
+        { x: 0, z: -66, to: 'hogwarts_courtyard', label: 'Castle Courtyard' },
+        { x: 18.5, z: -94, to: 'hogwarts_entrance_hall', label: 'Entrance Hall' }
+      ] }),
       loc('hogwarts_courtyard', 'Castle Courtyard', 'courtyard', [-30, -62, 30, -30], [-9, -52, 0.3, 9, -46, 0.3], { exits: [
         { x: 0, z: -60, to: 'hogwarts_great_hall', label: 'Great Hall' },
         { x: 0, z: -32, to: 'hogwarts_viaduct', label: 'Viaduct Bridge' },
         { x: -28, z: -50, to: 'hogwarts_dungeons', label: 'The Dungeons' },
         { x: -28, z: -34, to: 'hogwarts_hagrid', label: "Hagrid's Hut" }
       ] }),
-      loc('hogwarts_viaduct', 'Viaduct Bridge', 'bridge', [-6, -30, 6, 22], [0, -22, 1.25, 0, -10, 1.25], { ringOut: true, fallBelow: -6, ground: 1.25, exits: [{ x: 0, z: -28, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }] }),
+      // The bridge is a real crossing now: steps up from the courtyard at its castle end, a
+      // landing and steps down to the lawn at the far end, so both ends are walks.
+      loc('hogwarts_viaduct', 'Viaduct Bridge', 'bridge', [-6, -30, 6, 34], [0, 12, 1.25, 0, 26, 1.25], { ringOut: true, fallBelow: -6, ground: 1.25, exits: [
+        { x: 0, z: -29, to: 'hogwarts_courtyard', label: 'Castle Courtyard' },
+        { x: 0, z: 32, to: 'hogwarts_grounds', label: 'Castle Grounds' }
+      ] }),
+      loc('hogwarts_grounds', 'Castle Grounds', 'grounds', [-40, 46, 40, 86], [-9, 64, 0.3, 9, 62, 0.3], { ground: 0.3, exits: [
+        { x: 0, z: 48, to: 'hogwarts_viaduct', label: 'Viaduct Bridge' },
+        { x: 0, z: 86, to: 'hogwarts_lakeshore', label: 'Black Lake Shore' },
+        { x: -38, z: 62, to: 'hogwarts_hagrid', label: "Hagrid's Hut" }
+      ] }),
+      // The quay on the lawn's north edge: 0.58 m of stone above the lake, with a parapet on
+      // the water side, reached by walking the lawn path.
+      // 12 m deep, not 10. At z 88-98 the quay was 32 x 10 - narrower than the 12 m minimum a
+      // fighting stage needs (scripts/test-combat.mjs) - and it left a 2 m unowned strip between
+      // it and the grounds at z=86 on the documented "lawn path and quay steps" route. Starting
+      // the quay at the lawn's edge fixes the size and closes the gap at once.
+      loc('hogwarts_lakeshore', 'Black Lake Shore', 'shore', [-16, 86, 16, 98], [-7, 92, 0.58, 7, 92, 0.58], { ground: 0.58, exits: [{ x: 0, z: 90, to: 'hogwarts_grounds', label: 'Castle Grounds' }] }),
       loc('hogwarts_quidditch', 'Quidditch Pitch', 'arena', [58, -12, 132, 56], [82, 16, 0.5, 112, 34, 0.5], { ground: 0.5 }),
       loc('hogwarts_forest', 'Forbidden Forest', 'forest', [-124, -78, -42, -16], [-96, -56, 0.3, -70, -34, 0.3], { exits: [{ x: -96, z: -18, to: 'hogwarts_hagrid', label: "Hagrid's Hut" }] }),
       loc('hogwarts_boathouse', 'Black Lake Boathouse', 'dock', [54, 101, 70, 115], [58, 105, 0.6, 66, 111, 0.6], { ground: 0.6 }),
       loc('hogwarts_hogsmeade', 'Hogsmeade Village', 'village', [-122, 32, -48, 92], [-96, 50, 0.3, -56, 70, 0.3]),
       loc('hogwarts_dungeons', 'The Dungeons', 'dungeon', [-49, -107, -27, -81], [-44, -100, 0.3, -32, -88, 0.3], { interior: true, exits: [{ x: -38, z: -83, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }] }),
-      loc('hogwarts_hagrid', "Hagrid's Hut", 'hut', [-108, -4, -84, 20], [-103, 6, 0.3, -89, 15, 0.3], { exits: [
+      loc('hogwarts_hagrid', "Hagrid's Hut", 'hut', [-108, -4, -84, 20], [-101, 14.6, 0.3, -91, 14.6, 0.3], { exits: [
         { x: -96, z: -2, to: 'hogwarts_forest', label: 'Forbidden Forest' },
-        { x: -86, z: -2, to: 'hogwarts_courtyard', label: 'Castle Courtyard' }
-      ] })
+        { x: -86, z: -2, to: 'hogwarts_courtyard', label: 'Castle Courtyard' },
+        { x: -96, z: 16, to: 'hogwarts_grounds', label: 'Castle Grounds' }
+      ] }),
+      // The castle range behind the Great Hall (worlds/hogwarts_interior.js): halls,
+      // classrooms, four common rooms, the library, the hospital wing and the faculty floors.
+      // Each one is a real room reached by walking through the castle.
+      ...HOGWARTS_INTERIOR_LOCATIONS.map(room => loc(room.id, room.label, room.kind, room.bounds, room.spawns, {
+        interior: true, ground: room.ground, exits: room.exits, camera: { tilt: .1, scale: .82 }
+      }))
     ]
   },
   konoha: {

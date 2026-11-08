@@ -13,11 +13,54 @@ export const DEFAULT_RULES = Object.freeze({
   respawnInvulnerability: 1.1
 });
 
+/**
+ * What an ordinary block is worth. `damageScale` is the bare-handed guard every fighter has; an
+ * offhand item may improve it (OFFHAND_DEFENSE below), and nothing else may.
+ */
+export const GUARD = Object.freeze({ damageScale: 0.28 });
+
+/**
+ * Offhand defence. Only equipment that is actually a shield is listed here: a katana, a ki orb, a
+ * blaster or a webshooter is not a defensive item and falls through to the bare guard. Each entry
+ * is deliberately a trade rather than free damage reduction - a shield blocks harder, spends more
+ * of the meter per blocked hit, and refills that meter more slowly.
+ */
+export const OFFHAND_DEFENSE = Object.freeze({
+  shield: Object.freeze({
+    damageScale: 0.18,     // ordinary block, versus GUARD.damageScale bare-handed
+    shieldCostScale: 1.15, // shield spent per blocked hit, versus SHIELD.hitCost
+    regenScale: 0.82       // shield regained per second, versus SHIELD.regen
+  })
+});
+
+/** The offhand kind a fighter is carrying, as classified on its model by models.js. */
+export function offhandOf(fighter) {
+  return fighter?.model?.userData?.offhandKind || null;
+}
+
+/** Defence entry for an offhand kind, or null when the item does not defend. */
+export function offhandDefense(kind) {
+  return (kind && OFFHAND_DEFENSE[kind]) || null;
+}
+
+/**
+ * Damage multiplier for an ordinary block. `base` is the path's own authored guard scale, so a
+ * shield improves every attack type by the same proportion instead of flattening the deliberate
+ * differences between them: melee and ultimates use GUARD.damageScale, while the projectile and
+ * signature paths keep the 0.30 / 0.32 they were tuned with.
+ */
+export function guardDamageScale(offhandKind, base = GUARD.damageScale) {
+  const entry = offhandDefense(offhandKind);
+  if (!entry) return base;
+  return base * (entry.damageScale / GUARD.damageScale);
+}
+
 /** Percentage damage after guarding, counters, character profiles and the combo step. */
-export function damageFor(base, { guarding = false, countering = false, profile, comboStep = 1, itemMultiplier = 1 } = {}) {
+export function damageFor(base, { guarding = false, countering = false, profile, comboStep = 1, itemMultiplier = 1, offhand = null } = {}) {
   const profileDamage = profile?.damage ?? 1;
   const scaling = comboStep > 1 ? 1 - Math.min(0.24, (comboStep - 1) * 0.07) : 1;
-  const raw = base * profileDamage * (countering ? 1.42 : 1) * (guarding ? 0.28 : 1) * itemMultiplier * scaling;
+  const guardScale = guarding ? guardDamageScale(offhand) : 1;
+  const raw = base * profileDamage * (countering ? 1.42 : 1) * guardScale * itemMultiplier * scaling;
   return Math.max(0, raw);
 }
 
@@ -45,13 +88,60 @@ export function hitstunFor({ percent = 0, guarding = false, aerial = false, laun
 }
 
 /**
- * Attack chaining window. A three-hit string is allowed while the previous hit has not
+ * Attack chaining window. A five-hit string is allowed while the previous hit has not
  * expired; after that the chain resets to the first hit. Attack recovery is what actually
- * gates re-entry: a new attack can only be buffered when the queue is empty.
+ * gates re-entry: a new attack can only be buffered when the queue is empty. The length is the
+ * same 5 as COMBO.chainLength in combo.js, so the rules helper and the live chain cannot drift.
  */
+export const CHAIN_LENGTH = 5;
 export function chainStep(previousStep, comboWindow) {
   if (comboWindow <= 0) return 1;
-  return (previousStep % 3) + 1;
+  return (previousStep % CHAIN_LENGTH) + 1;
+}
+
+/**
+ * Guard (shield) rules. Guarding is a resource, not a free stance: holding it drains the
+ * shield, a blocked hit costs shield in proportion to the move's weight, and an empty shield
+ * breaks the guard for a fixed time. Every number lives here so the balance is testable in
+ * node and the fighter simulation has no open-coded copy of it.
+ */
+export const SHIELD = Object.freeze({
+  max: 100,
+  holdDrain: 11,          // per second while guard is held
+  hitCost: 24,            // base cost of one blocked hit
+  damageCost: 0.9,        // extra cost per point of damage above 8
+  knockbackCost: 0.16,    // extra cost per point of kbs above 70
+  regen: 26,              // per second once the guard is down
+  regenDelay: 0.55,       // pause after a blocked hit before regen starts
+  breakSeconds: 1.15,
+  breakRecover: 22        // shield handed back when a break ends
+});
+
+/** Shield after `dt` of holding or recovering. A broken shield stays at zero. */
+export function shieldTick(shield, dt, { guarding = false, broken = false, offhand = null } = {}) {
+  const current = Math.max(0, Math.min(SHIELD.max, Number(shield) || 0));
+  if (broken) return 0;
+  // Holding the guard drains at the standard rate whatever is in the offhand: the shield's
+  // extra cost is per blocked hit and in its slower refill, not in merely standing ready.
+  if (guarding) return Math.max(0, current - SHIELD.holdDrain * dt);
+  const regenScale = offhandDefense(offhand)?.regenScale ?? 1;
+  return Math.min(SHIELD.max, current + SHIELD.regen * regenScale * dt);
+}
+
+/** What one blocked hit costs, scaled by how heavy the move was and by the offhand absorbing it. */
+export function shieldCostFor({ damage = 8, kbs = 80, offhand = null } = {}) {
+  const raw = SHIELD.hitCost
+    + Math.max(0, damage - 8) * SHIELD.damageCost
+    + Math.max(0, kbs - 70) * SHIELD.knockbackCost;
+  const costScale = offhandDefense(offhand)?.shieldCostScale ?? 1;
+  return Math.max(6, raw) * costScale;
+}
+
+/** Apply a blocked hit. Returns the remaining shield and whether it broke. */
+export function shieldAfterHit(shield, move = {}) {
+  const current = Math.max(0, Number(shield) || 0);
+  const next = Math.max(0, current - shieldCostFor(move));
+  return { shield: next, broke: next <= 0, cost: current - next };
 }
 
 export function createMatch(rules = {}) {

@@ -10,11 +10,17 @@ on:
       - ".github/workflows/validate-game.yml"
       - ".github/workflows/build-character-animations.yml"
       - "scripts/browser-smoke.mjs"
+      - "scripts/test-arena-switch.mjs"
+      - "scripts/test-combat-damage.mjs"
       - "scripts/test-combat.mjs"
       - "scripts/test-gameplay.mjs"
       - "scripts/test-worlds.mjs"
       - "scripts/test-worlds-browser.mjs"
       - "scripts/test-explore.mjs"
+      - "scripts/audit-arena-exploration.mjs"
+      - "scripts/test-texture-ownership.mjs"
+      - "scripts/test-rematch-textures.mjs"
+      - "public/js/render/texture_ownership.js"
       - "public/js/worlds/**/*.js"
       - "public/js/world/**/*.js"
       - "public/js/SmashCamera.js"
@@ -107,14 +113,14 @@ jobs:
           const launch = JSON.parse(launchMatch[1]);
           const all = JSON.parse(allMatch[1]);
           const launchNames = launch.map(([name]) => name);
-          // 32 original launch fighters plus Iron Spider, who was registered as a separate
-          // playable fighter; Iron Man and everyone else stay in place.
-          assert.equal(launch.length, 33, 'Expected 33 launch fighters');
-          assert.equal(new Set(launchNames).size, 33, 'Launch fighter names must be unique');
+          // The launch contract is 38: the 35-fighter pre-promotion roster plus the restored
+          // Wolverine, Geralt and Doom Slayer promotions. The three stay in launch.
+          assert.equal(launch.length, 38, 'Expected 38 launch fighters');
+          assert.equal(new Set(launchNames).size, 38, 'Launch fighter names must be unique');
           assert.ok(launchNames.includes('Spider-Man'), 'Spider-Man must be in launch roster');
           assert.ok(launchNames.includes('Iron Man (Tony Stark)'), 'Iron Man must stay in the launch roster');
           assert.ok(launchNames.includes('Iron Spider'), 'Iron Spider must be in the launch roster');
-          assert.equal(all.length - launch.length, 25, 'DLC reserve should retain 25 characters');
+          assert.equal(all.length - launch.length, 22, 'DLC reserve should retain 22 characters');
 
           for (const required of [
             'skyEnvironment(renderer', 'composer.render()', 'Tenkaichi Budokai-inspired Papaya Island',
@@ -144,8 +150,8 @@ jobs:
           assert.ok(installer.includes("enabled: true") && installer.includes("goku-animated.glb"), 'Character asset installer is missing safe manifest activation');
           assert.ok(vfx.includes('function impact') && vfx.includes('function dash') && vfx.includes('function landing'), 'Combat VFX primitives are missing');
           assert.ok(main.includes('combatVFX.update(elapsed)') && main.includes('combatVFX.launch(start,color,moveType)'), 'Combat VFX are not integrated into the game loop');
-          assert.equal(manifest.characters.goku.url, '/models/characters/goku/Goku.fbx', 'Goku asset is not registered');
-          assert.equal(manifest.characters.iron_man_tony_stark.url, '/models/characters/iron-man-mark-v-rig/Iron%20Man%20Mark%20V%20Rig%20Materials.gltf', 'Iron Man asset is not registered');
+          assert.equal(manifest.characters.goku.url, '/models/characters/bespoke/goku_body.glb', 'Goku asset is not registered');
+          assert.equal(manifest.characters.iron_man_tony_stark.url, '/models/characters/roster/iron_man_tony_stark.glb', 'Iron Man asset is not registered');
           assert.ok(human.includes("n.includes('left')") && human.includes("n.includes('right')"), 'Mixamo-style rig-side detection is missing');
           assert.ok(fighter.includes('camera-relative steering') && main.includes('window.smashCamera=smashCamera'), 'Camera-relative free-roam controls are missing');
           assert.ok(models.includes('upgradeCharacterWithBlenderModel'), 'Blender character loader is missing');
@@ -155,8 +161,8 @@ jobs:
           assert.ok(main.includes('window.updateSignatureMoves'), 'Signature movement updates are missing');
           assert.ok(fighter.includes('ODM-style cross cuts'), 'Individual combo choreography is missing');
           for (const feature of ["const SPECIAL_MOVES", "label:'KAMEHAMEHA'", "label:'STORMBREAKER LIGHTNING'", "label:'WEB ZIP STRIKE'", "label:'SPIDER-LEG ASSAULT'"]) assert.ok(main.includes(feature), 'Missing signature move: ' + feature);
-          assert.equal(manifest.characters.iron_spider.url, '/models/characters/iron_spider/iron_spider.glb', 'Iron Spider asset is not staged');
-          assert.equal(manifest.characters.iron_spider.enabled, false, 'Iron Spider must stay disabled until its GLB is installed');
+          assert.equal(manifest.characters.iron_spider.url, '/models/characters/roster/iron_spider.glb', 'Iron Spider roster body is not registered');
+          assert.equal(manifest.characters.iron_spider.enabled, true, 'Iron Spider roster body must stay enabled');
           assert.ok(launchNames.includes('Iron Spider'), 'Iron Spider is not in the launch roster');
           console.log('Validated ' + launch.length + ' launch fighters, ' + (all.length-launch.length) + ' DLC fighters, browser modules, and cinematic-map features.');
           NODE
@@ -180,9 +186,14 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Unit-test combat rules and arena collision
         run: node scripts/test-combat.mjs
+      - name: Unit-test texture ownership, including skeleton bone textures
+        run: node scripts/test-texture-ownership.mjs
       - name: Smoke-test actual game render and Blender GLB loading
         timeout-minutes: 6
         run: node scripts/browser-smoke.mjs
+      - name: Gate arena switching (intentional failure + every supported arena)
+        timeout-minutes: 6
+        run: node scripts/test-arena-switch.mjs
       - name: Play-test movement, combat, rounds, arenas and local two-player
         timeout-minutes: 8
         run: node scripts/test-gameplay.mjs
@@ -194,6 +205,12 @@ jobs:
       - name: Play-test free roam and explore-only mouse look
         timeout-minutes: 8
         run: node scripts/test-explore.mjs
+      - name: Gate stage exploration, collision, boundaries and camera clearance
+        timeout-minutes: 10
+        run: node scripts/audit-arena-exploration.mjs
       - name: Play-test Iron Spider from selection through a full match
         timeout-minutes: 8
         run: node scripts/test-iron-spider.mjs
+      - name: Verify repeated character selections reach a texture plateau
+        timeout-minutes: 8
+        run: node scripts/test-rematch-textures.mjs

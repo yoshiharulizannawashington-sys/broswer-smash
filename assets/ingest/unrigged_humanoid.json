@@ -1,0 +1,48 @@
+{
+ "id": "unrigged_humanoid",
+ "source": "artifacts/dev/prepare/unrigged_humanoid/unrigged_humanoid-retargeted.glb",
+ "output": "public/models/characters/imported/unrigged_humanoid.glb",
+ "targetHeight": 1.8,
+ "boneMap": {
+  "Head": "Head",
+  "Neck": "Neck",
+  "LeftHand": "LeftHand",
+  "LeftForeArm": "LeftForeArm",
+  "LeftArm": "LeftArm",
+  "LeftShoulder": "LeftShoulder",
+  "RightHand": "RightHand",
+  "RightForeArm": "RightForeArm",
+  "RightArm": "RightArm",
+  "RightShoulder": "RightShoulder",
+  "Chest": "Chest",
+  "Spine": "Spine",
+  "LeftFoot": "LeftFoot",
+  "LeftLeg": "LeftLeg",
+  "LeftUpLeg": "LeftUpLeg",
+  "RightFoot": "RightFoot",
+  "RightLeg": "RightLeg",
+  "RightUpLeg": "RightUpLeg",
+  "Hips": "Hips"
+ },
+ "clipMap": {
+  "Idle": "Idle",
+  "Walk": "Walk",
+  "Run": "Run",
+  "Jump": "Jump",
+  "Punch": "Punch",
+  "Kick": "Kick",
+  "Kamehameha": "Kamehameha"
+ },
+ "clipNotes": {
+  "Idle": "source clip \"Idle\"",
+  "Walk": "source clip \"Walk\"",
+  "Run": "source clip \"Run\"",
+  "Jump": "source clip \"Jump\"",
+  "Punch": "source clip \"Punch\"",
+  "Kick": "source clip \"Kick\"",
+  "Kamehameha": "SUBSTITUTE: no kamehameha clip in source; \"Kamehameha\" used"
+ },
+ "provenance": {
+  "notes": "Prepared by scripts/prepare-character.mjs from unrigged-humanoid.glb (auto-rigged, clips retargeted). Licence metadata is informational only."
+ }
+}

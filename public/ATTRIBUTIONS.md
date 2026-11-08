@@ -26,6 +26,26 @@ glTF Sample Models (Khronos Group) — permissive sample models
   than a broken import. A Sketchfab licence does not by itself settle rights to the underlying
   Marvel character, so confirm that separately before distributing the game.
 
+## Naruto Uzumaki — imported body, local prototype only
+
+- Title: **Naruto & Sasuke Low Poly + Rig + Texture**
+- Creator: **ronildo.facanha** — https://sketchfab.com/ronildo.facanha
+- Source: https://sketchfab.com/3d-models/naruto-sasuke-low-poly-rig-texture-b650b60a7bbd4f11b05a435e65116168
+- Licence: **CC BY 4.0**. Required credit: “Naruto & Sasuke Low Poly + Rig + Texture by ronildo.facanha,
+  licensed CC BY 4.0.” The files were published by the creator in the project folder linked from the
+  model description and retrieved on 2026-11-06.
+- What was used: the Naruto half of the supplied FBX (5,444 tris on a 567-bone rig) and the five PNG
+  maps that accompany it. Sasuke, the render backdrop and the extra face variants were not installed.
+- Modifications: `assets/blender/naruto_from_fbx.py` keeps Naruto alone, rebuilds each material around
+  its supplied texture, removes the inverted-hull ink shell (glTF cannot mark a material back-side, so
+  it drew the body as a black silhouette) and normalises the 6.15 m source to 1.80 m.
+  `assets/blender/naruto_animations.py` adds 19 animation clips authored on that rig. Modified files
+  are marked as such under CC BY 4.0.
+- **Rights scope.** A CC BY licence covers the creator's own work; it does **not** grant rights to the
+  Naruto franchise, its characters or its designs. This body is therefore local-prototype-only art and
+  must not be shipped or published as a cleared asset. The in-game rosters and movesets still derive
+  from the project's own original designs; the model is an art swap for development.
+
 All procedural characters and UI code currently included in this repo are original and created for this demo.
 
 No third-party Superman or Goku character model files are currently bundled. Candidate model pages and their listed license information are documented in public/models/characters/README.md. A listing's uploader-selected license does not necessarily grant rights to the underlying copyrighted character. Verify permission for your intended use before redistributing or publishing a build.

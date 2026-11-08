@@ -6,15 +6,19 @@
 // one keyboard; gamepad 0 drives P1 and gamepad 1 drives P2.
 //
 //   P1  WASD move · J attack · K special · U grab · SPACE jump · SHIFT sprint/dash
-//       E guard (tap to parry) · F flight · C descend · G web swing
+//       E guard (tap to parry) · F flight · C descend · X flight brake · G web swing
+//       I transform · O ultimate
 //   P2  ARROWS move · , attack · . special · / grab · ENTER jump · RIGHT SHIFT sprint/dash
-//       ; guard (tap to parry) · [ flight · ] descend · \ web swing
+//       ; guard (tap to parry) · [ flight · ] descend · \ web swing · N transform · M ultimate
+//   Gamepad: D-pad up transforms, D-pad down casts the ultimate, for either player.
 
 const P1_KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
   up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   sprint: ['ShiftLeft'], jump: ['Space'], attack: ['KeyJ'], special: ['KeyK'],
-  grab: ['KeyU'], guard: ['KeyE'], flight: ['KeyF'], descend: ['KeyC'], web: ['KeyG']
+  grab: ['KeyU'], guard: ['KeyE'], flight: ['KeyF'], descend: ['KeyC'], web: ['KeyG'],
+  brake: ['KeyX'], transform: ['KeyI'], ultimate: ['KeyO'],
+  special2: ['KeyL'], special3: ['KeyH'], special4: ['KeyT'], special5: ['KeyY']
 };
 
 const P2_KEYS = {
@@ -22,7 +26,10 @@ const P2_KEYS = {
   sprint: ['ShiftRight'], jump: ['Enter', 'NumpadEnter'], attack: ['Comma', 'Numpad1'],
   special: ['Period', 'Numpad2'], grab: ['Slash', 'Numpad3'],
   guard: ['Semicolon', 'Numpad5'], flight: ['BracketLeft', 'Numpad7'],
-  descend: ['BracketRight', 'Numpad8'], web: ['Backslash', 'Numpad9']
+  descend: ['BracketRight', 'Numpad8'], web: ['Backslash', 'Numpad9'],
+  brake: ['Minus', 'NumpadSubtract'], transform: ['KeyN'], ultimate: ['KeyM'],
+  special2: ['Quote', 'Numpad4'], special3: ['Backquote', 'Numpad6'],
+  special4: ['KeyP'], special5: ['KeyL']
 };
 
 const BUFFER_WINDOW = 9;
@@ -122,12 +129,23 @@ export default class SmashInputHandler {
       flightToggle: buffer.take(map.flight) || pressed(3),
       ascend: jumpHeld || pressed(10),
       descend: anyHeld(this.keys, map.descend) || pressed(11),
+      // Held brake for flight: a dedicated button, so stopping is a decision rather than
+      // releasing the stick and waiting for drag.
+      brake: anyHeld(this.keys, map.brake) || pressed(9),
       webSwing: anyHeld(this.keys, map.web) || pressed(5),
       attack: buffer.take(map.attack) || pressed(0),
       special: buffer.take(map.special) || pressed(1),
+      special2: buffer.take(map.special2) || pressed(2),
+      special3: buffer.take(map.special3) || pressed(3),
+      special4: buffer.take(map.special4) || pressed(14),
+      special5: buffer.take(map.special5) || pressed(15),
       grab: buffer.take(map.grab) || pressed(7),
       dodge: buffer.take(map.sprint) || pressed(4),
       shield: anyHeld(this.keys, map.guard) || pressed(6),
+      // Transform / ultimate are edge-triggered like attacks, so holding the key cannot
+      // re-activate a form or spend a second meter.
+      transform: buffer.take(map.transform) || pressed(12),
+      ultimate: buffer.take(map.ultimate) || pressed(13),
       parry: buffer.take(map.guard),
       vertical: anyHeld(this.keys, map.up) ? 1 : anyHeld(this.keys, map.down) ? -1 : 0,
       analogX: lx,

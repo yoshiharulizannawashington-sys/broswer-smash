@@ -1,0 +1,26 @@
+{
+ "source": "Bip001 (Marvel Future Fight) 65-joint rig",
+ "map": {
+  "pelvis": "Bip001 Pelvis_03",
+  "spine": "Bip001 Spine_04",
+  "torso": "Bip001 Spine2_018",
+  "neck": "Bip001 Neck_019",
+  "head": "Bip001 Head_020",
+  "leftClavicle": "Bip001 L Clavicle_022",
+  "leftArm": "Bip001 L UpperArm_023",
+  "leftFore": "Bip001 L Forearm_024",
+  "leftHand": "Bip001 L Hand_025",
+  "rightClavicle": "Bip001 R Clavicle_041",
+  "rightArm": "Bip001 R UpperArm_042",
+  "rightFore": "Bip001 R Forearm_043",
+  "rightHand": "Bip001 R Hand_044",
+  "leftLeg": "Bip001 L Thigh_05",
+  "leftShin": "Bip001 L Calf_06",
+  "leftFoot": "Bip001 L Foot_07",
+  "rightLeg": "Bip001 R Thigh_011",
+  "rightShin": "Bip001 R Calf_012",
+  "rightFoot": "Bip001 R Foot_013"
+ },
+ "missing": [],
+ "duplicates": []
+}

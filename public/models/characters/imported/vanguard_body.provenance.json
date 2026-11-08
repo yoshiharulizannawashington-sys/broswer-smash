@@ -1,0 +1,18 @@
+{
+  "id": "vanguard_body",
+  "attribution": "",
+  "notes": "Prepared by scripts/prepare-character.mjs from street-soldier.glb (rigged). Licence metadata is informational only.",
+  "originalFile": "artifacts/dev/imports/impmvysftoc2/asset/street-soldier.glb",
+  "output": "public/models/characters/imported/vanguard_body.glb",
+  "scale": 0.9824,
+  "clips": [
+    "Idle",
+    "Punch",
+    "Kick",
+    "Kamehameha",
+    "Run",
+    "Jump",
+    "Walk"
+  ],
+  "ingestedAt": "2026-11-02T04:58:00.341Z"
+}

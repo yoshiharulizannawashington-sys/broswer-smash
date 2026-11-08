@@ -182,7 +182,15 @@ export function describeRigValidation(result) {
   return result.ok ? `rig valid (${shape})` : `rig rejected: ${result.issues.join('; ')} (${shape})`;
 }
 
-/** Weapon meshes are not part of the fighter's silhouette; the audit excludes them. */
+/**
+ * Weapon meshes are not part of the fighter's silhouette; the audit excludes them. The exclusion
+ * has to cover the whole prop, not just its root: an equipped weapon is a group whose children
+ * ("Storm_spark", a blade, a barrel) carry their own names, and a long weapon legitimately reaches
+ * past the fighter's feet.
+ */
 export function isEquippedWeapon(node) {
-  return String(node.name || '').startsWith('Equipped');
+  for (let current = node; current; current = current.parent) {
+    if (String(current.name || '').startsWith('Equipped')) return true;
+  }
+  return false;
 }

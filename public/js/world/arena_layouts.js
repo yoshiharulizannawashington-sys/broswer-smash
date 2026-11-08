@@ -38,37 +38,8 @@ const LEGACY_LAYOUTS = {
       c(-12, -32, 2, 7), c(15, -38, 2, 11), c(48, -5, 2.4, 13), c(-50, -10, 2.4, 10)
     ]
   },
-  volcano: {
-    label: 'Obsidian Volcano',
-    kind: 'open',
-    bounds: { x0: -70, x1: 70, z0: -74, z1: 34 },
-    ground: 0,
-    spawns: [{ x: -6, z: -20 }, { x: 6, z: -19.3 }],
-    blocks: [
-      { x: -42, z: -38, r: 12, top: 23 },
-      c(-90, -65, 11, 30)
-    ]
-  },
-  ice: {
-    label: 'Frostfall Citadel',
-    kind: 'open',
-    bounds: { x0: -70, x1: 70, z0: -72, z1: 34 },
-    ground: 0,
-    spawns: [{ x: -6, z: -20 }, { x: 6, z: -19.3 }],
-    blocks: [c(-34, -35, 9, 22), c(95, -75, 12, 30)]
-  },
-  neon: {
-    label: 'Neon Megacity',
-    kind: 'open',
-    bounds: { x0: -66, x1: 66, z0: -74, z1: 34 },
-    ground: 0,
-    spawns: [{ x: -6, z: -20 }, { x: 6, z: -19.3 }],
-    blocks: [
-      k(-40.5, -40.5, -35.5, -35.5, 18), k(-31.5, -40.5, -26.5, -35.5, 21),
-      k(-22.5, -40.5, -17.5, -35.5, 24), k(-13.5, -40.5, -8.5, -35.5, 27),
-      k(-4.5, -40.5, 0.5, -35.5, 30), c(0, -100, 12, 40)
-    ]
-  },
+  // Obsidian Volcano, Frostfall Citadel and Neon Megacity were fully procedural arenas with no
+  // authored counterpart. They are archived in archive/part10-legacy/procedural-stages.md.
   deathstar: {
     label: 'Death Star',
     kind: 'interior',
@@ -118,7 +89,7 @@ const LEGACY_LAYOUTS = {
     kind: 'open',
     bounds: { x0: -54, x1: 54, z0: -40, z1: 46 },
     ground: 0,
-    spawns: [{ x: -7, z: -20 }, { x: 7, z: -19.3 }],
+    spawns: [{ x: -3.6, z: -20 }, { x: 3.6, z: -19.3 }],
     blocks: [
       { x: -16, z: -1, r: 4.2, top: 0.7 },
       // Small houses flanking the avenue: two rings of them, mirrored either side.
@@ -135,7 +106,12 @@ const LEGACY_LAYOUTS = {
     kind: 'interior',
     bounds: { x0: -21, x1: 21, z0: -75, z1: 12 },
     ground: 0,
-    spawns: [{ x: -8, z: -8 }, { x: 8, z: -7.3 }],
+    // The hall runs 67 m away from the spawn toward -Z; the default +Z shot backs into the
+    // entrance wall three metres behind the fighters. Turn the duel camera down the hall.
+    camera: { yaw: Math.PI },
+    // Spawn on the open play centre of the hall, not the entrance vestibule: the authored
+    // doorway wall sat three metres behind the old z -8 spawn and capped every duel shot there.
+    spawns: [{ x: -8, z: -31.5 }, { x: 8, z: -30.8 }],
     blocks: [
       // The four house tables are low enough to jump onto and high enough to block a walk.
       { x0: -13.7, z0: -65.5, x1: -10.3, z1: 1.5, top: 1.3 },
@@ -203,6 +179,43 @@ function insideSolid(block, x, z, feetY, step) {
     return { dx: 0, dz: 1, d: 0, penetration: far };
   }
   return null;
+}
+
+/**
+ * True when a world-space point sits inside a solid volume. Fighters use `resolveCollision`
+ * below, which needs a push direction; projectiles only need the yes/no, and a 3D point test is
+ * cheap enough to run for every live projectile each frame against a few hundred volumes.
+ * `bottom` is honoured so a shot fired under a deck is not blocked by the deck overhead.
+ */
+export function solidAt(x, y, z, layout) {
+  if (!layout) return false;
+  for (const block of layout.blocks || []) {
+    if (block.top == null || y > block.top) continue;
+    if (block.bottom != null && y < block.bottom) continue;
+    if (block.r != null) {
+      if (Math.hypot(x - block.x, z - block.z) <= block.r) return true;
+    } else if (x >= block.x0 && x <= block.x1 && z >= block.z0 && z <= block.z1) return true;
+  }
+  return false;
+}
+
+/**
+ * True when a solid volume sits on the segment between two world-space points. Melee uses
+ * this so a punch does not reach through a wall; it samples the line instead of building a
+ * mesh raycast, which keeps it cheap enough to run for every swing.
+ */
+export function solidBetween(from, to, layout, samples = 5) {
+  if (!layout || !from || !to) return false;
+  for (let i = 1; i < samples; i++) {
+    const t = i / samples;
+    if (solidAt(
+      from.x + (to.x - from.x) * t,
+      from.y + (to.y - from.y) * t,
+      from.z + (to.z - from.z) * t,
+      layout
+    )) return true;
+  }
+  return false;
 }
 
 /**

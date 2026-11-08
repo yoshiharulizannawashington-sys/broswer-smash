@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { modelService } from './scripts/model-service.mjs';
 import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -45,7 +46,7 @@ const copyRuntimeAssets = {
 export default defineConfig({
   root: 'public',
   publicDir: false,
-  plugins: [stripCacheBustFromEntry, copyRuntimeAssets],
+  plugins: [modelService(), stripCacheBustFromEntry, copyRuntimeAssets],
   server: { host: '0.0.0.0', port: 3000, strictPort: true },
   build: {
     outDir: '../dist',

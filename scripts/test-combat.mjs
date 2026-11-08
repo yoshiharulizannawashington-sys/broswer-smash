@@ -3,7 +3,8 @@
 import assert from 'node:assert/strict';
 import {
   DEFAULT_RULES, createMatch, tickMatch, evaluateRound, awardRound, nextRound, resetMatch,
-  damageFor, knockbackFor, launchFor, hitstunFor, chainStep, matchSummary
+  damageFor, knockbackFor, launchFor, hitstunFor, chainStep, matchSummary,
+  GUARD, OFFHAND_DEFENSE, offhandOf, offhandDefense, guardDamageScale, shieldCostFor, shieldTick
 } from '../public/js/combat/combat_rules.js';
 import {
   ARENA_LAYOUTS, layoutFor, layoutKeys, spawnPoints, groundHeightAt,
@@ -36,8 +37,47 @@ check('guarded hits barely launch', launchFor({ guarding: true }) === 1.2);
 check('launchers lift higher than jabs', launchFor({ launchY: 8.6, launcher: true }) > launchFor({ launchY: 3.4 }));
 check('hit stun grows with damage', hitstunFor({ percent: 120 }) > hitstunFor({ percent: 10 }));
 check('guarded hit stun is short', hitstunFor({ guarding: true }) === 0.1);
-check('chains cycle 1-2-3', chainStep(1, 1) === 2 && chainStep(2, 1) === 3 && chainStep(3, 1) === 1);
+check('chains cycle 1-2-3-4-5', chainStep(1, 1) === 2 && chainStep(2, 1) === 3 && chainStep(3, 1) === 4
+  && chainStep(4, 1) === 5 && chainStep(5, 1) === 1);
 check('expired combo window restarts the chain', chainStep(2, 0) === 1);
+
+console.log('offhand defence');
+// The shield is the only defensive offhand, and it must change an ordinary block without
+// touching a fighter who carries nothing defensive.
+check('a bare guard still cuts damage to 28%', Math.abs(damageFor(10, { guarding: true }) - 2.8) < 1e-9);
+check('a shield blocks to 18%', Math.abs(damageFor(10, { guarding: true, offhand: 'shield' }) - 1.8) < 1e-9);
+check('a shield changes nothing when not guarding', damageFor(10, { offhand: 'shield' }) === 10);
+check('a shield beats a bare guard but is not immunity',
+  damageFor(10, { guarding: true, offhand: 'shield' }) > 0
+  && damageFor(10, { guarding: true, offhand: 'shield' }) < damageFor(10, { guarding: true }));
+check('non-shield offhands keep the exact bare guard',
+  ['katana', 'sword', 'lightning', 'ki_orb', 'webshooters', 'repulsor', 'unarmed', null, undefined]
+    .every(kind => Math.abs(damageFor(10, { guarding: true, offhand: kind }) - 2.8) < 1e-9));
+check('an unknown offhand kind falls back safely',
+  Number.isFinite(guardDamageScale('tentacle_of_doom'))
+  && Math.abs(guardDamageScale('tentacle_of_doom') - GUARD.damageScale) < 1e-9);
+// The projectile (0.30) and signature (0.32) paths keep their authored guard scales; a shield
+// improves each by the same proportion, so no path is left resolving blocks differently.
+const shieldRatio = OFFHAND_DEFENSE.shield.damageScale / GUARD.damageScale;
+check('a shield scales the projectile path by the same proportion',
+  Math.abs(guardDamageScale('shield', 0.3) - 0.3 * shieldRatio) < 1e-9);
+check('a shield scales the signature path by the same proportion',
+  Math.abs(guardDamageScale('shield', 0.32) - 0.32 * shieldRatio) < 1e-9);
+check('a shield never weakens an authored path',
+  guardDamageScale('shield', 0.3) < 0.3 && guardDamageScale('shield', 0.32) < 0.32);
+check('a shield costs more meter per blocked hit',
+  shieldCostFor({ damage: 12, kbs: 90, offhand: 'shield' }) > shieldCostFor({ damage: 12, kbs: 90 }));
+check('a shield refills more slowly',
+  shieldTick(50, 1, { offhand: 'shield' }) < shieldTick(50, 1, {}));
+check('holding a shield drains at the standard rate',
+  shieldTick(50, 1, { guarding: true, offhand: 'shield' }) === shieldTick(50, 1, { guarding: true }));
+check('a shield still breaks when the meter empties',
+  (() => { let shield = 30; for (let i = 0; i < 12; i++) shield = Math.max(0, shield - shieldCostFor({ damage: 12, kbs: 90, offhand: 'shield' })); return shield === 0; })());
+check('offhandOf reads the model classification',
+  offhandOf({ model: { userData: { offhandKind: 'shield' } } }) === 'shield'
+  && offhandOf({ model: { userData: {} } }) === null && offhandOf(null) === null);
+check('only the shield is a defensive offhand',
+  offhandDefense('shield') !== null && offhandDefense('katana') === null && offhandDefense(null) === null);
 
 console.log('match state');
 let match = createMatch();
@@ -85,7 +125,16 @@ for (const key of keys) {
   const width = b.x1 - b.x0, depth = b.z1 - b.z0;
   // Large worlds are 90-240 m across; bridge, dock and sky-island stages are deliberately
   // narrow, and a dojo floor or boathouse deck is a small ring by design.
-  check(`${key}: bounds are wide enough for a fight`, Math.min(width, depth) >= 12 && width * depth >= 200,
+  //
+  // Interior rooms are a stage in their own right, but they are *rooms*: the castle grid is
+  // 18 x 14 m with a 2 m wall inset, so the walkable rectangle of a classroom is 14 x 14 (196 m2)
+  // and the Entrance Hall is 14 x 10 (140 m2). They cannot be widened - every room shares a wall
+  // with its neighbour, so growing one eats the next. The 12 m / 200 m2 floor therefore applies to
+  // open and stage arenas; rooms keep a 9 m / 120 m2 floor, which still guarantees room to fight.
+  const minSpan = layout.kind === 'interior' ? 9 : 12;
+  const minArea = layout.kind === 'interior' ? 120 : 200;
+  check(`${key}: bounds are wide enough for a fight`,
+    Math.min(width, depth) >= minSpan && width * depth >= minArea,
     `${Math.round(width)} x ${Math.round(depth)}`);
   const spawns = spawnPoints(layout);
   check(`${key}: two spawns inside the bounds`,

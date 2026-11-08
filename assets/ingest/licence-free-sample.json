@@ -1,0 +1,39 @@
+{
+  "id": "licence_free_import",
+  "source": "public/models/characters/ingested/quaternius_base.glb",
+  "output": "public/models/characters/ingested/licence_free_import.glb",
+  "targetHeight": 1.78,
+  "boneMap": {
+    "pelvis": "pelvis",
+    "spine": "spine",
+    "torso": "torso",
+    "neck": "neck",
+    "head": "head",
+    "leftClavicle": "leftClavicle",
+    "rightClavicle": "rightClavicle",
+    "leftArm": "leftArm",
+    "leftFore": "leftFore",
+    "leftHand": "leftHand",
+    "rightArm": "rightArm",
+    "rightFore": "rightFore",
+    "rightHand": "rightHand",
+    "leftLeg": "leftLeg",
+    "leftShin": "leftShin",
+    "leftFoot": "leftFoot",
+    "rightLeg": "rightLeg",
+    "rightShin": "rightShin",
+    "rightFoot": "rightFoot"
+  },
+  "clipMap": {
+    "Idle": "Idle",
+    "Walk": "Walk",
+    "Run": "Run",
+    "Jump": "Jump",
+    "Punch": "Punch",
+    "Kick": "Kick",
+    "Kamehameha": "Kamehameha"
+  },
+  "clipNotes": {
+    "Kick": "Inherited from the source body's own clip set; not re-authored here."
+  }
+}

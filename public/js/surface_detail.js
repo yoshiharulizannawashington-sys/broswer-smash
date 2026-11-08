@@ -8,13 +8,17 @@
 // metallic/roughness and clearcoat while giving the surfaces something to catch
 // the light with.
 import * as THREE from 'three';
+import { markSharedTexture } from './render/texture_ownership.js';
 
 const CLASS_PATTERNS = {
-  fabric: { repeat: 3.2, normalScale: 0.55, roughnessRange: [0.9, 1], weave: true },
-  armor: { repeat: 2.1, normalScale: 0.34, roughnessRange: [0.82, 1], brushed: true },
-  leather: { repeat: 2.4, normalScale: 0.6, roughnessRange: [0.88, 1] },
-  skin: { repeat: 1.6, normalScale: 0.22, roughnessRange: [0.94, 1], pores: true },
-  generic: { repeat: 2.6, normalScale: 0.24, roughnessRange: [0.92, 1] }
+  // Fine, low-contrast relief. Earlier values (a 5-texel weave repeated 3.2 times and a 0.55
+  // normal scale) turned every prefab fighter into a visible checkerboard at fighting
+  // distance; the point is to break up flat plastic, not to print a grid on the skin.
+  fabric: { repeat: 7.5, normalScale: 0.22, roughnessRange: [0.9, 1], weave: true },
+  armor: { repeat: 4.5, normalScale: 0.16, roughnessRange: [0.82, 1], brushed: true },
+  leather: { repeat: 6.0, normalScale: 0.24, roughnessRange: [0.88, 1] },
+  skin: { repeat: 4.0, normalScale: 0.12, roughnessRange: [0.94, 1], pores: true },
+  generic: { repeat: 6.0, normalScale: 0.12, roughnessRange: [0.92, 1] }
 };
 
 // Skip anything that owns its own look: eyes, energy trim, hair cards and glow bits
@@ -86,12 +90,14 @@ function buildPattern(kind) {
       let roughness = .95;
 
       if (preset.weave) {
-        // Two interlaced thread directions plus a slow weave wobble.
-        const warp = ((x + Math.sin(y * .11) * 1.4) % 5) < 2.5 ? 1 : .9;
-        const weft = ((y + Math.cos(x * .09) * 1.2) % 5) < 2.5 ? 1 : .92;
-        const slub = Math.sin(x * .7 + y * .33) * .02 + Math.sin(y * 1.3) * .015;
-        shade = (warp * weft) * .95 + slub;
-        relief = (warp - weft) * .8 + slub * 3;
+        // Two interlaced thread directions plus a slow weave wobble. The albedo difference
+        // between warp and weft is deliberately small: it should read as cloth up close and as
+        // a flat colour at fighting distance.
+        const warp = ((x + Math.sin(y * .11) * 1.4) % 5) < 2.5 ? 1 : .972;
+        const weft = ((y + Math.cos(x * .09) * 1.2) % 5) < 2.5 ? 1 : .978;
+        const slub = Math.sin(x * .7 + y * .33) * .008 + Math.sin(y * 1.3) * .006;
+        shade = (warp * weft) * .99 + slub;
+        relief = (warp - weft) * .4 + slub * 3;
         roughness = .93 + (random() - .5) * .06;
       } else if (preset.brushed) {
         // Horizontally brushed metal with occasional panel seams.
@@ -149,6 +155,9 @@ function buildPattern(kind) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(preset.repeat, preset.repeat);
     texture.anisotropy = 4;
+    // One cached pattern set is shared by every fighter built from the same detail class, so a
+    // character swap releasing its old body must not dispose these.
+    markSharedTexture(texture);
   }
   return { albedoTexture, roughnessTexture, normalTexture, normalScale: preset.normalScale };
 }

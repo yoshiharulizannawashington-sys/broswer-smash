@@ -8,8 +8,9 @@ import {
   WORLDS, WORLD_ORDER, WORLD_LOCATIONS, PALETTES, worldParts, blocksFromParts, worldGroups, worldLocation
 } from '../public/js/worlds/world_catalog.js';
 import {
-  ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds
+  ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds, solidAt
 } from '../public/js/world/arena_layouts.js';
+import { HOGWARTS_CONNECTIONS, HOGWARTS_GRAPH_NOTES, HOGWARTS_INTERIOR_AREAS, HOGWARTS_INTERIOR_LOCATIONS, HOGWARTS_NAV_ROUTES } from '../public/js/worlds/hogwarts_interior.js';
 
 let checks = 0;
 const failures = [];
@@ -281,6 +282,106 @@ for (const id of WORLD_ORDER) {
   const reachable = WORLD_LOCATIONS.filter(location => location.world === id && (location.exits || []).length > 0);
   ok(reachable.length >= 2, `${id} has walkable links between its stages (${reachable.length})`);
 }
+
+// ---- castle interior: navigation, not decoration -----------------------------
+// A room is only finished if it can be walked into. These checks use the same functions the
+// fighter controller runs every frame (groundHeightAt, resolveCollision, STEP_HEIGHT), so a
+// wall across a doorway or a tread over the step limit fails here rather than stranding a
+// player in the browser.
+{
+  const layout = layoutFor('hogwarts_entrance_hall');
+  ok(HOGWARTS_INTERIOR_LOCATIONS.length >= 12,
+    `the castle interior exposes start locations (${HOGWARTS_INTERIOR_LOCATIONS.length})`);
+  ok(layout.blocks.length > 300, `the interior contributes collision volumes (${layout.blocks.length} in the world)`);
+
+  for (const area of HOGWARTS_INTERIOR_AREAS) {
+    ok(Boolean(area.label) && area.connected.length > 0, `${area.id} is a named, connected area`);
+    const cx = (area.room.x0 + area.room.x1) / 2;
+    const cz = (area.room.z0 + area.room.z1) / 2;
+    const ground = groundHeightAt(cx, cz, layout, area.height + 2.1, 0.6);
+    ok(near(ground, area.height, 0.8), `${area.id} has a standable floor at ${area.height} (got ${ground.toFixed(2)})`);
+  }
+
+  for (const route of HOGWARTS_NAV_ROUTES) {
+    let feet = route.from.y;
+    let previous = route.from;
+    let worstPush = 0;
+    for (const point of route.points) {
+      const span = Math.hypot(point.x - previous.x, point.z - previous.z);
+      const steps = Math.max(1, Math.ceil(span / 0.3));
+      for (let i = 1; i <= steps; i++) {
+        const x = previous.x + (point.x - previous.x) * (i / steps);
+        const z = previous.z + (point.z - previous.z) * (i / steps);
+        const probe = { x, y: feet, z };
+        resolveCollision(probe, { x: 0, y: 0, z: 0 }, 0.7, layout);
+        worstPush = Math.max(worstPush, Math.hypot(probe.x - x, probe.z - z));
+        const ground = groundHeightAt(x, z, layout, feet);
+        ok(ground <= feet + 0.42 + 1e-6,
+          `${route.name}: the rise at (${x.toFixed(1)}, ${z.toFixed(1)}) is one tread (${feet.toFixed(2)} -> ${ground.toFixed(2)})`);
+        ok(feet - ground < 1.1,
+          `${route.name}: no hole at (${x.toFixed(1)}, ${z.toFixed(1)}) (${feet.toFixed(2)} -> ${ground.toFixed(2)})`);
+        feet = ground;
+      }
+      previous = point;
+    }
+    ok(worstPush < 0.12, `${route.name}: the walk is unobstructed (worst push ${worstPush.toFixed(2)} m)`);
+    ok(near(feet, route.endY, 0.7), `${route.name}: ends on the ${route.endY} m floor (got ${feet.toFixed(2)})`);
+  }
+
+  // The Great Hall doorway and the entrance hall exit must describe the same hole in the wall.
+  const greatHall = WORLD_LOCATIONS.find(location => location.id === 'hogwarts_great_hall');
+  const hallDoor = greatHall.exits.find(exit => exit.to === 'hogwarts_entrance_hall');
+  ok(Boolean(hallDoor), 'the Great Hall has a doorway into the castle range');
+  const entrance = WORLD_LOCATIONS.find(location => location.id === 'hogwarts_entrance_hall');
+  const back = entrance.exits.find(exit => exit.to === 'hogwarts_great_hall');
+  ok(Boolean(back), 'the entrance hall leads back into the Great Hall');
+  if (hallDoor && back) {
+    ok(Math.abs(hallDoor.z - back.z) < 1.5, 'the two sides of the doorway line up');
+    ok(!solidAt(hallDoor.x, hallDoor.z, 0.57 + 1, hallDoor.z, layout) && !solidAt(back.x, 0.57 + 1, back.z, layout),
+      'the doorway itself is not filled with wall');
+  }
+
+  // The dungeons used to be sealed; the passage to the courtyard must be walkable.
+  let feet = 0.3, worst = 0;
+  for (let z = -79; z <= -61; z += 0.3) {
+    const probe = { x: -34, y: feet, z };
+    resolveCollision(probe, { x: 0, y: 0, z: 0 }, 0.7, layout);
+    worst = Math.max(worst, Math.hypot(probe.x + 34, probe.z - z));
+    feet = groundHeightAt(-34, z, layout, feet);
+  }
+  ok(worst < 0.12, `the dungeon passage is walkable (worst push ${worst.toFixed(2)} m)`);
+  ok(near(feet, 0.3, 0.5), `the dungeon passage stays on the ground floor (${feet.toFixed(2)})`);
+}
+
+  // ---- the traversal graph -------------------------------------------------
+  // Every playable space is a node and every edge is a connection the player can actually
+  // walk. The graph is only allowed to claim an edge when an automated route proves it, so a
+  // wall across a door or a stair that stops short fails here instead of shipping.
+  {
+    const nodes = new Set([...HOGWARTS_INTERIOR_AREAS.map(area => area.id), ...Object.keys(HOGWARTS_GRAPH_NOTES)]);
+    ok(HOGWARTS_CONNECTIONS.length >= 20, `the castle graph has ${HOGWARTS_CONNECTIONS.length} connections`);
+    const routeNames = new Set(HOGWARTS_NAV_ROUTES.map(route => route.name));
+    for (const edge of HOGWARTS_CONNECTIONS) {
+      ok(nodes.has(edge.a) && nodes.has(edge.b), `${edge.a} ↔ ${edge.b} joins two known spaces`);
+      if (edge.route) ok(routeNames.has(edge.route), `${edge.a} ↔ ${edge.b} names a route that exists (${edge.route})`);
+    }
+    for (const area of HOGWARTS_INTERIOR_AREAS) {
+      ok(HOGWARTS_CONNECTIONS.some(edge => edge.a === area.id || edge.b === area.id),
+        `${area.id} appears in the traversal graph`);
+    }
+    const reached = new Set(['entrance_hall']);
+    for (let pass = 0; pass < nodes.size; pass++) {
+      for (const edge of HOGWARTS_CONNECTIONS) {
+        if (reached.has(edge.a)) reached.add(edge.b);
+        if (reached.has(edge.b)) reached.add(edge.a);
+      }
+    }
+    const unreachable = [...nodes].filter(id => !reached.has(id));
+    ok(unreachable.length === 0, `every space is reachable from the entrance hall (unreachable: ${unreachable.join(', ')})`);
+    // A graph is not proof: the routes it cites are the ones walked below.
+    const proven = HOGWARTS_CONNECTIONS.filter(edge => edge.route).length;
+    ok(proven >= 8, `${proven} graph edges are proven by a walked route`);
+  }
 
 // ---- report ----------------------------------------------------------------
 if (failures.length) {

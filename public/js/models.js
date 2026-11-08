@@ -1,8 +1,11 @@
 // Original procedural fighters for Browser Smash. Articulated pivot hierarchy enables real limb animation.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { enhanceSurfaceMaterials, surfaceDetailReport } from './surface_detail.js?v=browser-smash-surface-detail-v31-20261022';
-import { bindRigJoints, validateFighterRig, describeRigValidation } from './rig_validation.js?v=browser-smash-rig-v1-20261023';
+import { enhanceSurfaceMaterials, surfaceDetailReport } from './surface_detail.js';
+import { claimModelTextures, releaseModelTextures } from './render/texture_ownership.js';
+import { bindRigJoints, validateFighterRig, describeRigValidation } from './rig_validation.js';
+import { attachSpiderLegs } from './anim/spider_legs.js';
+import { createSculptedFighter, hasSculptedFighter } from './characters/sculpted.js';
 
 const runtimeAssetState = typeof window !== 'undefined'
   ? (window.__browserSmashAssets ||= {})
@@ -89,25 +92,61 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     lord_voldemort:{body:0x17181b,armor:0x2e3035,accent:0xb6ad9c,skin:0xd4d0c5,head:'hair',feature:'voldemort'},
     sasuke_uchiha:{body:0x17213b,armor:0x353d55,accent:0x5a9ce1,head:'hair',feature:'sasuke'},
     hashirama_senju:{body:0x325a46,armor:0x5b3d2f,accent:0x8a9873,head:'hair',feature:'hashirama',scale:1.22},
-    madara_uchiha:{body:0x492e32,armor:0x7c3d3a,accent:0xb79362,head:'hair',feature:'madara',scale:1.22}
+    madara_uchiha:{body:0x492e32,armor:0x7c3d3a,accent:0xb79362,head:'hair',feature:'madara',scale:1.22},
+    // Original fighter: the fallback body is only visible until the exported GLB loads.
+    kaze:{body:0xe9e6da,armor:0x1b1f27,accent:0x7fe6cf,skin:0xc79a78,head:'hair',scale:1}
   };
   const d={...(designs[archetype]||designs.warrior)};
   const look=looks[key];
   if(look) Object.assign(d,look);
+  // Spider-Man's suit already carries the wrist silhouette, and the shared signature-weapon
+  // prefab is a generic-rig web-shooter built from a large cuff, cartridge and nozzles. On the
+  // imported body it reads as a floating grey brick across the hands and hides the authored
+  // poses, so equipment stays off. The web moves supply their own webshooter projectile profile
+  // and do not read an equipped weapon, so this changes presentation, not the moveset.
+  if(key==='spider_man')g.userData.unarmed=true;
+  // Authored bodies: real anatomy, layered clothing and armour, modelled hands and faces.
+  // These replace the primitive assembly for the three fighters whose source assets were never
+  // supplied, and they are skipped by the prefab swap below so nothing overwrites them.
+  if(hasSculptedFighter(key)){
+    const sculpted=createSculptedFighter(key,{identity});
+    if(sculpted){
+      const scale=look?.scale||1;
+      sculpted.scale.setScalar(scale);
+      sculpted.userData.identity=identity;
+      sculpted.userData.archetype=archetype;
+      sculpted.userData.characterScale=scale;
+      sculpted.userData.visualScale=scale;
+      sculpted.userData.unarmed=true;
+      // Authored bodies are lofted from code and carry no UV chart, so the tiling weave maps
+      // the prefab path bakes would sample one texel and smear it across every limb (and on a
+      // UV-mapped material turned the figure into a visible grid). Their detail is geometry:
+      // lapels, plates, fingers, hair locks. Leave their materials alone.
+      sculpted.userData.surfaceDetail={applied:false,reason:'authored geometry, no UV chart'};
+      runtimeAssetState.lastSculptedDetail={key,applied:false,materials:0};
+      return sculpted;
+    }
+  }
+  // The accent material is the fighter's emissive trim. Tagging it by name lets a form's
+  // authored look retint the trim without touching skin, cloth or armour.
   const cloth=mat(d.body,.10,.72),
     armor=new THREE.MeshPhysicalMaterial({color:d.armor,metalness:.78,roughness:.27,clearcoat:.78,clearcoatRoughness:.16,envMapIntensity:1.15}),
-    glow=new THREE.MeshPhysicalMaterial({color:d.accent,metalness:.36,roughness:.2,clearcoat:.72,clearcoatRoughness:.12,emissive:d.accent,emissiveIntensity:1.0,envMapIntensity:1.1}),
+    glow=new THREE.MeshPhysicalMaterial({name:'fighter-accent',color:d.accent,metalness:.36,roughness:.2,clearcoat:.72,clearcoatRoughness:.12,emissive:d.accent,emissiveIntensity:1.0,envMapIntensity:1.1}),
     skin=new THREE.MeshStandardMaterial({color:d.skin,metalness:.02,roughness:.64,envMapIntensity:.72}),
     dark=new THREE.MeshStandardMaterial({color:0x10151d,metalness:.38,roughness:.38});
   // root origin is at the feet; torso and limbs are independently articulated.
   const pelvis=joint(g,[0,1.02,0]); part(pelvis,new THREE.BoxGeometry(.68,.38,.42),armor,[0,0,0]);
-  const torso=joint(pelvis,[0,.28,0]); part(torso,new THREE.BoxGeometry(.9,.82,.48),cloth,[0,.28,0]);
+  // Two-stage spine, matching characters/sculpted.js: the chest pivots mid-spine, not at the pelvis.
+  const spine=joint(pelvis,[0,.14,0]);
+  const torso=joint(spine,[0,.14,0]); part(torso,new THREE.BoxGeometry(.9,.82,.48),cloth,[0,.28,0]);
   part(torso,new THREE.BoxGeometry(.98,.25,.55),armor,[0,.48,0]);
   part(torso,new THREE.BoxGeometry(.23,.38,.06),glow,[0,.3,.275]);
   for(const s of [-1,1]) {
     const shoulder=part(torso,new THREE.SphereGeometry(.28,12,10),armor,[s*.55,.48,0],[1,1,.9]);
     part(torso,new THREE.BoxGeometry(.18,.36,.12),glow,[s*.42,.25,.27]);
-    const arm=joint(torso,[s*.62,.35,0]); part(arm,new THREE.CylinderGeometry(.13,.16,.42,10),cloth,[0,-.2,0]);
+    // Clavicle rolls the arm from the chest. Offsets preserved (0.16+0.46=0.62, 0.30+0.05=0.35).
+    const clavicle=joint(torso,[s*.16,.30,0]);
+    const arm=joint(clavicle,[s*.46,.05,0]); part(arm,new THREE.CylinderGeometry(.13,.16,.42,10),cloth,[0,-.2,0]);
     part(arm,new THREE.BoxGeometry(.32,.22,.3),armor,[0,-.42,.015]);
     const fore=joint(arm,[0,-.42,0]); part(fore,new THREE.CylinderGeometry(.11,.14,.38,10),armor,[0,-.18,0]);
     part(fore,new THREE.BoxGeometry(.23,.18,.24),glow,[0,-.37,.035]);
@@ -115,8 +154,14 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     part(leg,new THREE.BoxGeometry(.31,.25,.32),armor,[0,-.43,.015]);
     const shin=joint(leg,[0,-.45,0]); part(shin,new THREE.CylinderGeometry(.12,.15,.43,10),armor,[0,-.21,0]);
     part(shin,new THREE.BoxGeometry(.3,.16,.43),dark,[0,-.42,.08]);
-    if(s===-1) { g.userData.leftArm=arm;g.userData.leftFore=fore;g.userData.leftLeg=leg;g.userData.leftShin=shin; }
-    else { g.userData.rightArm=arm;g.userData.rightFore=fore;g.userData.rightLeg=leg;g.userData.rightShin=shin; }
+    // Wrist and ankle articulation points. The prefab keeps its existing end geometry on the
+    // forearm/shin, so these are pure articulation joints: a clip can angle the hand or roll the
+    // foot on a body that has the geometry for it (characters/sculpted.js does), and a prefab body
+    // simply has nothing hanging off the joint.
+    const hand=joint(fore,[0,-.34,0]);
+    const foot=joint(shin,[0,-.40,0]);
+    if(s===-1) { g.userData.leftClavicle=clavicle;g.userData.leftArm=arm;g.userData.leftFore=fore;g.userData.leftHand=hand;g.userData.leftLeg=leg;g.userData.leftShin=shin;g.userData.leftFoot=foot; }
+    else { g.userData.rightClavicle=clavicle;g.userData.rightArm=arm;g.userData.rightFore=fore;g.userData.rightHand=hand;g.userData.rightLeg=leg;g.userData.rightShin=shin;g.userData.rightFoot=foot; }
   }
   const neck=joint(torso,[0,.72,0]); part(neck,new THREE.CylinderGeometry(.13,.16,.18,10),skin,[0,0,0]);
   const head=joint(neck,[0,.24,0]); part(head,new THREE.SphereGeometry(.28,24,18),skin,[0,0,0],[.88,1.05,.82]);
@@ -164,15 +209,26 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
     const capeMat=mat(color,.04,.88);
     const mesh=part(g,new THREE.ShapeGeometry(shape),capeMat,[0,1.93,-.31]);mesh.renderOrder=1;return mesh;
   };
+  // Hair is a form surface: a transformation may retint it and change its silhouette, so the
+  // material and the meshes are tagged here rather than sniffed out later.
   const spikeHair=(color,count=7,length=.42)=>{
     const hm=mat(color,.05,.82);
+    hm.name='fighter-hair';
+    (g.userData.hairMaterials||=[]).push(hm);
     for(let i=0;i<count;i++){const angle=(i/count)*Math.PI*2;const x=Math.cos(angle)*.17,z=Math.sin(angle)*.13;
-      const spike=part(head,new THREE.ConeGeometry(.085,length,5),hm,[x,.25+(i%3)*.018,z]);spike.rotation.z=Math.sin(angle)*.6;spike.rotation.x=Math.cos(angle)*.45;}
+      const spike=part(head,new THREE.ConeGeometry(.085,length,5),hm,[x,.25+(i%3)*.018,z]);spike.rotation.z=Math.sin(angle)*.6;spike.rotation.x=Math.cos(angle)*.45;
+      spike.userData.formSurface='hair';
+      (head.userData.hairMeshes||=[]).push(spike);}
   };
   if(['superman','superman','burt_reynolds','superman'].includes(feature)) cape(0x982733,.82,1.55);
   if(['superman','ironman','blackadam'].includes(feature)){
     const emblem=part(torso,new THREE.BoxGeometry(.3,.31,.055),glow,[0,.27,.32]);
-    if(feature==='ironman')part(torso,new THREE.CircleGeometry(.12,24),mat(0x7af2ff,.1,.2,0x50ccff),[0,.25,.365]);
+    if(feature==='ironman'){
+      const reactor=part(torso,new THREE.CircleGeometry(.12,24),mat(0x7af2ff,.1,.2,0x50ccff),[0,.25,.365]);
+      reactor.material.name='arc-reactor';
+      reactor.userData.formSurface='reactor';
+      g.userData.reactorMesh=reactor;
+    }
   }
   if(['superman','the_flash_barry_allen','all_might'].includes(feature)) cape(feature==='superman'?0x972a35:0x26375d,.82,1.55);
   if(feature==='blackadam'){part(torso,new THREE.BoxGeometry(.11,.39,.045),glow,[0,.24,.35]);}
@@ -219,6 +275,18 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   if(feature==='lantern'){part(g,new THREE.TorusGeometry(.07,.035,7,16),glow,[.28,1.1,.24]);}
   if(feature==='flash'){for(const side of [-1,1]){const bolt=part(head,new THREE.ConeGeometry(.07,.28,4),mat(0xf0c34b,.25,.24),[side*.3,.04,.02]);bolt.rotation.z=side*Math.PI/2;}}
 
+  if(feature==='trident'){
+    // Aquaman's beard was missing entirely at gameplay distance: a dark auburn jaw, sideburns and
+    // moustache read as a beard silhouette instead of a clean-shaven face.
+    const beardMat=mat(0x7a4a28,.32,.88),beardDark=mat(0x5e361b,.28,.9);
+    part(head,new THREE.SphereGeometry(.158,12,9),beardMat,[0,-.145,.135],[1,.92,.58]);
+    part(head,new THREE.BoxGeometry(.1,.055,.035),beardDark,[0,-.062,.228]);
+    for(const side of [-1,1]){
+      part(head,new THREE.BoxGeometry(.055,.13,.035),beardMat,[side*.115,-.105,.185]);
+      part(head,new THREE.BoxGeometry(.045,.12,.025),beardMat,[side*.145,-.055,.12]);
+      part(head,new THREE.BoxGeometry(.05,.1,.025),beardMat,[side*.075,-.115,.215]);
+    }
+  }
   if(feature==='strange'){cape(0x77262c,.9,1.4);part(torso,new THREE.TorusGeometry(.11,.035,7,20),mat(0xd8ad50,.75,.2),[0,.22,.35]);}
   if(feature==='hammer'){cape(0x7a2026,.7,1.2);}
   if(feature==='stormbreaker'){
@@ -268,7 +336,29 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
   if(feature==='ariel'){spikeHair(0xc54435,8,.34);part(head,new THREE.TorusGeometry(.16,.035,8,18),mat(0x45b7a4,.2,.4),[0,-.05,.24]);}
   if(feature==='ursula'){for(let i=0;i<6;i++){const arm=part(g,new THREE.CylinderGeometry(.08,.16,.9,8),mat(0x2b183a,.2,.4),[-.55+i*.22,.2,-.12]);arm.rotation.z=(i-2.5)*.12;}}
   if(feature==='edna'){const lens=mat(0x0a0a0a,.15,.15);for(const side of [-1,1])part(head,new THREE.TorusGeometry(.14,.03,8,20),lens,[side*.15,.02,.25]);part(head,new THREE.BoxGeometry(.12,.035,.04),lens,[0,.02,.25]);}
-  if(feature==='pirate'){part(head,new THREE.CylinderGeometry(.24,.3,.14,12),dark,[0,.23,-.02]);part(head,new THREE.SphereGeometry(.28,12,8),dark,[0,.3,-.03],[1,.4,1]);part(g,new THREE.BoxGeometry(.48,.05,.05),mat(0xb68f53,.65,.2),[0,1.08,.29]);}
+  if(feature==='pirate'){
+    // A tricorn, not a flattened cap: a leather dome, a thin brim disc and three stiff panels
+    // turned up and outward at 120 degrees. Gold edging runs along each peak so the silhouette
+    // still reads at gameplay distance.
+    // NOTE: a second build of this hat (three flared panels with a torus band) placed the pieces at
+    // head-local y .21-.38 and rendered as a black ring across the eyes, proving the `head` group's
+    // local origin is not at the chin. Reverted rather than shipped. Measure the head bbox and the
+    // face-feature offsets in a capture before re-authoring; do not guess the vertical frame.
+    const leather=mat(0x241b14,.05,.85),leatherEdge=mat(0x3a2c1f,.12,.7),hatGold=mat(0xc39a52,.72,.28);
+    part(head,new THREE.CylinderGeometry(.3,.325,.035,18),leather,[0,.235,-.02]);
+    const crown=part(head,new THREE.SphereGeometry(.255,14,10),leather,[0,.3,-.02],[1,.62,1]);
+    crown.rotation.x=.02;
+    // Three upturned panels stand above the brim, leaning out only slightly so the tricorn
+    // silhouette is wide at the top instead of reading as a flat cap.
+    for(const angle of [Math.PI,Math.PI/3,-Math.PI/3]){
+      const peak=part(head,new THREE.BoxGeometry(.46,.30,.05),leatherEdge,[Math.sin(angle)*.245,.44,Math.cos(angle)*.245]);
+      peak.rotation.y=angle;peak.rotation.x=.3;
+      // Edging is a child of the panel, so it stays on the panel's top edge instead of floating
+      // in front of the face.
+      part(peak,new THREE.BoxGeometry(.47,.032,.062),hatGold,[0,.155,.001]);
+    }
+    part(g,new THREE.BoxGeometry(.48,.05,.05),hatGold,[0,1.08,.29]);
+  }
   if(feature==='spiderman'){
     const webBlack=mat(0x10131a,.12,.5),lens=mat(0xeaf6ff,.12,.22,.08),spiderSilver=mat(0x96a9c1,.45,.38);
     // Angular white lenses with dark raised rims are readable at fighting-camera distance.
@@ -313,38 +403,49 @@ export function makeProceduralCharacter(archetype='warrior', identity=archetype)
       const upper=part(torso,new THREE.BoxGeometry(.035,.19,.025),gold,[side*.1,.34,.344]);upper.rotation.z=side*.5;
       const lower=part(torso,new THREE.BoxGeometry(.03,.2,.025),gold,[side*.145,.22,.344]);lower.rotation.z=-side*.4;
     }
-    // Four folded mechanical legs on the back harness: the character's defining silhouette.
-    // Segments are built between explicit joint positions so the folded legs sit outside the
-    // shoulder armour instead of disappearing inside the torso.
-    const legSegment=(from,to,radius,material)=>{
-      const direction=new THREE.Vector3().subVectors(to,from);
-      const mesh=new THREE.Mesh(new THREE.CylinderGeometry(.022,radius,direction.length(),6),material);
-      mesh.position.copy(from).addScaledVector(direction,.5);
-      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.clone().normalize());
-      mesh.castShadow=true;mesh.receiveShadow=true;torso.add(mesh);
-      return mesh;
-    };
-    for(let i=0;i<4;i++){
-      const side=i%2===0?-1:1, tier=i<2?0:1;
-      const hip=new THREE.Vector3(side*.3,.52-tier*.2,-.3);
-      const knee=new THREE.Vector3(side*(.66+tier*.06),.8-tier*.2,-.5);
-      const tip=new THREE.Vector3(side*(.74+tier*.04),1.2-tier*.24,-.66);
-      legSegment(hip,knee,.038,gold);
-      legSegment(knee,tip,.028,steel);
-      part(torso,new THREE.SphereGeometry(.05,8,6),gold,[knee.x,knee.y,knee.z]);
-      part(torso,new THREE.SphereGeometry(.04,8,6),gold,[tip.x,tip.y,tip.z]);
-    }
+    // The four mechanical legs are not decoration: anim/spider_legs.js attaches a real
+    // three-joint chain per leg (12 joints total) that poses from the fighter's combat state
+    // and reports its tip positions for the leg sweep. Attached below, once the body exists.
   }
   if(feature==='fedora'){part(head,new THREE.CylinderGeometry(.28,.28,.11,16),mat(0x563521,.04,.8),[0,.24,0]);part(head,new THREE.CylinderGeometry(.15,.21,.26,12),mat(0x563521,.04,.8),[0,.4,-.03]);part(g,new THREE.BoxGeometry(.5,.035,.1),mat(0x563521),[0,1.1,.25]);}
 
   if(feature==='hashirama'){cape(0x3c5365,.78,1.25);}
-  if(feature==='voldemort'){part(head,new THREE.BoxGeometry(.2,.07,.055),dark,[0,-.06,.24]);for(const side of [-1,1])part(head,new THREE.BoxGeometry(.065,.035,.03),glow,[side*.105,-.03,.25]);}
+  if(feature==='voldemort'){
+    // The pale skull needs structure, not just colour: a heavy brow, sunken sockets, snake-slit
+    // nostrils, hollow cheeks, a thin mouth and a pointed chin, all proud of the head surface.
+    const bone=mat(0xd4d0c5,.42,.85),boneShade=mat(0xa9a294,.5,.9),socket=mat(0x1a1a1e,.1,.9),slit=glow,mouthMat=mat(0x6d4a4c,.35,.9);
+    for(const side of [-1,1]){
+      const brow=part(head,new THREE.BoxGeometry(.15,.032,.05),bone,[side*.082,.072,.228]);
+      brow.rotation.z=side*-.2;
+      part(head,new THREE.BoxGeometry(.1,.05,.03),socket,[side*.085,.036,.245]);
+      const eye=part(head,new THREE.BoxGeometry(.072,.02,.025),slit,[side*.085,.036,.262]);
+      eye.rotation.z=side*.12;
+      const cheek=part(head,new THREE.BoxGeometry(.055,.085,.018),boneShade,[side*.132,-.01,.222]);
+      cheek.rotation.z=side*.16;
+    }
+    // Snake-flat nose: a short bridge with two forward nostril slits, not a long pale bar.
+    part(head,new THREE.BoxGeometry(.038,.042,.05),boneShade,[0,.006,.258]);
+    for(const side of [-1,1]){
+      const wing=part(head,new THREE.BoxGeometry(.022,.026,.032),bone,[side*.032,-.014,.268]);
+      wing.rotation.z=side*.22;
+      part(head,new THREE.BoxGeometry(.012,.016,.016),socket,[side*.026,-.026,.284]);
+      // A deep hollow under the cheekbone gives the gaunt skull its shape.
+      const hollow=part(head,new THREE.BoxGeometry(.05,.07,.014),mat(0x8f887c,.4,.95),[side*.138,-.035,.218]);
+      hollow.rotation.z=side*.2;
+    }
+    part(head,new THREE.BoxGeometry(.15,.016,.022),mouthMat,[0,-.074,.264]);
+    part(head,new THREE.BoxGeometry(.085,.014,.02),boneShade,[0,-.088,.256]);
+    part(head,new THREE.BoxGeometry(.05,.05,.05),bone,[0,-.118,.232]);
+  }
   if(feature==='madara'){for(const side of [-1,1])part(torso,new THREE.BoxGeometry(.2,.56,.14),armor,[side*.42,.25,.2]);}
 
     // Circular ground markers removed; the environment lighting supplies contact shadows.
   // rigKind tells the pose writer which skeleton it is driving: this one is Y-up with
   // absolute joint offsets the procedural pose owns, unlike the Z-up Blender prefab.
-  g.userData={...g.userData,archetype,identity,rigKind:'procedural',characterScale:look?.scale||1,visualScale:look?.scale||1,torso,pelvis,head,blade};
+  g.userData={...g.userData,archetype,identity,rigKind:'procedural',characterScale:look?.scale||1,visualScale:look?.scale||1,spine,torso,pelvis,neck,head,blade};
+  // Iron Spider's appendages are a jointed rig on the body itself, so they exist before, during
+  // and after the sweep instead of being spawned as one-shot VFX.
+  if(feature==='ironspider')attachSpiderLegs(g);
   g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
   return g;
 }
@@ -387,6 +488,9 @@ function loadCharacterModelLibrary(){
 export async function upgradeCharacterWithBlenderModel(fighter){
   const oldModel=fighter?.model;
   if(!oldModel||!oldModel.userData)return false;
+  // An authored body is already the finished model: the prefab library holds primitive
+  // cylinder assemblies, so swapping one in would be a downgrade.
+  if(oldModel.userData.sculptedBody)return false;
   const key=characterWeaponKey(fighter.identity||fighter.name);
   let prefabs;
   try{
@@ -447,7 +551,13 @@ export async function upgradeCharacterWithBlenderModel(fighter){
     return false;
   }
   parent.add(avatar);
+  // This clone's geometry belongs to the avatar alone, and the body it replaces is done. The old
+  // body used to be detached without disposing anything, so every swap stranded a full prefab
+  // clone's geometries (and any maps it owned) in the renderer for the rest of the session.
+  claimModelTextures(avatar);
+  releaseModelTextures(oldModel,{keep:(window.fighters||[]).map(f=>f.model).filter(model=>model&&model!==oldModel)});
   parent.remove(oldModel);
+  oldModel.traverse?.(node=>{ if(node.isMesh) node.geometry?.dispose?.(); });
   fighter.model=avatar;
   fighter.position=avatar.position;
   await equipCharacterWeapons(fighter).catch(error=>console.warn('Weapon reattachment after Blender model swap:',error));
@@ -462,7 +572,7 @@ function loadWeaponLibrary(){
   if(!weaponLibraryState.promise){
     weaponLibraryState.promise=new Promise((resolve,reject)=>{
       const url=new URL('../assets/character_weapons.glb',import.meta.url);
-      url.searchParams.set('v','browser-smash-weapons-v4-20261018');
+      url.searchParams.set('v','browser-smash-weapons-v6-20261103');
       runtimeAssetState.weapons={status:'loading',url:url.href};
       new GLTFLoader().load(url.href,gltf=>{
         const prefabs=new Map();
@@ -539,13 +649,111 @@ function weaponSize(kind){
   return .76;
 }
 function clearEquippedWeapon(mount,prop){
-  if(mount&&prop&&prop.parent===mount)mount.remove(prop);
+  if(!prop)return;
+  // The prop hangs off the mount itself, or off the aligned holder made for a skeleton mount.
+  if(prop.parent===mount||prop.parent?.parent===mount)prop.parent.remove(prop);
+}
+/**
+ * Where a weapon hangs. A prefab body's joints are already in the game's frame, so a weapon
+ * parents straight onto them. A rigged character's bones are not: a Blender bone's +Y runs down
+ * the bone, so a weapon parented directly to the forearm pointed along the arm and hung through
+ * the floor (Stormbreaker reached 0.30 m below the fighter's origin). One holder per mount,
+ * aligned with the world in the bind pose, gives the weapon the frame its authored offsets were
+ * written for while still riding the hand rigidly once the arm moves.
+ */
+function weaponMount(bone,model){
+  if(!bone||!bone.isBone)return bone||null;
+  const cached=bone.userData.weaponHolder;
+  if(cached){
+    // A holder made for an earlier body must move with the current one: its position is written in
+    // model-local space, so a stale parent offsets the prop by the difference between the frames.
+    if(model&&cached.parent!==model)model.add(cached);
+    return cached;
+  }
+  const holder=new THREE.Group();
+  holder.name='weapon-holder';
+  // The holder is what gets parented, so it has to remember which bone it rides: the grip offset
+  // depends on whether that bone is the hand or the forearm.
+  holder.userData.attachBone=bone.name;
+  holder.userData.attachBoneObject=bone;
+  holder.userData.attachIsHand=/hand|wrist|palm/i.test(bone.name||'');
+  // The holder rides the body root so it inherits the fighter's yaw; syncEquippedWeapons() writes
+  // its position from the hand bone after the skeleton has been posed.
+  (model||bone.parent||bone).add(holder);
+  holder.position.set(0,0,0);
+  bone.userData.weaponHolder=holder;
+  return holder;
+}
+/**
+ * A grip belongs in the palm, not at the far end of the forearm.
+ *
+ * The authored props put the grip at their own origin and run the blade or head up from there,
+ * so a hand mount needs only a palm-sized offset. The forearm fallback keeps the old -0.39 m
+ * reach towards the wrist. Parenting to the forearm alone made Stormbreaker swing around the
+ * elbow instead of the wrist, which read in a live match as a hammer floating beside Thor's
+ * shoulder, and did the same to Wonder Woman's sword and shield.
+ */
+// Per-weapon grip origins, in the prop's own scaled units. A prop's geometry origin is not where a
+// hand closes on it, so the correction belongs to the weapon kind rather than to a character.
+//   shield: centre-grip round shield. After the Z-up export its boss sits at local (0, +0.50, +0.15),
+//   so the root drops 0.50 and moves back 0.15 to put the boss itself in the palm.
+const PROP_GRIPS={
+  // With a body-frame holder the authored face normal (local +Z) already points along the bearer's
+  // forward axis, so the shield needs only its centre-grip offset.
+  shield:{y:-.50,z:-.15}
+};
+function weaponSpin(kind){return PROP_GRIPS[kind]?.spin||null;}
+function weaponGrip(mount,side,kind,size){
+  const hand=mount?.userData?.attachIsHand===true;
+  const prop=PROP_GRIPS[kind]||null;
+  if(prop)return{x:(prop.x||0)*size,y:(prop.y||0)*size-.045,z:(prop.z||0)*size+(side==='left'?.040:.055)};
+  return hand?{y:-.045,z:side==='left'?.040:.055}:{y:-.39,z:side==='left'?.045:.065};
+}
+/**
+ * Weapon orientation is the fighter's horizontal facing, not the arm's.
+ *
+ * Position belongs to the hand bone: the prop rides the palm wherever the arm goes. Orientation is
+ * a separate concern. Cancelling the bone's rotation outright (the original holder) kept props
+ * upright but locked them to a fixed compass direction, so a shield pointed the same way after a
+ * 180-degree turn. Using the bone's own rotation instead made every prop tumble with each swing.
+ * This writes the holder's world rotation as pure body yaw, which leaves the authored grip
+ * offsets, and the prop's own upright axis, untouched.
+ */
+export function syncEquippedWeapons(model){
+  if(!model?.userData)return;
+  model.updateWorldMatrix(true,false);
+  for(const side of ['Right','Left']){
+    const weapon=model.userData['equippedWeapon'+side];
+    const holder=weapon?.parent;
+    const bone=holder?.userData?.attachBoneObject;
+    if(!holder||!bone)continue;
+    bone.updateWorldMatrix(true,false);
+    holder.position.copy(model.worldToLocal(new THREE.Vector3().setFromMatrixPosition(bone.matrixWorld)));
+  }
 }
 export async function equipCharacterWeapons(fighter){
   const model=fighter?.model;
   if(!model?.userData)return false;
-  const rightMount=model.userData.rightFore||model.userData.rightArm;
-  const leftMount=model.userData.leftFore||model.userData.leftArm;
+  // Spider-Man is a web-slinger, not a weapon carrier. The shared prefab for his wrists is a
+  // generic-rig cuff/cartridge assembly that reads as a floating grey brick on both the imported
+  // suit and the fallback body, and it obscures the hand poses this pass is judging. Do this before
+  // the mount path so no body can acquire the prop; the web abilities carry their own projectile
+  // profile, so the moveset is unchanged.
+  if(characterWeaponKey(fighter?.identityKey||fighter?.identity||fighter?.name)==='spider_man'){
+    model.userData.unarmed=true;
+    model.userData.weaponKind='unarmed';
+    model.userData.weaponLabel='WEB SHOOTERS';
+    return false;
+  }
+  // Hands are the weapon: a sky-authored fighter with an energy beam does not carry a sword,
+  // and the palm repulsor / ki emitter is already modelled on the body.
+  if(model.userData.unarmed===true||model.userData.sculptedBody){
+    model.userData.weaponKind='unarmed';
+    model.userData.weaponLabel=model.userData.sculptedBody==='iron_man_tony_stark'?'REPULSOR':'KI STRIKE';
+    return false;
+  }
+  const rightMount=weaponMount(model.userData.rightHand||model.userData.rightFore||model.userData.rightArm,model);
+  const leftMount=weaponMount(model.userData.leftHand||model.userData.leftFore||model.userData.leftArm,model);
   if(!rightMount)return false;
   clearEquippedWeapon(rightMount,model.userData.equippedWeaponRight);
   clearEquippedWeapon(leftMount,model.userData.equippedWeaponLeft);
@@ -561,8 +769,12 @@ export async function equipCharacterWeapons(fighter){
     model.userData.weaponKind=kind;
     model.userData.weaponLabel=template.userData.display_name||key;
     weapon.name='Equipped '+(template.userData.display_name||key);
-    weapon.position.set(0,-.39,.065);
-    weapon.scale.setScalar(weaponSize(kind));
+    const rightSize=weaponSize(kind);
+    const grip=weaponGrip(rightMount,'right',kind,rightSize);
+    weapon.position.set(grip.x||0,grip.y,grip.z);
+    const rightSpin=weaponSpin(kind);
+    if(rightSpin)weapon.rotation.set(rightSpin[0],rightSpin[1],rightSpin[2]);
+    weapon.scale.setScalar(rightSize);
     enhanceSurfaceMaterials(weapon,{weapon:true});
     weapon.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
     rightMount.add(weapon);
@@ -573,13 +785,24 @@ export async function equipCharacterWeapons(fighter){
     const weapon=leftTemplate.clone(true);
     const kind=leftTemplate.userData.kind||'sword';
     weapon.name='Equipped offhand '+key;
-    weapon.position.set(0,-.39,.045);
-    weapon.scale.setScalar(weaponSize(kind));
+    const leftSize=weaponSize(kind);
+    const grip=weaponGrip(leftMount,'left',kind,leftSize);
+    weapon.position.set(grip.x||0,grip.y,grip.z);
+    const leftSpin=weaponSpin(kind);
+    if(leftSpin)weapon.rotation.set(leftSpin[0],leftSpin[1],leftSpin[2]);
+    weapon.scale.setScalar(leftSize);
     enhanceSurfaceMaterials(weapon,{weapon:true});
     weapon.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
     leftMount.add(weapon);
     model.userData.equippedWeaponLeft=weapon;
+    // The offhand has its own identity - Wonder Woman's and Link's shield, Geralt's second sword -
+    // and it is not what weaponKind describes (that is the right-hand weapon, and it is what the
+    // combat reach and impact tables key on). Recorded from the prefab's own `kind` so the game
+    // never has to guess from a mesh name.
+    model.userData.offhandKind=kind;
+    model.userData.offhandLabel=leftTemplate.userData.display_name||key;
   }
+  syncEquippedWeapons(model);
   return true;
 }
 

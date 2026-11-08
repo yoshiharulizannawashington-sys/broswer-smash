@@ -14,7 +14,7 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
     { kind: 'power', label: 'OVERDRIVE CORE', color: 0xff4c8c },
     { kind: 'shield', label: 'AEGIS ORB', color: 0x5bcaff },
   ];
-  function makeItem(def, x, z) {
+  function makeItem(def, x, z, once = false) {
     const root = new THREE.Group();
     root.position.set(x, .9, z);
     root.userData.kind = def.kind;
@@ -36,7 +36,7 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
       sword.rotation.z = -.22; sword.rotation.x = -.12; root.add(sword);
     }
     scene.add(root);
-    items.push({ root, core, glow, halo, def, x, z, phase: Math.random() * 6.28, respawn: 0, available: true });
+    items.push({ root, core, glow, halo, def, x, z, phase: Math.random() * 6.28, respawn: 0, available: true, once });
   }
   const spots = [[-4.5, -2.5], [4.5, -2.5], [0, -6.5], [-8, 2.8], [8, 2.8], [0, 5.2]];
   function seed(mapKey = 'valley') {
@@ -71,27 +71,46 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
         if (kind === 'shield') { fighter.invulnerable = Math.max(fighter.invulnerable || 0, 2.6); fighter.itemShieldTimer = 2.6; }
         if (kind === 'blade') {
           if (fighter.itemWeaponTimer <= 0) fighter.itemPreviousWeaponKind = fighter.model.userData.weaponKind || null;
+          // Only a fighter who actually picked a blade up owns this override. Without the flag the
+          // expiry below matched every fighter whose signature weapon is a sword (weaponKind
+          // 'sword') and deleted a classification they never overrode.
+          fighter.itemWeaponActive = true;
+          // Which body this override belongs to. A character swap replaces the model while the
+          // timer is still running, and the new body already carries its own classification.
+          fighter.itemWeaponModel = fighter.model;
           fighter.model.userData.weaponKind = 'sword';
           fighter.itemDamageMultiplier = 1.35;
           fighter.itemPowerTimer = 10;
           fighter.itemWeaponTimer = 10;
-          const arm = fighter.model.userData.rightArm;
+          // The pickup hangs from the palm, not the upper arm. On the upper arm a 0.82 m blade
+          // pivots around the shoulder, so any pose that raises both hands swept it across the
+          // fighter's face. The hand is where a held object actually belongs; equipment_state.js
+          // then decides whether the current technique can hold it at all.
+          const arm = fighter.model.userData.rightHand || fighter.model.userData.rightFore || fighter.model.userData.rightArm;
           if (arm && !fighter.model.userData.pickupBlade) {
             const bladeGroup = new THREE.Group();
+            bladeGroup.name = 'pickup-blade';
             const metal = new THREE.Mesh(new THREE.BoxGeometry(.095, .82, .045), shared.blade);
             metal.position.y = .46; bladeGroup.add(metal);
             const guard = new THREE.Mesh(new THREE.BoxGeometry(.34, .07, .1), shared.gold);
             guard.position.y = .04; bladeGroup.add(guard);
             const grip = new THREE.Mesh(new THREE.CylinderGeometry(.04, .045, .26, 8), shared.gold);
             grip.position.y = -.12; bladeGroup.add(grip);
-            bladeGroup.rotation.z = -.25; bladeGroup.position.set(0, -.24, .05); arm.add(bladeGroup);
+            bladeGroup.rotation.z = -.10; bladeGroup.position.set(0, -.05, .05); arm.add(bladeGroup);
             fighter.model.userData.pickupBlade = bladeGroup;
           }
         }
-        item.available = false; item.respawn = 12; item.root.visible = false;
+        // A dropped item is one-shot: it never respawns, so its mesh is retired below.
+        item.available = false; item.respawn = item.once ? 0 : 12; item.root.visible = false;
+        if (item.once) item.dead = true;
         onPickup(fighter, item.def);
         break;
       }
+    }
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (!items[i].dead) continue;
+      scene.remove(items[i].root);
+      items.splice(i, 1);
     }
     for (const fighter of fighters) {
       if (!fighter) continue;
@@ -99,9 +118,14 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
       fighter.itemShieldTimer = Math.max(0, (fighter.itemShieldTimer || 0) - dt);
       fighter.itemWeaponTimer = Math.max(0, (fighter.itemWeaponTimer || 0) - dt);
       if (fighter.itemPowerTimer <= 0) fighter.itemDamageMultiplier = 1;
-      if (fighter.itemWeaponTimer <= 0 && fighter.model?.userData?.weaponKind === 'sword') {
-        if (fighter.itemPreviousWeaponKind) fighter.model.userData.weaponKind = fighter.itemPreviousWeaponKind;
-        else delete fighter.model.userData.weaponKind;
+      if (fighter.itemWeaponTimer <= 0 && fighter.itemWeaponActive) {
+        fighter.itemWeaponActive = false;
+        const sameModel = !fighter.itemWeaponModel || fighter.itemWeaponModel === fighter.model;
+        if (sameModel) {
+          if (fighter.itemPreviousWeaponKind) fighter.model.userData.weaponKind = fighter.itemPreviousWeaponKind;
+          else delete fighter.model.userData.weaponKind;
+        }
+        fighter.itemWeaponModel = null;
         fighter.itemPreviousWeaponKind = null;
         if (fighter.model.userData.pickupBlade) {
           fighter.model.userData.pickupBlade.parent?.remove(fighter.model.userData.pickupBlade);
@@ -110,6 +134,12 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
       }
     }
   }
+  /** Drop a pickup into the world at a destroyed prop's place. Real effect, real collision. */
+  function spawnAt(kind, x, z) {
+    const def = definitions.find(d => d.kind === kind) || definitions[1];
+    makeItem(def, x, z, true);
+  }
   seed('valley');
-  return { update, seed, items };
+  if (typeof window !== 'undefined') window.spawnItemDrop = spawnAt;
+  return { update, seed, items, spawnAt };
 }

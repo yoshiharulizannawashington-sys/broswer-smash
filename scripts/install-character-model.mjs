@@ -69,8 +69,12 @@ function locateModel(target) {
 }
 
 function assertContained(baseDir, relative, description) {
-  const resolved = path.resolve(baseDir, decodeURIComponent(relative.split(/[?#]/, 1)[0]));
-  if (resolved !== baseDir && !resolved.startsWith(baseDir + path.sep)) fail('resource escapes its folder in ' + description + ': ' + relative);
+  // Resolve the base first: the caller may hand us a relative glTF path (the fetch pipeline
+  // passes one), and comparing an absolute resolution against a relative prefix rejected every
+  // sibling buffer as an escape even when it sat exactly next to the glTF.
+  const base = path.resolve(baseDir);
+  const resolved = path.resolve(base, decodeURIComponent(relative.split(/[?#]/, 1)[0]));
+  if (resolved !== base && !resolved.startsWith(base + path.sep)) fail('resource escapes its folder in ' + description + ': ' + relative);
   if (!fs.existsSync(resolved)) fail('missing referenced resource in ' + description + ': ' + relative);
   return resolved;
 }

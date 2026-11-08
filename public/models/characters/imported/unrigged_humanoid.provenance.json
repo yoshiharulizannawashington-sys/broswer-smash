@@ -1,0 +1,18 @@
+{
+  "id": "unrigged_humanoid",
+  "attribution": "",
+  "notes": "Prepared by scripts/prepare-character.mjs from unrigged-humanoid.glb (auto-rigged, clips retargeted). Licence metadata is informational only.",
+  "originalFile": "artifacts/dev/prepare/unrigged_humanoid/unrigged_humanoid-retargeted.glb",
+  "output": "public/models/characters/imported/unrigged_humanoid.glb",
+  "scale": 0.9824,
+  "clips": [
+    "Idle",
+    "Jump",
+    "Kamehameha",
+    "Kick",
+    "Punch",
+    "Run",
+    "Walk"
+  ],
+  "ingestedAt": "2026-11-03T00:04:04.698Z"
+}

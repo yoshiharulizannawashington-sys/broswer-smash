@@ -1,0 +1,22 @@
+{
+  "id": "quaternius_base",
+  "creator": "Quaternius",
+  "license": "CC BY 3.0",
+  "sourceUrl": "https://poly.pizza/m/cwYvO5UauX",
+  "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+  "attribution": "\"Animated Base Character\" by Quaternius, via Poly Pizza — licensed CC BY 3.0. Bones remapped and clips renamed for Browser Smash; geometry unchanged.",
+  "notes": "Poly Pizza lists this model as Creative Commons Attribution (CC BY 3.0), NOT the CC0 most Quaternius packs use, so attribution is required. Geometry, rig and animation remain the author's work; this pipeline renames nodes and clips and adds one scaling wrapper node.",
+  "originalFile": "artifacts/dev/ingest-source/base-character.glb",
+  "output": "public/models/characters/ingested/quaternius_base.glb",
+  "scale": 0.9984,
+  "clips": [
+    "Idle",
+    "Jump",
+    "Kick",
+    "Punch",
+    "Kamehameha",
+    "Run",
+    "Walk"
+  ],
+  "ingestedAt": "2026-11-01T23:17:39.680Z"
+}
