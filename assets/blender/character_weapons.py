@@ -200,13 +200,36 @@ def make_fan(r,mats):
     ico(r,'Fan crest',(0,-.13,.57),(.17,.035,.17),glow)
     return r
 
+def shield_material(name, rgb, metallic, roughness):
+    """Dedicated shield surface. The shared steel washed out under the arena key light because it
+    is a light value at low roughness; this one is a deeper value with a controlled highlight."""
+    if name in bpy.data.materials:
+        return bpy.data.materials[name]
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes.get('Principled BSDF')
+    bsdf.inputs['Base Color'].default_value = (rgb[0], rgb[1], rgb[2], 1.0)
+    bsdf.inputs['Metallic'].default_value = metallic
+    bsdf.inputs['Roughness'].default_value = roughness
+    return mat
+
+
 def make_shield(r,mats):
     steel,gold,wood,glow,dark=mats
-    # Vertical shield face; exported axis conversion preserves its facing plane.
+    # The face keeps the proven three nested shells: a thin single shell rendered see-through from
+    # the inside (the match camera sees the back of the shield during the block pose), which read as
+    # a hole with the arena visible through it. Detail is additive on top of that solid face: a
+    # raised gold rim, six radial ribs and a glowing boss core.
+    face = shield_material('ww-shield-face', (0.42, 0.47, 0.55), 0.88, 0.26)
     ico(r,'Shield boss',(0,-.15,.5),(.13,.08,.13),gold)
     for z,fac in [(0.5,1),(0.42,.72),(0.34,.45)]:
-        ico(r,'Shield ring',(0,-.13,z),(.42*fac,.075,.5*fac),steel if fac==1 else gold)
+        ico(r,'Shield ring',(0,-.13,z),(.42*fac,.075,.5*fac),face if fac==1 else gold)
     box(r,'Shield rim',(0,-.12,.5),(.88,.08,.94),gold)
+    torus(r,'Shield gold rim',(0,-.138,.5),.452,.028,gold,(math.pi/2,0,0))
+    for i in range(6):
+        a=i*math.pi/3
+        box(r,f'Shield rib {i}',(math.sin(a)*.205,-.152,.5+math.cos(a)*.205),(.022,.014,.32),gold,(0,a,0))
+    ico(r,'Shield boss core',(0,-.168,.5),(.060,.022,.060),glow)
     return r
 
 def make_orb(r,mats,kind='ki_orb'):

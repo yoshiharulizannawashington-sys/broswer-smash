@@ -1,0 +1,14 @@
+{
+ "props": [
+  {
+   "name": "Antique Estoc",
+   "file": "props/antique_estoc.glb",
+   "source": "https://polyhaven.com/a/antique_estoc",
+   "licence": "CC0",
+   "kind": "weapon",
+   "triangles": 8246,
+   "sizeBytes": 2527896,
+   "addedAt": "2026-11-03T00:04:07.226Z"
+  }
+ ]
+}

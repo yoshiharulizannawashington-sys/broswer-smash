@@ -1,0 +1,43 @@
+{
+  "source": "Sketchfab \"T-800 Blood - yes rigged bone (Terminator 2)\" by KenzoDkohno22T",
+  "uid": "b72e4bad70084e53b38f139f0d9bf178",
+  "creator": "KenzoDkohno22T",
+  "license": "CC BY 4.0",
+  "sourceUrl": "https://sketchfab.com/3d-models/t-800-blood-yes-rigged-bone-terminator-2-b72e4bad70084e53b38f139f0d9bf178",
+  "assetKind": "imported-licensed",
+  "rosterSlot": "arnold_schwarzenegger",
+  "displayName": "Arnold Schwarzenegger (T-800)",
+  "status": "PROMOTED \u2014 normalized PBR body, 25 retargeted clips, 19/19 canonical slots; fully watertight at 0 open / 0 non-manifold after closing the final 49 hand/finger-joint edges on 2026-11-13; live 13/13 migration verified.",
+  "verified": {
+    "bytes": 3915176,
+    "sha256": "47e835387a11068c486befa94f4253a87c1270fe9ed2dea8a41aa9247b50944a",
+    "height": 1.88,
+    "feetY": 0,
+    "bones": 53,
+    "canonicalSlots": 19,
+    "clips": 25,
+    "triangles": 21584,
+    "vertices": 21874,
+    "materials": 4,
+    "textures": 4,
+    "file": "public/models/characters/imported/t800/t800_animated.glb",
+    "pbrConversion": "scripts/convert-specgloss-to-pbr.mjs",
+    "retargetReport": "artifacts/t800/prepared/retarget-fixed.log",
+    "inspectedWith": "node scripts/inspect-character-glb.mjs public/models/characters/imported/t800/t800_animated.glb",
+    "topologyRepair": "artifacts/a1-combat/source-topology-review.json",
+    "topologyBefore": "artifacts/source-topology-before/t800_animated.glb",
+    "topologyAfter": "artifacts/t800/watertight/t800_split_final.glb",
+    "topologyFinal": "public/models/characters/imported/t800/t800_animated.glb",
+    "watertight": {
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "budget": 80,
+      "vertexCount": 21874,
+      "capFacesAdded": 49
+    },
+    "finalRepairLog": "artifacts/t800/watertight/repair-split-final.log",
+    "finalInspectLog": "artifacts/t800/watertight/inspect-promoted.log",
+    "liveMigrationLog": "artifacts/t800/watertight/live-t800-migration.log",
+    "liveMigration": "13/13 checks passed; 25/25 clips moving; no page errors"
+  }
+}

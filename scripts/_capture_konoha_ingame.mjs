@@ -1,0 +1,32 @@
+import { createServer } from 'node:http';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { resolve, normalize, sep, extname } from 'node:path';
+import { chromium } from 'playwright';
+const root=process.cwd(), out='artifacts/environment/konoha/in-game'; await mkdir(out,{recursive:true});
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml'};
+const server=createServer(async(req,res)=>{try{const pathname=decodeURIComponent(new URL(req.url||'/','http://x').pathname);if(pathname==='/api/models/sources'){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({sources:[],roster:{launch:[],manifestKeys:[]}}));return;}let rel=normalize(pathname).replace(/^[/\\]+/,'');if(!rel)rel='index.html';if(['js','assets','models','data'].some(d=>rel===d||rel.startsWith(d+sep)))rel='public'+sep+rel;const file=resolve(root,rel);if(file!==root&&!file.startsWith(root+sep)){res.writeHead(403);res.end('Forbidden');return;}const bytes=await readFile(file);res.writeHead(200,{'Content-Type':mime[extname(file).toLowerCase()]||'application/octet-stream'});res.end(bytes);}catch{if(!res.headersSent)res.writeHead(404);res.end('Not found');}});
+await new Promise(d=>server.listen(0,'127.0.0.1',d)); const origin='http://127.0.0.1:'+server.address().port;
+const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--ignore-gpu-blocklist','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+const page=await browser.newPage({viewport:{width:1440,height:900}}); page.setDefaultTimeout(180000);
+const errors=[]; page.on('pageerror',e=>errors.push(e.stack||String(e))); page.on('console',m=>{if(m.type()==='error') errors.push('console: '+m.text());});
+await page.route('https://unpkg.com/three@0.152.2/**', async route=>{const url=new URL(route.request().url());const p=resolve(root,'node_modules/three',url.pathname.replace('/three@0.152.2/',''));try{await route.fulfill({status:200,contentType:'text/javascript; charset=utf-8',body:await readFile(p)});}catch{await route.fulfill({status:404,body:'missing'});}});
+await page.goto(origin+'/public/index.html',{waitUntil:'domcontentloaded'});
+await page.waitForFunction(()=>window.__browserSmashAssets?.app?.status==='running'&&window.__browserSmashMatch&&window.__browserSmashStep&&window.fighters?.length===2,null,{timeout:120000,polling:200});
+const results=[];
+for(const key of ['konoha_main_street','konoha_hokage_rock','konoha_gates']){
+  await page.evaluate(k=>window.__browserSmashSelect.chooseArena(k),key);
+  await page.waitForFunction(k=>window.__browserSmashWorld?.location===k,key,{timeout:60000});
+  await page.waitForFunction(()=>{const s=window.__browserSmashAssets?.konohaLandmarks;return s?.status==='loaded'||s?.status==='fallback';},null,{timeout:120000,polling:200});
+  await page.evaluate(()=>{ const play=document.querySelector('#play'); if(play) play.click(); });
+  await page.waitForFunction(()=>window.__browserSmashMatch?.()?.status==='fighting'||window.__browserSmashMatch?.()?.status==='countdown',null,{timeout:30000,polling:200}).catch(()=>{});
+  await page.evaluate(()=>window.__browserSmashSpawnFighters());
+  await page.evaluate(()=>window.__browserSmashStep(0.8));
+  await page.waitForTimeout(600);
+  const state=await page.evaluate(()=>({key:window.__browserSmashWorld?.location,world:window.__browserSmashWorld?.world,assets:window.__browserSmashAssets?.konohaLandmarks,scene:{children:window.__browserSmashScene?.children.length},fighters:window.fighters.map(f=>({x:+f.position.x.toFixed(2),y:+f.position.y.toFixed(2),z:+f.position.z.toFixed(2)})),camera:(()=>{const c=window.smashCamera?.camera;if(!c)return null;const e=c.matrixWorld.elements;const d={x:-e[8],y:-e[9],z:-e[10]};const m=window.__browserSmashScene?.getObjectByName('konoha_hokage_mountain');const p=m?m.position.clone():null;const q=p?p.clone().project(c):null;return {pos:[+c.position.x.toFixed(1),+c.position.y.toFixed(1),+c.position.z.toFixed(1)],dir:[+d.x.toFixed(2),+d.y.toFixed(2),+d.z.toFixed(2)],mountainWorld:p?.toArray().map(v=>+v.toFixed(1)),ndc:q?.toArray().map(v=>+v.toFixed(2))};})()}));
+  await page.screenshot({path:`${out}/${key}.png`});
+  results.push(state);
+  console.log(key,JSON.stringify(state));
+}
+await writeFile(out+'/capture-report.json',JSON.stringify({results,errors},null,2));
+if(errors.length) throw new Error(errors.slice(0,4).join('\n---\n'));
+await browser.close(); server.close();

@@ -1,0 +1,58 @@
+{
+ "id": "thor_rigged",
+ "sourceModel": "Thor (Textured) (No Rig)",
+ "sourceUid": "266488af3874414a8dfa9f488e738aed",
+ "creator": null,
+ "license": null,
+ "sourceFile": "artifacts/asset-fetch/thor/thor.glb",
+ "notes": "Auto-rigged in Blender 4.2.23 by scripts/autorig_batch.py from the supplied unrigged body. 19 canonical bones, 12496 vertices, 0 unweighted, 4 max influences. Staged only: not on the launch roster. 25-clip roster animation set retargeted onto the exact 19-bone rig.",
+ "rig": {
+  "bones": 19,
+  "canonicalSlots": 19,
+  "height": 1.88,
+  "feetY": 0,
+  "vertices": 12496,
+  "unweighted": 0,
+  "maxInfluences": 4,
+  "armLength": 0.3508,
+  "legLength": 0.4153,
+  "joints": {
+   "pelvis": 0.0383,
+   "torso": 0.0285,
+   "head": 0.012,
+   "leftArm": 0.0403,
+   "leftFore": 0.007,
+   "rightArm": 0.0566,
+   "rightFore": 0.08,
+   "leftLeg": 0.0778,
+   "leftShin": 0.0654,
+   "rightLeg": 0.0306,
+   "rightShin": 0.032,
+   "spine": 0.0551,
+   "leftClavicle": 0.0592,
+   "rightClavicle": 0.0592,
+   "neck": 0.0618,
+   "leftHand": 0.0346,
+   "rightHand": 0.1378,
+   "leftFoot": 0.0712,
+   "rightFoot": 0.0468
+  },
+  "symmetry": {
+   "leftArm": 0,
+   "leftFore": 0,
+   "leftHand": 0,
+   "leftLeg": 0,
+   "leftShin": 0,
+   "leftFoot": 0
+  }
+ },
+ "validation": "artifacts/rig-batch/validation.json",
+ "stagedAt": "2026-11-10T18:47:44.353Z",
+ "animation": {
+  "clips": 25,
+  "donor": "public/models/characters/roster/thor.glb",
+  "retarget": "scripts/rig-clips-to-body.mjs retarget",
+  "approach": "bind-pose retarget at 30 fps; grounded clips lifted once at the Hips, root motion omitted",
+  "report": "artifacts/rig-batch/animated/thor-retarget.json"
+ }
+}

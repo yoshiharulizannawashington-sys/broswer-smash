@@ -10,7 +10,7 @@ You are working in the existing Browser Smash repository, not a new game. Preser
 3. Make those fighters animate, move, fight, and use their signature attacks through the existing game systems.
 4. Generalize the asset pipeline for future roster models.
 5. Improve the world renderer and camera without destabilizing gameplay.
-6. Later integrate large environment packages (New York/Avengers Tower, Hogwarts, Death Star, Valley of the End, and other supplied maps).
+6. Later integrate large environment packages (New York/Avengers Tower, Hogwarts, Konoha, Valley of the End, and other supplied maps).
 
 The pulled-back cinematic camera and high-quality 3D environments are long-term non-negotiable goals, but character integration is the current priority. Do not spend the first pass building every future world.
 
@@ -28,6 +28,11 @@ The pulled-back cinematic camera and high-quality 3D environments are long-term 
 - Animation pipeline notes: `assets/blender/CHARACTER_ANIMATION_PIPELINE.md`
 - Character package installer: `scripts/install-character-assets.mjs`
 - Runtime browser smoke test: `scripts/browser-smoke.mjs`
+- Asset validator: `scripts/validate-assets.mjs` (`npm run validate:assets`)
+- Runtime roster audit: `scripts/audit-roster.mjs` (`npm run audit:roster`) — mounts every selectable fighter's prefab rig, weapon and surface detail.
+- Generated surface detail: `public/js/surface_detail.js`. Per-arena sky IBL: `public/js/sky_environment.js`.
+- Build config: `vite.config.js` — the site root is `public/`, output goes to `dist/`
+- Authored arena loader: `public/js/arenas/cinematic_arenas.js` (wired into `applyMap` in `public/js/main.js`)
 - CI: `.github/workflows/validate-game.yml`, `.github/workflows/build-character-animations.yml`, and `.github/workflows/build-final-valley.yml`.
 
 These are known repository paths, not a substitute for checking the current branch. Read relevant code and git status before editing.
@@ -39,7 +44,6 @@ The repository already contains environment/Blender assets, including:
 - `public/assets/character_weapons.glb`
 - `public/assets/final_valley.glb`
 - `public/assets/arenas/asgard.glb`
-- `public/assets/arenas/deathstar.glb`
 - `public/assets/arenas/helicarrier.glb`
 - `public/assets/arenas/hogwarts.glb`
 - `public/assets/arenas/tournament.glb`
@@ -88,7 +92,7 @@ The current bake script authors procedural starter animations based on rig/bone-
 - Preserve the working direct Three.js renderer. Do not re-enable previously problematic post-processing blindly; verify actual rendering after any pipeline change.
 - Keep cache-busting query versions consistent across main module imports, InputManager dependencies, and both HTML entrypoints when the project requires it.
 - Preserve existing arenas and their procedural content.
-- Later environments should use supplied real assets when available and include terrain/architecture detail, PBR materials, lighting, atmospheric depth, collision proxies, scale/LOD strategy, and performance checks. Future targets include a NYC skyline with a major Avengers Tower landmark, Hogwarts Castle, Death Star interiors/exteriors, and Valley of the End. Do not mislabel a prototype as a finished photorealistic world.
+- Later environments should use supplied real assets when available and include terrain/architecture detail, PBR materials, lighting, atmospheric depth, collision proxies, scale/LOD strategy, and performance checks. Future targets include a NYC skyline with a major Avengers Tower landmark, Hogwarts Castle, Konoha, and Valley of the End. The Death Star is permanently cancelled and archived under `archive/cancelled/death-star/`. Do not mislabel a prototype as a finished photorealistic world.
 - Large map assets should be loaded on demand, not all loaded simultaneously.
 
 ## Safe workflow
@@ -96,7 +100,7 @@ The current bake script authors procedural starter animations based on rig/bone-
 1. Check `git status`, branch, latest commit, and latest Actions results. Do not discard or overwrite user changes.
 2. Read the specific code and existing tests before editing.
 3. Make one coherent, reviewable change at a time.
-4. Run `npm run build`, relevant syntax checks, and existing validation scripts; use Playwright/browser smoke tests when available.
+4. Run `npm run build`, relevant syntax checks, and existing validation scripts (`npm run validate:assets`, `npm run audit:roster`, `npm run test:smoke`); use Playwright/browser smoke tests when available.
 5. Check actual runtime asset requests, browser errors, character animation, and gameplay where tools permit. Distinguish source inspection from verified runtime behavior.
 6. Inspect the diff and rerun tests after fixes.
 7. Commit coherent changes only when appropriate and permitted. Never claim tests, Blender, model integration, or commits succeeded unless they did.
@@ -106,3 +110,29 @@ The current bake script authors procedural starter animations based on rig/bone-
 ## Completion standard
 
 A successful first character milestone means the **actual supplied** Goku and Iron Man models load through the normal selection path; both can move, animate, attack, take damage, guard/dodge, use their signature moves, and complete a match; the camera remains pulled back; and browser tests show no critical failures. If the actual source assets are unavailable, report the pipeline as prepared, not the milestone as complete.
+
+## Standing direction - enhance the existing game, do not rebuild it
+
+Browser Bros already has worlds, arenas, a roster, models, animations, combat and a working render
+path. The objective is to make that existing game substantially better, not to replace it.
+
+- Upgrade before replacing. Inspect what exists, keep functioning systems, improve the current
+  implementation, and only swap an asset when the improvement is visible and measurable. Keep
+  backups and a rollback path.
+- Characters: better faces, proportions, materials, armour and equipment; character-specific
+  animations, combos, signature moves, ultimates and transformations. Preserve identity, roster
+  count, movesets and stats unless explicitly authorised.
+- Worlds: better architecture, textures, lighting, atmosphere, landmarks, explorable and
+  interactive space at both ground and aerial scale. Do not discard existing maps.
+- Gameplay: responsiveness, impact, combos, block, dodge, grabs, knockback, recovery, flight and
+  aerial combat, weapons, destruction and environmental interaction.
+- Camera and visual polish: fix real defects with a focused repair plus acceptance test, but never
+  let one polish issue block unrelated character, environment or gameplay production.
+- Work autonomously through routine, reversible, scoped changes. Ask only for destructive,
+  irreversible, ambiguous or permission-dependent decisions. Preserve all dirty work: never reset,
+  clean, discard, commit or push without explicit authorisation.
+- Definition of progress: count better-looking characters, environments, animations, combat,
+  exploration and cinematics. More docs, audits, manifests, tests or placeholder geometry are not a
+  delivered improvement. Every phase must produce playable or visible results with captured
+  evidence, and software-rendered (SwiftShader) captures are composition evidence only - never
+  hardware visual or performance verification.

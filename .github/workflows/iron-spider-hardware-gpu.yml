@@ -1,0 +1,133 @@
+name: Iron Spider hardware acceptance (self-hosted GPU)
+
+# Manual-only: this job must run on a trusted physical-GPU machine.
+# The default runner labels are [self-hosted, linux, x64, gpu]. Edit the dispatch input or this
+# workflow if your runner uses different labels.
+#
+# The headed run needs an active X display. Use the headless input only on a runner that has
+# already been verified to expose the physical GPU in headless Chromium.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_labels:
+        description: JSON array of labels for the self-hosted GPU runner
+        required: true
+        default: '["self-hosted","linux","x64","gpu"]'
+        type: string
+      headless:
+        description: Use only on a verified headless-GPU runner
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iron-spider-hardware-gpu
+  cancel-in-progress: false
+
+jobs:
+  iron-spider-hardware:
+    name: Iron Spider on physical GPU
+    runs-on: ${{ fromJSON(inputs.runner_labels) }}
+    timeout-minutes: 45
+    env:
+      HARDWARE_GPU: "1"
+      HARDWARE_GPU_ONLY: "iron-spider"
+      HARDWARE_GPU_HEADLESS: ${{ inputs.headless && '1' || '0' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save playwright
+          npx playwright install chromium
+
+      - name: Require a display for a headed run
+        if: ${{ !inputs.headless }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${DISPLAY:-}" ]; then
+            echo "::error::DISPLAY is not set. Use a runner with an active GPU-backed display, or dispatch with headless=true only after verifying the hardware renderer in headless mode."
+            exit 1
+          fi
+          echo "Using display ${DISPLAY}"
+
+      - name: Remove stale hardware evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf artifacts/hardware-gpu
+          rm -f artifacts/iron-spider/hardware-run.json
+
+      - name: Record GPU host details
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/hardware-gpu
+          {
+            echo "recordedAt: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "hostname: $(hostname)"
+            echo "kernel: $(uname -srm)"
+            echo "DISPLAY: ${DISPLAY:-unset}"
+            echo "WAYLAND_DISPLAY: ${WAYLAND_DISPLAY:-unset}"
+            echo "node: $(node --version)"
+            echo "npm: $(npm --version)"
+            echo "playwright: $(npx playwright --version 2>/dev/null || echo unavailable)"
+            echo "--- nvidia-smi ---"
+            nvidia-smi 2>&1 || true
+            echo "--- lspci display devices ---"
+            lspci 2>/dev/null | grep -Ei 'VGA|3D|Display' || true
+          } > artifacts/hardware-gpu/host-gpu.txt
+
+      - name: Record run start
+        id: run_start
+        shell: bash
+        run: echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: Run Iron Spider hardware acceptance
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run accept:hardware-gpu
+
+      - name: Enforce hardware renderer and report
+        if: always()
+        shell: bash
+        env:
+          RUN_STARTED_AT: ${{ steps.run_start.outputs.started_at }}
+          EXPECTED_HEADLESS: ${{ inputs.headless && 'true' || 'false' }}
+        run: |
+          node scripts/verify-iron-spider-hardware-evidence.mjs \
+            --started-at "$RUN_STARTED_AT" \
+            --expected-headless "$EXPECTED_HEADLESS"
+
+      - name: Upload hardware evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: iron-spider-hardware-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/hardware-gpu/
+            artifacts/iron-spider/hardware-run.json
+            artifacts/iron-spider-*.png
+          if-no-files-found: warn
+          retention-days: 30

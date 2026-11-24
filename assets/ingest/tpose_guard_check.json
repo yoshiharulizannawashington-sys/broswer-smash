@@ -1,0 +1,48 @@
+{
+ "id": "tpose_guard_check",
+ "source": "artifacts/dev/imports/impmvys9rj82/asset/street-soldier.glb",
+ "output": "public/models/characters/imported/tpose_guard_check.glb",
+ "targetHeight": 1.83,
+ "boneMap": {
+  "mixamorig:Hips": "Hips",
+  "mixamorig:Spine": "Spine",
+  "mixamorig:Spine1": "Chest",
+  "mixamorig:Neck": "Neck",
+  "mixamorig:Head": "Head",
+  "mixamorig:LeftShoulder": "LeftShoulder",
+  "mixamorig:LeftArm": "LeftArm",
+  "mixamorig:LeftForeArm": "LeftForeArm",
+  "mixamorig:LeftHand": "LeftHand",
+  "mixamorig:RightShoulder": "RightShoulder",
+  "mixamorig:RightArm": "RightArm",
+  "mixamorig:RightForeArm": "RightForeArm",
+  "mixamorig:RightHand": "RightHand",
+  "mixamorig:LeftUpLeg": "LeftUpLeg",
+  "mixamorig:LeftLeg": "LeftLeg",
+  "mixamorig:LeftFoot": "LeftFoot",
+  "mixamorig:RightUpLeg": "RightUpLeg",
+  "mixamorig:RightLeg": "RightLeg",
+  "mixamorig:RightFoot": "RightFoot"
+ },
+ "clipMap": {
+  "Idle": "Idle",
+  "Walk": "Walk",
+  "Run": "Run",
+  "Jump": "Idle",
+  "Punch": "Idle",
+  "Kick": "Idle",
+  "Kamehameha": "Idle"
+ },
+ "clipNotes": {
+  "Idle": "source clip \"Idle\"",
+  "Walk": "source clip \"Walk\"",
+  "Run": "source clip \"Run\"",
+  "Jump": "SUBSTITUTE: rehearsal of \"Idle\" for jump",
+  "Punch": "SUBSTITUTE: rehearsal of \"Idle\" for punch",
+  "Kick": "SUBSTITUTE: rehearsal of \"Idle\" for kick",
+  "Kamehameha": "SUBSTITUTE: rehearsal of \"Idle\" for kamehameha"
+ },
+ "provenance": {
+  "notes": "Prepared by scripts/prepare-character.mjs from street-soldier.glb (rigged). Licence metadata is informational only."
+ }
+}

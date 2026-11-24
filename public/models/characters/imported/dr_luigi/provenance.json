@@ -1,0 +1,32 @@
+{
+  "source": "Sketchfab \"Dr Mario World - Dr Luigi\" by Dola, https://sketchfab.com/3d-models/dr-mario-world-dr-luigi-2e7016d3f03c4433a34a59095db805e2",
+  "uid": "2e7016d3f03c4433a34a59095db805e2",
+  "creator": "Dola",
+  "license": "CC BY 4.0 (CC Attribution)",
+  "retrieved": "2026-11-13",
+  "downloadedWith": "scripts/fetch-environment-asset.mjs — official Sketchfab download endpoint, owner's token (never logged)",
+  "assetKind": "imported-rigged-promoted",
+  "rosterSlot": "luigi",
+  "displayName": "Luigi",
+  "status": "PROMOTED into the stable Luigi slot. Exact supplied body: 91 bones, 19/19 canonical roles, 3 skinned meshes, 5,489 triangles, 1.756 m with feet at 0.001. The project's 25-clip Luigi set was retargeted from roster/luigi.glb with 0 unresolved target nodes. Source faces -Z; manifest yawOffset 180 presents the face. Known open-shell limitation: 181 boundary edges / 6 non-manifold edges in the sash and wrap hems. The original roster body is rollbackUrl.",
+  "verified": {
+    "bytes": 1873144,
+    "sha256": "716cd309cfde8751acf601d6fd8fbba42097396aefd2bd5a4a899ab2f6f1e049",
+    "height": 1.756,
+    "feetY": 0.001,
+    "bones": 91,
+    "canonicalSlots": 19,
+    "skinnedMeshes": 3,
+    "triangles": 5489,
+    "clips": 25,
+    "sourceClips": 0,
+    "openBoundaryEdges": 181,
+    "nonManifoldEdges": 6,
+    "file": "public/models/characters/imported/dr_luigi/dr_luigi_animated.glb",
+    "sourceArchive": "artifacts/asset-fetch/2e7016d3f03c4433a34a59095db805e2/model.glb",
+    "retargetReport": "artifacts/character/luigi/retarget.log",
+    "runtimeEvidence": "artifacts/hd-fighter/luigi/final-selection.png, final-live.png, live-check.json",
+    "runtimeTest": "bash scripts/run-browser-test.sh scripts/verify-luigi-live.mjs — 7/7 PASS"
+  },
+  "requiredBeforeActivation": []
+}

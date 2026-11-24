@@ -1,0 +1,338 @@
+// Playable geometry for every selectable arena.
+//
+// The procedural and authored arenas in main.js are built at a much larger scale than the
+// old fight bounds (a fixed 34 x 16 metre box), so a fight staged in Asgard's plaza, the
+// Hogwarts nave was confined to a strip in the middle of the room while the rest of the environment sat outside an invisible wall.
+//
+// A layout is plain data plus three small pure functions, which is why it can be unit
+// tested in node without a browser or a WebGL context:
+//   bounds     playable rectangle; fighters are clamped inside it, so it doubles as the
+//              ring-out line for stages that want one.
+//   blocks     solid volumes the fighters collide with. `top` is how high the volume is:
+//              feet above `top - step` can stand on it, anything lower is pushed out.
+//   ground     height of the arena floor at spawn.
+//   spawns     where each fighter starts, rather than one shared offset for all maps.
+//   camera     distance hint used by the selection screen for its map cards.
+
+import { WORLD_LOCATIONS } from '../worlds/world_catalog.js';
+
+export const STEP_HEIGHT = 0.42;
+/** How tall a fighter stands, used to decide whether a raised block is overhead or a wall. */
+export const BODY_HEIGHT = 1.9;
+
+const k = (x0, z0, x1, z1, top) => ({ x0, z0, x1, z1, top });
+const c = (x, z, r, top) => ({ x, z, r, top });
+
+const LEGACY_LAYOUTS = {
+  valley: {
+    label: 'Valley of Echoes',
+    kind: 'open',
+    bounds: { x0: -60, x1: 60, z0: -55, z1: 40 },
+    ground: 0,
+    spawns: [{ x: -6, z: 0 }, { x: 6, z: 0.7 }],
+    blocks: [
+      c(-27, -24, 8, 13), c(25, -24, 8, 13),
+      k(-8.1, -49, -0.2, -47, 9.3), k(-4.3, -49.1, 4.3, -46.9, 9.3),
+      c(-22, -16, 2, 8), c(22, -18, 2, 10), c(-36, 8, 2.5, 12), c(36, 12, 2.5, 9),
+      c(-12, -32, 2, 7), c(15, -38, 2, 11), c(48, -5, 2.4, 13), c(-50, -10, 2.4, 10)
+    ]
+  },
+  // Obsidian Volcano, Frostfall Citadel and Neon Megacity were fully procedural arenas with no
+  // authored counterpart. They are archived in archive/part10-legacy/procedural-stages.md.
+  finalvalley: {
+    label: 'Final Valley',
+    kind: 'open',
+    bounds: { x0: -58, x1: 58, z0: -66, z1: 22 },
+    ground: 0,
+    spawns: [{ x: -6.4, z: -30 }, { x: 6.4, z: -29.3 }],
+    blocks: []
+  },
+  tournament: {
+    label: 'DBZ World Tournament',
+    kind: 'stage',
+    bounds: { x0: -17.2, x1: 17.2, z0: -27.2, z1: 3.2 },
+    ground: 0.18,
+    spawns: [{ x: -7, z: -12 }, { x: 7, z: -11.3 }],
+    // The authored ring is enclosed by stands and a gate; a 1.0-scale shot cropped them
+    // off and left a white slab. Pull back far enough to read the whole tournament court.
+    camera: { yaw: 0, tilt: .18, scale: 1.9, skyline: true },
+    blocks: []
+  },
+  starktower: {
+    label: 'Helicarrier / Stark Penthouse',
+    kind: 'interior',
+    bounds: { x0: -35, x1: 52, z0: -49, z1: -3 },
+    ground: 0.05,
+    spawns: [{ x: -11, z: -24 }, { x: 15, z: -23.3 }],
+    blocks: [
+      k(16.5, -42.2, 53.6, -41.1, 13.5), k(53.4, -41, 54.4, -7, 13.5),
+      { x0: 27.4, z0: -29.5, x1: 36.6, z1: -28.1, top: 1.7 },
+      { x0: 39.5, z0: -15.3, x1: 48.5, z1: -13.7, top: 1.0 },
+      { x0: 41.6, z0: -31.1, x1: 44.4, z1: -28.9, top: 1.4 },
+      { x0: 15.8, z0: -26.3, x1: 20.2, z1: -21.7, top: 9.1 }
+    ]
+  },
+  asgard: {
+    label: 'Asgard',
+    kind: 'open',
+    bounds: { x0: -54, x1: 54, z0: -40, z1: 46 },
+    ground: 0,
+    spawns: [{ x: -3.6, z: -20 }, { x: 3.6, z: -19.3 }],
+    blocks: [
+      { x: -16, z: -1, r: 4.2, top: 0.7 },
+      // Small houses flanking the avenue: two rings of them, mirrored either side.
+      ...[-1, 1].flatMap(side => [0, 1, 2, 3, 4, 5, 6].map(i => {
+        const x = side * (18 + (i % 3) * 7);
+        const z = 26 - i * 10;
+        const w = (7 + (i % 2) * 2) * 0.5;
+        return { x0: x - w, z0: z - w, x1: x + w, z1: z + w, top: 6 + (i % 4) * 1.5 + 3.8 };
+      }))
+    ]
+  },
+  // Imported environment arenas assembled in Blender. Their playable plaza decks are baked into
+  // the GLB, so the layout only has to describe the walkable rectangle, spawns and camera.
+  skyloft: {
+    label: 'Skyloft · Skyward Isle',
+    kind: 'open',
+    hideFloor: true,
+    bounds: { x0: -21, x1: 21, z0: -15.5, z1: 15.5 },
+    ground: 0.14,
+    spawns: [{ x: -6.2, z: -2.0 }, { x: 6.2, z: 2.0 }],
+    blocks: [],
+    camera: { yaw: 0, tilt: 0.22, scale: 1.45, skyline: false }
+  },
+  mariokart: {
+    label: 'Mario Kart · Wuhu Island Headland',
+    kind: 'open',
+    hideFloor: true,
+    // Fight across Wuhu's natural west headland and the grass-and-rock isthmus into the Sunshine
+    // Airport atoll, not the reclaimed apron that used to cover this coast. The stage uses the
+    // combined Wuhu + Sunshine Airport GLB; main.js bakes the same footprint from both imported
+    // lands and the isthmus, so fighters follow the grass, rock and shoreline instead of a flat
+    // runway height.
+    // The 34×28 m battlefield spans Wuhu's west headland, the natural grass-and-rock isthmus and a
+    // new low atoll shelf beyond the airport's western rim. The shelf is built at mount from the
+    // same grass/rock materials as the isthmus, so the east half is solid atoll rather than the
+    // removed runway or the lagoon. The lower bound is -4.5 so the Wuhu side remains on the island
+    // shelf while the isthmus meets the airport ledge.
+    bounds: { x0: -45, x1: -11, z0: -38, z1: -10 },
+    ground: -4.5,
+    spawns: [{ x: -42, z: -22 }, { x: -26, z: -12 }],
+    blocks: [],
+    camera: { yaw: 0, tilt: 0.23, scale: 1.5, skyline: false }
+  },
+  konoha_overlook: {
+    label: 'Konoha · Hidden Leaf Village',
+    kind: 'open',
+    hideFloor: true,
+    // The imported village has its own streets, walls and cliff. This 22 x 10 m intersection is
+    // the flat open surface inside the gate; the authored overlook that used to sit in front of
+    // it is removed at mount and is not part of the stage.
+    bounds: { x0: -14, x1: 8, z0: -108, z1: -98 },
+    ground: -0.5,
+    // Keep both spawns on the open intersection itself. The old -9/-105 and 3/-101 pair
+    // sampled the pagoda roof and the courtyard wall, so the round opened with both fighters
+    // grounded on scenery instead of on the stage floor.
+    spawns: [{ x: -6, z: -104 }, { x: 1, z: -102 }],
+    blocks: [],
+    camera: { yaw: 0, tilt: 0.2, scale: 1.8, skyline: true }
+  },
+  hogwarts: {
+    label: 'Hogwarts Great Hall',
+    kind: 'interior',
+    bounds: { x0: -21, x1: 21, z0: -75, z1: 12 },
+    ground: 0,
+    // The hall runs 67 m away from the spawn toward -Z; the default +Z shot backs into the
+    // entrance wall three metres behind the fighters. Turn the duel camera down the hall.
+    camera: { yaw: Math.PI },
+    // Spawn on the open play centre of the hall, not the entrance vestibule: the authored
+    // doorway wall sat three metres behind the old z -8 spawn and capped every duel shot there.
+    spawns: [{ x: -8, z: -31.5 }, { x: 8, z: -30.8 }],
+    blocks: [
+      // The four house tables are low enough to jump onto and high enough to block a walk.
+      { x0: -13.7, z0: -65.5, x1: -10.3, z1: 1.5, top: 1.3 },
+      { x0: -5.7, z0: -65.5, x1: -2.3, z1: 1.5, top: 1.3 },
+      { x0: 2.3, z0: -65.5, x1: 5.7, z1: 1.5, top: 1.3 },
+      { x0: 10.3, z0: -65.5, x1: 13.7, z1: 1.5, top: 1.3 },
+      // Nave columns.
+      ...[-66, -54.7, -43.4, -32.1, -20.8, -9.5, 1.8].flatMap(z => [
+        c(-20, z, 1.6, 19), c(20, z, 1.6, 19)
+      ])
+    ]
+  }
+};
+
+// The five reference worlds contribute one layout per battle location. Their collision
+// volumes come from the world geometry itself (see worlds/world_catalog.js), so a stage
+// inside a world shares the same walls, terraces and catwalks as the rest of the map.
+const WORLD_LAYOUTS = Object.fromEntries(WORLD_LOCATIONS.map(location => [location.id, location.layout]));
+
+export const ARENA_LAYOUTS = Object.freeze({ ...LEGACY_LAYOUTS, ...WORLD_LAYOUTS });
+
+const DEFAULT_KEY = 'valley';
+
+export function layoutFor(key) {
+  return ARENA_LAYOUTS[key] || ARENA_LAYOUTS[DEFAULT_KEY];
+}
+
+export function layoutKeys() {
+  return Object.keys(ARENA_LAYOUTS);
+}
+
+/** Walkable height at a point: the floor, the highest reachable block, or imported terrain. */
+export function groundHeightAt(x, z, layout, feetY = 0, step = STEP_HEIGHT) {
+  let height = layout?.ground ?? 0;
+  for (const block of layout?.blocks || []) {
+    const top = block.top;
+    if (top == null || top > feetY + step) continue;
+    if (block.r != null) {
+      if (Math.hypot(x - block.x, z - block.z) <= block.r) height = Math.max(height, top);
+    } else if (x >= block.x0 && x <= block.x1 && z >= block.z0 && z <= block.z1) {
+      height = Math.max(height, top);
+    }
+  }
+  // Imported islands bake their real surface into a layout height sampler after the GLB mounts.
+  // It is the top walkable surface, not a step-limited block: a fighter approaching rising grass
+  // must follow it rather than walk through it. Authored decks remain the fallback beneath it.
+  //
+  // A steep rock face or low boulder is also the top surface sampled by the heightfield, so without
+  // this gate groundHeightAt would lift the fighter onto it before resolveCollision saw the
+  // migrated solid block. Once the fighter is standing on the top (feet >= top - step), keep
+  // sampling it; below that, leave the base height and let the block push the fighter out.
+  const blockedBySolid = (layout?.blocks || []).some(block => (block.steep || block.lowBoulder)
+    && block.top != null && feetY < block.top - step
+    && (block.r != null
+      ? Math.hypot(x - block.x, z - block.z) <= block.r
+      : x >= block.x0 && x <= block.x1 && z >= block.z0 && z <= block.z1));
+  if (typeof layout?.heightAt === 'function' && !blockedBySolid) {
+    const terrain = layout.heightAt(x, z);
+    if (Number.isFinite(terrain)) height = Math.max(height, terrain);
+  }
+  return height;
+}
+
+/** True when the point is inside a solid volume the fighter's feet cannot stand on. */
+function insideSolid(block, x, z, feetY, step) {
+  if (block.top == null || feetY >= block.top - step) return 0;
+  // A deck, catwalk or roof above the fighter is not a wall: only collide with a raised
+  // volume when the fighter's body actually reaches its underside.
+  if (block.bottom != null && feetY + BODY_HEIGHT <= block.bottom) return 0;
+  if (block.r != null) {
+    const dx = x - block.x, dz = z - block.z;
+    const d = Math.hypot(dx, dz);
+    return d < block.r ? { dx, dz, d, penetration: block.r - d, circle: true } : null;
+  }
+  if (x > block.x0 && x < block.x1 && z > block.z0 && z < block.z1) {
+    const left = x - block.x0, right = block.x1 - x;
+    const near = z - block.z0, far = block.z1 - z;
+    const min = Math.min(left, right, near, far);
+    if (min === left) return { dx: -1, dz: 0, d: 0, penetration: left };
+    if (min === right) return { dx: 1, dz: 0, d: 0, penetration: right };
+    if (min === near) return { dx: 0, dz: -1, d: 0, penetration: near };
+    return { dx: 0, dz: 1, d: 0, penetration: far };
+  }
+  return null;
+}
+
+/**
+ * True when a world-space point sits inside a solid volume. Fighters use `resolveCollision`
+ * below, which needs a push direction; projectiles only need the yes/no, and a 3D point test is
+ * cheap enough to run for every live projectile each frame against a few hundred volumes.
+ * `bottom` is honoured so a shot fired under a deck is not blocked by the deck overhead.
+ */
+export function solidAt(x, y, z, layout) {
+  if (!layout) return false;
+  for (const block of layout.blocks || []) {
+    if (block.top == null || y > block.top) continue;
+    if (block.bottom != null && y < block.bottom) continue;
+    if (block.r != null) {
+      if (Math.hypot(x - block.x, z - block.z) <= block.r) return true;
+    } else if (x >= block.x0 && x <= block.x1 && z >= block.z0 && z <= block.z1) return true;
+  }
+  return false;
+}
+
+/**
+ * True when a solid volume sits on the segment between two world-space points. Melee uses
+ * this so a punch does not reach through a wall; it samples the line instead of building a
+ * mesh raycast, which keeps it cheap enough to run for every swing.
+ */
+export function solidBetween(from, to, layout, samples = 5) {
+  if (!layout || !from || !to) return false;
+  for (let i = 1; i < samples; i++) {
+    const t = i / samples;
+    if (solidAt(
+      from.x + (to.x - from.x) * t,
+      from.y + (to.y - from.y) * t,
+      from.z + (to.z - from.z) * t,
+      layout
+    )) return true;
+  }
+  return false;
+}
+
+/**
+ * Push a fighter out of every solid volume it overlaps and drop the inward part of its
+ * velocity, so walking into a wall slides along it instead of stopping dead.
+ */
+export function resolveCollision(position, velocity, radius, layout) {
+  if (!layout || !position) return position;
+  const feetY = position.y ?? 0;
+  for (const block of layout.blocks || []) {
+    const hit = insideSolid(block, position.x, position.z, feetY, STEP_HEIGHT);
+    if (!hit) continue;
+    let nx = hit.dx, nz = hit.dz;
+    let push = hit.penetration + radius;
+    if (hit.circle) {
+      if (hit.d < 1e-4) { nx = 1; nz = 0; } else { nx = hit.dx / hit.d; nz = hit.dz / hit.d; }
+      push = (block.r + radius) - hit.d;
+    }
+    position.x += nx * push;
+    position.z += nz * push;
+    if (velocity) {
+      const inward = velocity.x * nx + velocity.z * nz;
+      if (inward < 0) { velocity.x -= inward * nx; velocity.z -= inward * nz; }
+    }
+  }
+  return position;
+}
+
+/** Keep the fighter inside the playable rectangle, which doubles as the ring-out line. */
+export function clampToBounds(position, velocity, radius, layout) {
+  const b = layout?.bounds;
+  if (!b) return position;
+  const x0 = b.x0 + radius, x1 = b.x1 - radius, z0 = b.z0 + radius, z1 = b.z1 - radius;
+  if (position.x < x0) { position.x = x0; if (velocity && velocity.x < 0) velocity.x = 0; }
+  if (position.x > x1) { position.x = x1; if (velocity && velocity.x > 0) velocity.x = 0; }
+  if (position.z < z0) { position.z = z0; if (velocity && velocity.z < 0) velocity.z = 0; }
+  if (position.z > z1) { position.z = z1; if (velocity && velocity.z > 0) velocity.z = 0; }
+  return position;
+}
+
+/** A fighter this far outside the playable rectangle counts as a ring-out. */
+export function isOutOfBounds(position, layout, margin = 4) {
+  const b = layout?.bounds;
+  if (!b || !position) return false;
+  if (layout.fallBelow != null && position.y < layout.fallBelow) return true;
+  return position.x < b.x0 - margin || position.x > b.x1 + margin
+    || position.z < b.z0 - margin || position.z > b.z1 + margin;
+}
+
+/** Spawn positions in metres, mirrored either side of the arena's centre line. */
+export function spawnPoints(layout) {
+  const spawns = layout?.spawns || [{ x: -6, z: 0 }, { x: 6, z: 0 }];
+  // A layout may pin a spawn to an elevated deck (city roof, sky island, bridge deck);
+  // otherwise the walkable height at that point is used.
+  return spawns.map(spawn => ({
+    x: spawn.x,
+    z: spawn.z,
+    y: spawn.y != null ? spawn.y : groundHeightAt(spawn.x, spawn.z, layout)
+  }));
+}
+
+/** Human-readable footprint, used by the arena selection cards. */
+export function layoutSize(layout) {
+  const b = layout?.bounds;
+  if (!b) return { width: 0, depth: 0 };
+  return { width: Math.round(b.x1 - b.x0), depth: Math.round(b.z1 - b.z0) };
+}

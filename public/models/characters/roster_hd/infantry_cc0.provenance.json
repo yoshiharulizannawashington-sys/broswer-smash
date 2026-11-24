@@ -1,0 +1,30 @@
+{
+  "key": "hd_infantry_cc0",
+  "file": "roster_hd/infantry_cc0.glb",
+  "sourceUrl": "https://grab3d.com/models/characters/soldier/",
+  "downloadUrl": "https://grab3d.com/dl/soldier-rigged/soldier-rigged.glb",
+  "retrieved": "2026-11-06",
+  "publisher": "Grab3D (grab3d.com)",
+  "license": "CC0 1.0 Universal (public domain dedication) — stated on the publisher page, in the page metadata, and in its schema.org license field (https://creativecommons.org/publicdomain/zero/1.0/).",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "sha256": "b1f32017868a6f951c21c45b84646696431e6b4c813d563af37944123f673a59",
+  "measured": {
+    "bytes": 13566236,
+    "meshes": 1,
+    "vertices": 171277,
+    "triangles": 278969,
+    "materials": 1,
+    "textures": 3,
+    "images": [
+      "rig_basecolor.jpg",
+      "rig_normal.jpg",
+      "rig_metallic-rig_roughness.jpg"
+    ],
+    "joints": 24,
+    "animations": [
+      "run",
+      "walk"
+    ]
+  },
+  "caveat": "The publisher states CC0 and supplies no separate author credit; the rights claim is the publisher's, not an independently confirmed upstream author. Keep this record with the file and re-check before distribution."
+}

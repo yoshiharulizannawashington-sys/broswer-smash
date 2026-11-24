@@ -1,0 +1,18 @@
+{
+  "id": "street_soldier",
+  "attribution": "",
+  "notes": "Prepared by scripts/prepare-character.mjs from street-soldier.glb (rigged). Licence metadata is informational only.",
+  "originalFile": "artifacts/dev/imports/impmvzxdj8p1/asset/street-soldier.glb",
+  "output": "public/models/characters/imported/street_soldier.glb",
+  "scale": 0.9824,
+  "clips": [
+    "Idle",
+    "Jump",
+    "Punch",
+    "Kick",
+    "Kamehameha",
+    "Run",
+    "Walk"
+  ],
+  "ingestedAt": "2026-11-03T00:03:57.859Z"
+}

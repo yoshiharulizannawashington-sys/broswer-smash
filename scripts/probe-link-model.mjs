@@ -1,0 +1,33 @@
+import { createServer } from 'node:http';
+import { readFile, mkdir } from 'node:fs/promises';
+import { resolve, normalize, sep, extname } from 'node:path';
+import { chromium } from 'playwright';
+const out='artifacts/link-upgrade/probe'; await mkdir(out,{recursive:true});
+const root=process.cwd(); const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.hdr':'application/octet-stream','.wasm':'application/wasm'};
+const server=createServer(async(req,res)=>{try{let rel=normalize(decodeURIComponent(new URL(req.url||'/','http://x').pathname)).replace(/^[/\\]+/,'')||'index.html';if(!(rel==='public'||rel.startsWith('public'+sep)))rel='public'+sep+rel;res.writeHead(200,{'Content-Type':mime[extname(rel).toLowerCase()]||'application/octet-stream'});res.end(await readFile(resolve(root,rel)))}catch{if(!res.headersSent)res.writeHead(404);res.end('nf')}});
+await new Promise(d=>server.listen(0,'127.0.0.1',d)); const origin='http://127.0.0.1:'+server.address().port;
+const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+try{
+ const page=await browser.newPage({viewport:{width:1280,height:720}}); page.setDefaultTimeout(90000);
+ page.on('pageerror',e=>console.log('PAGEERROR',String(e.message||e).slice(0,300)));
+ await page.addInitScript(()=>{localStorage.setItem('browserSmashP1','Link');localStorage.setItem('browserSmashCPU','Mario')});
+ await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>document.querySelector('#bbTitle')&&window.fighters?.length===2,null,{timeout:80000,polling:250});
+ await page.waitForTimeout(1000);
+ const title=await page.evaluate(()=>{const f=window.fighters[0];const m=f.model;return {id:f.identity,pos:f.position.toArray(),modelPos:m.position.toArray(),modelScale:m.scale.toArray(),placement:m.userData.placement,asset:m.userData.characterAssetUrl,rigCheck:window.__browserSmashRigCheck?.(f),children:m.children.map(c=>({name:c.name,pos:c.position.toArray(),scale:c.scale.toArray(),rot:c.rotation.toArray()})),imported:m.userData.importedModel?{pos:m.userData.importedModel.position.toArray(),scale:m.userData.importedModel.scale.toArray(),children:m.userData.importedModel.children.map(c=>({name:c.name,pos:c.position.toArray(),scale:c.scale.toArray()}))}:null}});
+ console.log('TITLE',JSON.stringify(title,null,2));
+ await page.evaluate(()=>document.querySelector('[data-nav="versus"]')?.click());
+ await page.waitForSelector('#selectScreen',{state:'visible',timeout:15000});
+ await page.evaluate(()=>window.__browserSmashSelect?.select('p1','Link'));
+ await page.waitForTimeout(1500);
+ const debug=await page.evaluate(()=>{const raw=window.__fighterPreviewDebug;try{return JSON.parse(JSON.stringify(raw,(k,v)=>typeof v==='object'&&v!==null?'[omitted]':v))}catch(e){return String(e)}});
+ console.log('PREVIEWDEBUG',JSON.stringify(debug,null,2));
+ await page.screenshot({path:out+'/select.png'});
+ await page.evaluate(()=>document.querySelector('#selectScreen')?.classList.add('hidden'));
+ await page.evaluate(()=>{window.__browserSmashTrainingDummy=true;window.__browserSmashFreezeAI=true;document.querySelector('#play')?.click()});
+ await page.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'),null,{timeout:25000,polling:200});
+ await page.waitForTimeout(2000);
+ const live=await page.evaluate(()=>{const f=window.fighters[0],m=f.model;return{id:f.identity,pos:f.position.toArray(),modelPos:m.position.toArray(),modelScale:m.scale.toArray(),modelWorld:[m.matrixWorld.elements[12],m.matrixWorld.elements[13],m.matrixWorld.elements[14]],placement:m.userData.placement,rigCheck:window.__browserSmashRigCheck?.(f),cam:window.__browserSmashCamera?{pos:window.__browserSmashCamera.position?.toArray?.(),target:window.__browserSmashCamera.target?.toArray?.()}:null}});
+ console.log('LIVE',JSON.stringify(live,null,2));
+ await page.screenshot({path:out+'/live.png'});
+}finally{await browser.close();server.close()}

@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-11-03T00:20:45.375Z",
+  "origin": "live game, public/index.html",
+  "identity": {
+    "fighter": "Naruto Uzumaki",
+    "modelName": "Scene",
+    "characterModelLoaded": true,
+    "meshes": 25,
+    "triangles": 16432,
+    "hasRig": true,
+    "materialCount": 20,
+    "autoRotate": null
+  },
+  "pageErrors": [],
+  "note": "Current model as loaded by the game today. Not a replacement."
+}

@@ -1,0 +1,16 @@
+import { createServer } from 'node:http';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { resolve, normalize, extname } from 'node:path';
+import { chromium } from 'playwright';
+const root=process.cwd(), out='artifacts/environment/konoha/landmarks'; await mkdir(out,{recursive:true});
+const mime={'.html':'text/html','.js':'text/javascript','.glb':'model/gltf-binary','.png':'image/png','.json':'application/json'};
+const server=createServer(async(req,res)=>{try{let rel=normalize(decodeURIComponent(new URL(req.url||'/','http://x').pathname)).replace(/^[/\\]+/,'');res.writeHead(200,{'Content-Type':mime[extname(rel)]||'application/octet-stream'});res.end(await readFile(resolve(root,rel)));}catch{if(!res.headersSent)res.writeHead(404);res.end('nf');}});
+await new Promise(d=>server.listen(0,'127.0.0.1',d)); const origin='http://127.0.0.1:'+server.address().port;
+const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-webgl','--ignore-gpu-blocklist','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+const page=await browser.newPage({viewport:{width:1400,height:900}}); page.setDefaultTimeout(120000); const errors=[]; page.on('pageerror',e=>errors.push(String(e.message||e).slice(0,300)));
+const url=origin+'/scripts/_environment_viewer.html?model='+encodeURIComponent('public/assets/environments/konoha/hokage_landmarks.glb');
+await page.goto(url,{waitUntil:'domcontentloaded'}); await page.waitForFunction(()=>window.__environmentViewer?.ready||window.__environmentViewer?.error,null,{timeout:120000,polling:200});
+const state=await page.evaluate(()=>window.__environmentViewer); if(!state.ready) throw new Error(state.error);
+await page.screenshot({path:out+'/assembly.png'}); await writeFile(out+'/viewer-report.json',JSON.stringify({state,errors},null,2));
+console.log(JSON.stringify(state)); if(errors.length) throw new Error(errors.join(' | '));
+await browser.close(); server.close();

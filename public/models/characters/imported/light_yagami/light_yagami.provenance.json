@@ -1,0 +1,29 @@
+{
+  "source": "Sketchfab \"light yagami from Death note\" by Shah Bakhat026, https://sketchfab.com/3d-models/light-yagami-from-death-note-7d0599365ae141f7b0b65cd55d27a06b",
+  "uid": "7d0599365ae141f7b0b65cd55d27a06b",
+  "creator": "Shah Bakhat026",
+  "license": "CC BY 4.0 (CC Attribution)",
+  "retrieved": "2026-11-07",
+  "downloadedWith": "scripts/fetch-sketchfab-model.mjs — official Sketchfab download endpoint, GLB archive, owner's token (never logged)",
+  "bytes": 12692108,
+  "assetKind": "imported-licensed",
+  "rosterSlot": "l_death_note_style",
+  "displayName": "Light Yagami",
+  "status": "IMPORTED, NOT RIGGED, NOT ANIMATED — deliberately NOT enabled in manifest.json. Pointing the roster slot at this file today would replace L with a static T-pose mesh, which the brief forbids.",
+  "verified": {
+    "height": 1.997,
+    "feetY": -1.002,
+    "triangles": 106002,
+    "skinnedMeshes": 0,
+    "bones": 0,
+    "clips": 0,
+    "inspection": "node scripts/inspect-character-glb.mjs public/models/characters/imported/light_yagami/light_yagami.glb",
+    "result": "FAILED: no skinned mesh (model is not bound to a skeleton); no canonical bones; no animation clips; feet sit 1.00 m below the origin and need a 1.00 m Y correction."
+  },
+  "requiredBeforeActivation": [
+    "Build a deform skeleton and skin weights (19-bone roster rig or a dedicated humanoid rig).",
+    "Author the full movement/combat/reaction clip set and the Death Note ultimate on that skeleton.",
+    "Ground the mesh (feetY -1.002 m), normalize scale/orientation, and export a GLB whose tracks bind to the real joints.",
+    "Enable the slot only after per-clip deformation and live-match verification."
+  ]
+}

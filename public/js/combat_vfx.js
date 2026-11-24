@@ -23,44 +23,67 @@ export default function createCombatVFX(THREE, scene) {
     active.push(effect);
     return effect;
   }
+  /**
+   * One impact, graded by what produced it. The table exists because a single shared formula gave
+   * every hit the same treatment: a 23-intensity explosion and a jab both built their flash from
+   * `intensity * .012` and then scaled it by up to 4.2x, which produced a ~2 m additive sphere at
+   * .98 opacity sitting on the fighter - the white puff in gameplay captures. The numbers here are
+   * deliberately small: the flash is now a spark of light at the point of contact, and the energy
+   * of the hit is carried by the sparks, the rings and the camera instead.
+   */
+  const GRADES = {
+    light: { flash: .10, flashMax: .20, opacity: .34, growth: 1.25, rings: 2, ringEnd: 1.5, tube: .022, sparks: 12, sparkSpark: 9, length: .2, life: .28, ground: false },
+    heavy: { flash: .14, flashMax: .30, opacity: .42, growth: 1.55, rings: 3, ringEnd: 1.9, tube: .028, sparks: 18, sparkSpark: 12, length: .42, life: .4, ground: true },
+    guard: { flash: .09, flashMax: .16, opacity: .3, growth: 1.1, rings: 2, ringEnd: 1.2, tube: .018, sparks: 8, sparkSpark: 6, length: .16, life: .2, ground: false },
+    ultimate: { flash: .16, flashMax: .34, opacity: .44, growth: 1.7, rings: 3, ringEnd: 2.2, tube: .03, sparks: 22, sparkSpark: 13, length: .5, life: .46, ground: true }
+  };
+  function grade(options, intensity, guarded, heavy) {
+    const kind = String(options.kind || '');
+    if (guarded) return GRADES.guard;
+    if (kind === 'ultimate' || kind === 'beam' || kind === 'shockwave' || kind === 'lightning' || kind === 'fireball' || intensity >= 23) return GRADES.ultimate;
+    return heavy ? GRADES.heavy : GRADES.light;
+  }
   function impact(position, options = {}) {
     const color = options.color ?? 0xffd18a;
     const intensity = Math.max(1, Number(options.intensity) || 8);
     const guarded = options.guarded || options.kind === 'guard';
     const heavy = intensity >= 15 || ['heavy', 'shockwave', 'beam', 'lightning', 'fireball', 'land'].includes(options.kind);
-    const life = guarded ? .2 : heavy ? .46 : .32;
+    const spec = grade(options, intensity, guarded, heavy);
+    const life = spec.life;
     const group = new THREE.Group();
+    // A capped spark rather than a growing ball: `flashMax` is the hard ceiling on its radius, so
+    // no intensity can produce an effect bigger than a fighter's torso.
+    const flashRadius = Math.min(spec.flashMax, spec.flash + intensity * .004);
     const flash = new THREE.Mesh(
-      new THREE.SphereGeometry(.18 + Math.min(.3, intensity * .012), 8, 6),
-      makeBasic(guarded ? 0xa8caff : 0xfff6d6, .98)
+      new THREE.SphereGeometry(flashRadius, 8, 6),
+      makeBasic(guarded ? 0xa8caff : 0xfff6d6, spec.opacity)
     );
     flash.position.copy(position);
     group.add(flash);
     const rings = [];
-    for (let i = 0; i < (heavy ? 3 : 2); i++) {
+    for (let i = 0; i < spec.rings; i++) {
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(.44 + i * .18, i === 0 ? .045 : .022, 6, 28),
-        makeBasic(i === 1 ? color : (guarded ? 0x83bfff : color), .95 - i * .12)
+        new THREE.TorusGeometry(.44 + i * .18, i === 0 ? spec.tube : spec.tube * .6, 6, 28),
+        makeBasic(i === 1 ? color : (guarded ? 0x83bfff : color), (guarded ? .5 : .62) - i * .1)
       );
       ring.position.copy(position);
       ring.rotation.x = Math.PI / 2;
       ring.rotation.z = (Math.random() - .5) * .8;
       ring.scale.setScalar(.28 + i * .06);
       group.add(ring);
-      rings.push({ mesh: ring, start: .28 + i * .06, end: (heavy ? 2.8 : 1.9) + i * .38 });
+      rings.push({ mesh: ring, start: .28 + i * .06, end: spec.ringEnd + i * .3 });
     }
     const sparks = [];
-    const count = guarded ? 8 : Math.round(12 + Math.min(22, intensity * 1.05) + (heavy ? 8 : 0));
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < spec.sparks; i++) {
       const velocity = new THREE.Vector3(
-        (Math.random() - .5) * (heavy ? 13 : 9),
-        Math.random() * (heavy ? 11 : 7) + 1.2,
-        (Math.random() - .5) * (heavy ? 13 : 9)
+        (Math.random() - .5) * spec.sparkSpark,
+        Math.random() * spec.sparkSpark * .9 + 1.2,
+        (Math.random() - .5) * spec.sparkSpark
       );
-      const length = .13 + Math.random() * (heavy ? .48 : .3);
+      const length = .09 + Math.random() * spec.length;
       const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(.018 + Math.random() * .018, .018, length),
-        makeBasic(i % 4 === 0 ? 0xfff4c4 : (guarded ? 0x91caff : color), .98)
+        new THREE.BoxGeometry(.012 + Math.random() * .012, .014, length),
+        makeBasic(i % 4 === 0 ? 0xfff4c4 : (guarded ? 0x91caff : color), guarded ? .6 : .78)
       );
       mesh.position.copy(position);
       mesh.quaternion.setFromUnitVectors(forward, velocity.clone().normalize());
@@ -68,16 +91,16 @@ export default function createCombatVFX(THREE, scene) {
       sparks.push({ mesh, velocity, spin: (Math.random() - .5) * 8, length });
     }
     let groundRing = null;
-    if (heavy) {
+    if (spec.ground) {
       groundRing = new THREE.Mesh(
-        new THREE.TorusGeometry(.72, .065, 8, 48),
-        makeBasic(color, .8)
+        new THREE.TorusGeometry(.72, .042, 8, 48),
+        makeBasic(color, .5)
       );
       groundRing.position.set(position.x, Math.max(.045, position.y - .82), position.z);
       groundRing.rotation.x = Math.PI / 2;
       group.add(groundRing);
     }
-    return addEffect(group, life, { flash, rings, sparks, groundRing, heavy });
+    return addEffect(group, life, { flash, rings, sparks, groundRing, heavy, spec });
   }
   function dash(position, direction, color = 0x7deaff) {
     const dir = direction?.clone?.() || new THREE.Vector3(1, 0, 0);
@@ -135,12 +158,14 @@ export default function createCombatVFX(THREE, scene) {
         ring.mesh.material.opacity = .92 * (1 - t);
       }
       if (effect.flash) {
-        effect.flash.scale.setScalar(1 + t * (effect.heavy ? 3.2 : 1.8));
-        effect.flash.material.opacity = Math.max(0, .95 * (1 - t * 1.7));
+        // Growth is per grade and no longer multiplies a radius that already grew with intensity.
+        const growth = effect.spec?.growth ?? 1.6;
+        effect.flash.scale.setScalar(1 + t * growth);
+        effect.flash.material.opacity = Math.max(0, (effect.spec?.opacity ?? .4) * 1.6 * (1 - t * 1.5));
       }
       if (effect.groundRing) {
-        effect.groundRing.scale.setScalar(.25 + t * 3.6);
-        effect.groundRing.material.opacity = .8 * (1 - t);
+        effect.groundRing.scale.setScalar(.25 + t * 2.6);
+        effect.groundRing.material.opacity = .5 * (1 - t);
       }
       if (effect.launchRings) {
         for (const ring of effect.launchRings) {
@@ -166,5 +191,11 @@ export default function createCombatVFX(THREE, scene) {
     for (const effect of active) disposeEffect(effect);
     active.length = 0;
   }
-  return { impact, dash, launch, landing, update, dispose, get activeCount() { return active.length; } };
+  return {
+    impact, dash, launch, landing, update, dispose,
+    get activeCount() { return active.length; },
+    // Read-only view for the visual gallery, which measures how large a live effect is on screen
+    // relative to the fighter it is covering. Nothing in the game reads this.
+    get activeEffects() { return active; }
+  };
 }

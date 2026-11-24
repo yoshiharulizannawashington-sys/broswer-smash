@@ -1,0 +1,100 @@
+name: Validate environment arenas
+
+# The acceptance test drives the real setup screen and match loop for Konoha, Skyloft and
+# Mario Kart, including imported terrain, collision, spawns, camera clearance and page errors.
+# It also guards that the archived Death Star is not selectable at runtime.
+
+on:
+  push:
+    paths:
+      - "public/js/main.js"
+      - "public/js/arenas/**"
+      - "public/js/world/**"
+      - "public/js/worlds/**"
+      - "public/js/cinematic_environment.js"
+      - "public/js/sky_environment.js"
+      - "public/js/SmashCamera.js"
+      - "public/assets/arenas/**"
+      - "public/index.html"
+      - "index.html"
+      - "assets/blender/cinematic_arenas.py"
+      - "assets/blender/arena_*.py"
+      - "assets/blender/arenas/**"
+      - "assets/blender/environments/**"
+      - "public/assets/textures/**"
+      - "scripts/assemble-environment-arenas.py"
+      - "archive/cancelled/death-star/**"
+      - "scripts/verify-environment-arenas.mjs"
+      - "scripts/run-browser-test.sh"
+      - "scripts/install-browser-libs.sh"
+      - ".github/workflows/environment-arenas.yml"
+  pull_request:
+    paths:
+      - "public/js/main.js"
+      - "public/js/arenas/**"
+      - "public/js/world/**"
+      - "public/js/worlds/**"
+      - "public/js/cinematic_environment.js"
+      - "public/js/sky_environment.js"
+      - "public/js/SmashCamera.js"
+      - "public/assets/arenas/**"
+      - "public/index.html"
+      - "index.html"
+      - "assets/blender/cinematic_arenas.py"
+      - "assets/blender/arena_*.py"
+      - "assets/blender/arenas/**"
+      - "assets/blender/environments/**"
+      - "public/assets/textures/**"
+      - "scripts/assemble-environment-arenas.py"
+      - "archive/cancelled/death-star/**"
+      - "scripts/verify-environment-arenas.mjs"
+      - "scripts/run-browser-test.sh"
+      - "scripts/install-browser-libs.sh"
+      - ".github/workflows/environment-arenas.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: environment-arenas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  environment-arenas:
+    name: Konoha, Skyloft and Mario Kart
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out game
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Parse the environment acceptance test
+        run: node --check scripts/verify-environment-arenas.mjs
+
+      - name: Run full environment arena acceptance
+        run: node scripts/verify-environment-arenas.mjs
+
+      - name: Upload arena report and captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-arenas-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/environment/arenas/live/
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,26 @@
+{
+  "source": "Sketchfab \"Harry Potter (rigged) Character\" by RRB STUDIOS, https://sketchfab.com/3d-models/harry-potter-rigged-character-250a590d181e4f6cb0aec4a0c55e293c",
+  "uid": "250a590d181e4f6cb0aec4a0c55e293c",
+  "creator": "RRB STUDIOS",
+  "license": "CC BY 4.0 (CC Attribution)",
+  "retrieved": "2026-11-07",
+  "downloadedWith": "scripts/fetch-sketchfab-model.mjs — official Sketchfab download endpoint, GLB archive, owner's token (never logged)",
+  "bytes": 5178160,
+  "assetKind": "imported-licensed",
+  "rosterSlot": "lord_voldemort",
+  "displayName": "Harry Potter",
+  "status": "PROMOTED into the stable lord_voldemort slot as Harry Potter. 68-joint rig, 25 retargeted clips, four degenerate source triangles removed. Runtime acceptance tracked separately.",
+  "verified": {
+    "height": 1.8767,
+    "feetY": -0.0008,
+    "triangles": 16320,
+    "skinned": true,
+    "clips": 25,
+    "bones": 68,
+    "sha256": "4ab98be4419462ee8120ba061478a3700b661eca7f267a4bb5e2d8edf32be833",
+    "file": "public/models/characters/imported/harry_potter/harry_potter_animated.glb",
+    "retargetReport": "artifacts/harry/prepared/retarget.log",
+    "cleanupReport": "artifacts/harry/prepared/finalize.log"
+  },
+  "requiredBeforeActivation": []
+}

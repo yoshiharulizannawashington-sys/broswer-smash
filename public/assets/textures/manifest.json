@@ -1,0 +1,118 @@
+{
+  "families": {
+    "asphalt": {
+      "asset": "asphalt_02",
+      "author": "Rob Tuytel",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/asphalt_02"
+    },
+    "brick": {
+      "asset": "brick_wall_001",
+      "author": "Rob Tuytel, Dimitrios Savva",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/brick_wall_001"
+    },
+    "concrete": {
+      "asset": "concrete_slab_wall_02",
+      "author": "Amal Kumar",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/concrete_slab_wall_02"
+    },
+    "grass": {
+      "asset": "leafy_grass",
+      "author": "Charlotte Baglioni",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/leafy_grass"
+    },
+    "marble": {
+      "asset": "marble_tiles",
+      "author": "Charlotte Baglioni",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/marble_tiles"
+    },
+    "metal": {
+      "asset": "metal_plate_02",
+      "author": "Rob Tuytel",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/metal_plate_02"
+    },
+    "paving": {
+      "asset": "precast_stone_paving",
+      "author": "Dimitrios Savva",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/precast_stone_paving"
+    },
+    "rock": {
+      "asset": "cliff_side",
+      "author": "James Ray Cock, Jenelle van Heerden, Dario Barresi",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/cliff_side"
+    },
+    "roof": {
+      "asset": "clay_roof_tiles_02",
+      "author": "Amal Kumar",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/clay_roof_tiles_02"
+    },
+    "stone": {
+      "asset": "stone_block_wall",
+      "author": "Amal Kumar",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/stone_block_wall"
+    },
+    "wood": {
+      "asset": "brown_planks_09",
+      "author": "Rob Tuytel",
+      "maps": [
+        "albedo.jpg",
+        "normal.jpg",
+        "roughness.jpg"
+      ],
+      "url": "https://polyhaven.com/a/brown_planks_09"
+    }
+  },
+  "licence": "CC0 1.0 Universal (public domain)",
+  "note": "CC0 PBR surface maps for the large worlds. Regenerate with scripts/fetch-world-textures.py.",
+  "resolution": "512x512",
+  "source": "Poly Haven (https://polyhaven.com)"
+}

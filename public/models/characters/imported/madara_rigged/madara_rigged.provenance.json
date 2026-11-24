@@ -1,0 +1,58 @@
+{
+ "id": "madara_rigged",
+ "sourceModel": "⚡️Madara Uchiha (Anime) 3D Model⚡️",
+ "sourceUid": "ac94205c42a64acfbe4bcb0074d5dc80",
+ "creator": "YT-XTREMENINJA",
+ "license": "CC Attribution",
+ "sourceFile": "artifacts/asset-fetch/madara/madara.glb",
+ "notes": "Auto-rigged in Blender 4.2.23 by scripts/autorig_batch.py from the supplied unrigged body. 19 canonical bones, 29556 vertices, 0 unweighted, 4 max influences. Staged only: not on the launch roster. 25-clip roster animation set retargeted onto the exact 19-bone rig.",
+ "rig": {
+  "bones": 19,
+  "canonicalSlots": 19,
+  "height": 1.82,
+  "feetY": 0,
+  "vertices": 29556,
+  "unweighted": 0,
+  "maxInfluences": 4,
+  "armLength": 0.3823,
+  "legLength": 0.4257,
+  "joints": {
+   "pelvis": 0.0451,
+   "torso": 0.0359,
+   "head": 0.0063,
+   "leftArm": 0.0172,
+   "leftFore": 0.0513,
+   "rightArm": 0.0172,
+   "rightFore": 0.056,
+   "leftLeg": 0.0467,
+   "leftShin": 0.0462,
+   "rightLeg": 0.0467,
+   "rightShin": 0.0489,
+   "spine": 0.0906,
+   "leftClavicle": 0.052,
+   "rightClavicle": 0.052,
+   "neck": 0.0339,
+   "leftHand": 0.0054,
+   "rightHand": 0.0047,
+   "leftFoot": 0.0393,
+   "rightFoot": 0.0391
+  },
+  "symmetry": {
+   "leftArm": 0,
+   "leftFore": 0,
+   "leftHand": 0,
+   "leftLeg": 0,
+   "leftShin": 0,
+   "leftFoot": 0
+  }
+ },
+ "validation": "artifacts/rig-batch/validation.json",
+ "stagedAt": "2026-11-10T18:47:44.336Z",
+ "animation": {
+  "clips": 25,
+  "donor": "public/models/characters/roster/thor.glb",
+  "retarget": "scripts/rig-clips-to-body.mjs retarget",
+  "approach": "bind-pose retarget at 30 fps; grounded clips lifted once at the Hips, root motion omitted",
+  "report": "artifacts/rig-batch/animated/madara-retarget.json"
+ }
+}

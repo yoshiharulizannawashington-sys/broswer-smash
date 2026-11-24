@@ -1,0 +1,18 @@
+{
+  "id": "licence_free_import",
+  "attribution": "",
+  "notes": "",
+  "originalFile": "public/models/characters/ingested/quaternius_base.glb",
+  "output": "public/models/characters/ingested/licence_free_import.glb",
+  "scale": 1,
+  "clips": [
+    "Idle",
+    "Jump",
+    "Kick",
+    "Punch",
+    "Kamehameha",
+    "Run",
+    "Walk"
+  ],
+  "ingestedAt": "2026-11-02T00:11:15.388Z"
+}
