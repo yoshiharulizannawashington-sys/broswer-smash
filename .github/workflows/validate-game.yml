@@ -150,7 +150,7 @@ jobs:
           assert.ok(installer.includes("enabled: true") && installer.includes("goku-animated.glb"), 'Character asset installer is missing safe manifest activation');
           assert.ok(vfx.includes('function impact') && vfx.includes('function dash') && vfx.includes('function landing'), 'Combat VFX primitives are missing');
           assert.ok(main.includes('combatVFX.update(elapsed)') && main.includes('combatVFX.launch(start,color,moveType)'), 'Combat VFX are not integrated into the game loop');
-          assert.equal(manifest.characters.goku.url, '/models/characters/bespoke/goku_body.glb', 'Goku asset is not registered');
+          assert.equal(manifest.characters.goku.url, '/models/characters/bespoke/goku_body_face_rigged.glb', 'Goku asset is not registered');
           assert.equal(manifest.characters.iron_man_tony_stark.url, '/models/characters/roster/iron_man_tony_stark.glb', 'Iron Man asset is not registered');
           assert.ok(human.includes("n.includes('left')") && human.includes("n.includes('right')"), 'Mixamo-style rig-side detection is missing');
           assert.ok(fighter.includes('camera-relative steering') && main.includes('window.smashCamera=smashCamera'), 'Camera-relative free-roam controls are missing');

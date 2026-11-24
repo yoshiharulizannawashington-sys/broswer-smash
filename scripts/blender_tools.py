@@ -13,9 +13,11 @@ Every subcommand prints one JSON line prefixed with RESULT:, so the Node orchest
 parse Blender prose.
 """
 import bpy
+import bmesh
 import json
 import math
 import os
+import re
 import sys
 from mathutils import Vector
 
@@ -64,6 +66,10 @@ def activate(obj):
 # --------------------------------------------------------------------------- role classification
 def role_of(name):
     raw = str(name or "").lower().replace("mixamorig:", "")
+    # Sketchfab/Blender rigs often append a numeric bone suffix (`upper_arm.L_116`,
+    # `spine.001_143`, `face_91`). It is not part of the joint's semantic name and used to hide
+    # every limb from the importer, leaving a fully skinned body with only four bound roles.
+    raw = re.sub(r"[._:\-\s]\d+$", "", raw)
     spaced = raw.replace(".", " ").replace("_", " ").replace("-", " ").replace(":", " ")
     tokens = [t for t in spaced.split() if t]
     key = spaced.replace(" ", "")
@@ -87,7 +93,7 @@ def role_of(name):
         return None
     if "neck" in key:
         return "Neck"
-    if "head" in key:
+    if "head" in key or "face" in key or "skull" in key:
         return "Head"
     if "hips" in key or "pelvis" in key:
         return "Hips"
@@ -228,7 +234,7 @@ LIMBS = [
 ]
 
 
-def build_armature(height, width):
+def build_armature(height, width, tpose=False):
     arm_data = bpy.data.armatures.new("ImportedRig")
     arm_obj = bpy.data.objects.new("ImportedRig", arm_data)
     bpy.context.scene.collection.objects.link(arm_obj)
@@ -258,8 +264,15 @@ def build_armature(height, width):
                 # the hip instead of straight out along X.
                 chain = ("Shoulder", "Arm", "ForeArm", "Hand")
                 index = chain.index(name)
-                reach_length = max(0.02, abs(reach - 0.03) * width)
-                drop = math.radians((10, 55, 72, 80)[index])
+                if tpose:
+                    # A static authored mesh is usually in a T-pose. Keep the armature in the same
+                    # stance so the inverse bind is not a T mesh deformed by A-pose weights; the
+                    # source clips then bring the arms down on their first frame.
+                    reach_length = (0.05, 0.15, 0.15, 0.10)[index] * width
+                    drop = 0.0
+                else:
+                    reach_length = max(0.02, abs(reach - 0.03) * width)
+                    drop = math.radians((10, 55, 72, 80)[index])
                 if index == 0:
                     head = Vector((sign * 0.03 * width, 0, z_f * height))
                 else:
@@ -281,6 +294,55 @@ def build_armature(height, width):
             created[role] = bone
     bpy.ops.object.mode_set(mode="OBJECT")
     return arm_obj
+
+
+def animation_role_map(armature):
+    """Semantic roles used by the clip baker, with a spine-root fallback.
+
+    Some Sketchfab rigs have no central Hips bone: the root of the rig is `spine`, with the actual
+    left/right pelvis helpers beside it. Mapping the first pelvis helper to Hips would rotate only
+    one hip, so promote the root spine to Hips and shift the spine chain down one slot. The legs,
+    arms and head still map by their own names.
+    """
+    roles = role_map([b.name for b in armature.data.bones])
+    hips = roles.get("Hips", "")
+    # A side-specific pelvis helper is not the body root. Drop it and rebuild the torso chain from
+    # the actual rootmost spine bone.
+    if hips and re.search(r"pelvis[._\-\s]*[lr]", hips.lower()):
+        roles.pop("Hips", None)
+    if "Hips" not in roles:
+        spines = []
+        for bone in armature.data.bones:
+            if role_of(bone.name) == "Spine":
+                spines.append((bone_depth(bone), bone.name))
+        spines.sort(key=lambda item: item[0])
+        if spines:
+            roles["Hips"] = spines[0][1]
+            if len(spines) > 1:
+                roles["Spine"] = spines[1][1]
+            if len(spines) > 2:
+                roles["Chest"] = spines[2][1]
+            if "Neck" not in roles and len(spines) > 3:
+                roles["Neck"] = spines[-1][1]
+    return roles
+
+
+def clean_degenerate_meshes():
+    """Remove zero-area faces left by a source export, which the roster gate rejects."""
+    removed = 0
+    for obj in meshes():
+        bm = bmesh.new()
+        try:
+            bm.from_mesh(obj.data)
+            bad = [face for face in bm.faces if face.calc_area() < 1e-9]
+            if bad:
+                bmesh.ops.delete(bm, geom=bad, context="FACES")
+                bm.to_mesh(obj.data)
+                obj.data.update()
+                removed += len(bad)
+        finally:
+            bm.free()
+    return removed
 
 
 def segment_distance(point, head, tail):
@@ -356,7 +418,7 @@ def skin(obj, arm_obj):
     return covered
 
 
-def cmd_autorig(in_path, out_path):
+def cmd_autorig(in_path, out_path, tpose=False):
     reset()
     import_any(in_path)
     targets = meshes()
@@ -372,7 +434,7 @@ def cmd_autorig(in_path, out_path):
     if height < width * 0.6:
         log_result({"ok": False, "error": "bounds look non-humanoid (height %.2f, width %.2f)" % (height, width)})
         return
-    arm_obj = build_armature(height, width)
+    arm_obj = build_armature(height, width, tpose=tpose)
     covered = {}
     for obj in targets:
         world = obj.matrix_world.copy()
@@ -514,6 +576,181 @@ def cmd_retarget_direct(target_path, source_path, out_path):
                               export_animations=True, export_animation_mode="NLA_TRACKS",
                               export_yup=True, use_selection=True)
     log_result({"ok": True, "out": out_path, "pairs": len(pairs), "baked": baked})
+
+
+def cmd_retarget_all(target_path, source_path, out_path, apply_import_pose=False, world=False):
+    """Bake every source action onto the target rig, preserving the source clip names.
+
+    `cmd_retarget_direct` is the seven-state import path. The roster bodies ship 25 states (and
+    imported bodies must keep all of them), so this is the same rest-relative transfer over the
+    complete source action list. The target actions are named `BS_*` internally; the NLA tracks
+    carry the original names, which is what the glTF exporter writes as animation names.
+    """
+    reset()
+    import_any(target_path)
+    target_armatures = armatures()
+    if not target_armatures:
+        log_result({"ok": False, "error": "target has no armature"})
+        return
+    target = target_armatures[0]
+    target.animation_data_clear()
+    if apply_import_pose:
+        # A Sketchfab source can store its authored arms-down stance as the imported pose while
+        # the armature's underlying rest is a T. Baking from the rest silently turns the fighter
+        # into a T-pose, so make the imported stance the actual rest before baking.
+        activate(target)
+        bpy.ops.object.mode_set(mode="POSE")
+        bpy.ops.pose.select_all(action="SELECT")
+        bpy.ops.pose.armature_apply(selected=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.context.view_layer.update()
+    import_any(source_path)
+    source_armatures = [armature for armature in armatures() if armature != target]
+    if not source_armatures:
+        log_result({"ok": False, "error": "source rig not found"})
+        return
+    source = source_armatures[0]
+    source_roles = animation_role_map(source)
+    target_roles = animation_role_map(target)
+    pairs = [(target_roles[role], source_roles[role]) for role in target_roles if role in source_roles]
+    if not pairs:
+        log_result({"ok": False, "error": "no shared animation roles between source and target"})
+        return
+    pairs.sort(key=lambda pair: bone_depth(target.pose.bones[pair[0]].bone))
+    scene = bpy.context.scene
+    target.animation_data_create()
+    for pose_bone in target.pose.bones:
+        pose_bone.rotation_mode = "QUATERNION"
+
+    def clear_pose():
+        activate(target)
+        bpy.ops.object.mode_set(mode="POSE")
+        bpy.ops.pose.select_all(action="SELECT")
+        bpy.ops.pose.transforms_clear()
+        bpy.ops.object.mode_set(mode="OBJECT")
+
+    clear_pose()
+    source_actions = list(bpy.data.actions)
+    produced_actions = {}
+    baked = {}
+    donor_suffix = "_" + source.name
+
+    def clip_name(action_name):
+        # The generated donor armature is named Kaze_Rig and its actions are `idle_Kaze_Rig`.
+        # The mounted body must expose the canonical state name, not the donor's armature suffix,
+        # or the shared-family exact-name lookup ignores its own baked clips.
+        return action_name[:-len(donor_suffix)] if donor_suffix and action_name.endswith(donor_suffix) else action_name
+
+    for action in source_actions:
+        source.animation_data_create()
+        source.animation_data.action = action
+        start, end = [int(round(value)) for value in action.frame_range]
+        if end <= start:
+            continue
+        clear_pose()
+        produced = bpy.data.actions.new("BS_" + clip_name(action.name))
+        produced.use_fake_user = True
+        target.animation_data.action = produced
+        peaks = {}
+        base = {}
+        scene.frame_set(start)
+        delta0 = {}
+        if not world:
+            for target_name, source_name in pairs:
+                source_pose = source.pose.bones[source_name]
+                delta0[target_name] = (source_pose.matrix.to_quaternion()
+                                       @ source_pose.bone.matrix_local.to_quaternion().inverted())
+        for frame in range(start, end + 1):
+            scene.frame_set(frame)
+            for target_name, source_name in pairs:
+                source_pose = source.pose.bones[source_name]
+                target_pose = target.pose.bones[target_name]
+                if world:
+                    matrix = source_pose.matrix.to_quaternion().to_matrix().to_4x4()
+                else:
+                    absolute = (source_pose.matrix.to_quaternion()
+                                @ source_pose.bone.matrix_local.to_quaternion().inverted())
+                    delta = absolute @ delta0[target_name].inverted()
+                    matrix = (delta @ target_pose.bone.matrix_local.to_quaternion()).to_matrix().to_4x4()
+                matrix.translation = target_pose.matrix.translation
+                target_pose.matrix = matrix
+                bpy.context.view_layer.update()
+                target_pose.keyframe_insert("rotation_quaternion", frame=frame)
+                if frame == start:
+                    base[target_name] = target_pose.rotation_quaternion.copy()
+                current = target_pose.rotation_quaternion
+                degrees = math.degrees(base[target_name].rotation_difference(current).angle)
+                peaks[target_name] = max(peaks.get(target_name, 0.0), degrees)
+        target.animation_data.action = None
+        name = clip_name(action.name)
+        produced_actions[name] = produced
+        baked[name] = {
+            "frames": [start, end],
+            "bonesMoved": sum(1 for value in peaks.values() if value > 1),
+            "maxDegrees": round(max(peaks.values()) if peaks else 0, 1)
+        }
+
+    clear_pose()
+    target.animation_data.action = None
+    for name, action in produced_actions.items():
+        track = target.animation_data.nla_tracks.new()
+        track.name = name
+        track.strips.new(name, int(action.frame_range[0]), action)
+        track.mute = False
+
+    # The source assets carry a few zero-area faces. Remove them from the target only, after the
+    # animation bake, so the resulting body passes the roster's export-quality gate without
+    # changing any visible surface.
+    cleaned = clean_degenerate_meshes()
+    bpy.ops.object.select_all(action="DESELECT")
+    target.select_set(True)
+    for child in target.children_recursive:
+        child.select_set(True)
+    bpy.context.view_layer.objects.active = target
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    bpy.ops.export_scene.gltf(filepath=out_path, export_format="GLB", export_apply=False,
+                              export_animations=True, export_animation_mode="NLA_TRACKS",
+                              export_yup=True, use_selection=True)
+    log_result({"ok": True, "out": out_path, "pairs": len(pairs), "clips": len(produced_actions),
+                "degenerateRemoved": cleaned, "baked": baked})
+
+
+def cmd_normalize(in_path, out_path, height):
+    """Scale a finished character to the requested height and put its feet on z=0.
+
+    The source scale is not touched until after the clips are baked: actions store rotations, and
+    scaling the root does not change them. This keeps a centimetre-authored model from reaching
+    the runtime only to be normalized there (and makes the body inspectable before it mounts).
+    """
+    reset()
+    import_any(in_path)
+    target_meshes = meshes()
+    if not target_meshes:
+        log_result({"ok": False, "error": "no mesh to normalize"})
+        return
+    lo, hi = world_bounds(target_meshes)
+    current = hi.z - lo.z
+    if current <= 1e-9:
+        log_result({"ok": False, "error": "zero-height mesh"})
+        return
+    scale = float(height) / current
+    roots = [obj for obj in bpy.context.scene.objects if obj.parent is None]
+    for obj in roots:
+        obj.scale = tuple(value * scale for value in obj.scale)
+        obj.location = tuple(value * scale for value in obj.location)
+    bpy.context.view_layer.update()
+    lo, hi = world_bounds(target_meshes)
+    for obj in roots:
+        obj.location.z += -lo.z
+    bpy.context.view_layer.update()
+    lo, hi = world_bounds(target_meshes)
+    bpy.ops.object.select_all(action="SELECT")
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    bpy.ops.export_scene.gltf(filepath=out_path, export_format="GLB", export_apply=False,
+                              export_animations=True, export_animation_mode="NLA_TRACKS",
+                              export_yup=True, use_selection=True)
+    log_result({"ok": True, "out": out_path, "sourceHeight": round(current, 3),
+                "height": round(hi.z - lo.z, 3), "feetY": round(lo.z, 4), "scale": round(scale, 6)})
 
 
 def cmd_motion(in_path):
@@ -717,7 +954,7 @@ def main():
         elif command == "to_fbx":
             cmd_to_fbx(rest[0], rest[1])
         elif command == "autorig":
-            cmd_autorig(rest[0], rest[1])
+            cmd_autorig(rest[0], rest[1], len(rest) > 2 and rest[2] == "tpose")
         elif command == "retarget":
             cmd_retarget(rest[0], rest[1], rest[2], rest[3] if len(rest) > 3 else "")
         elif command == "report":
@@ -726,6 +963,12 @@ def main():
             cmd_motion(rest[0])
         elif command == "retarget2":
             cmd_retarget_direct(rest[0], rest[1], rest[2])
+        elif command == "retargetall":
+            mode = rest[3] if len(rest) > 3 else ""
+            cmd_retarget_all(rest[0], rest[1], rest[2],
+                             apply_import_pose=mode in ("apply-pose", "pose-world"), world=mode in ("world", "pose-world"))
+        elif command == "normalize":
+            cmd_normalize(rest[0], rest[1], float(rest[2]))
         else:
             log_result({"ok": False, "error": "unknown subcommand " + command})
     except Exception as error:  # noqa: BLE001 - reported to Node instead of dying silently

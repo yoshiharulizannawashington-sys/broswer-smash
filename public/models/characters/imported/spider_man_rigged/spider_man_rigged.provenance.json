@@ -1,0 +1,58 @@
+{
+ "id": "spider_man_rigged",
+ "sourceModel": "Friendly Neighborhood Spider- Man",
+ "sourceUid": "9a0393916dc54a4183543eef3ef08f83",
+ "creator": null,
+ "license": null,
+ "sourceFile": "artifacts/asset-fetch/spider_man/spider_man.glb",
+ "notes": "Auto-rigged in Blender 4.2.23 by scripts/autorig_batch.py from the supplied unrigged body. 19 canonical bones, 207897 vertices, 0 unweighted, 4 max influences. Staged only: not on the launch roster. 25-clip roster animation set retargeted onto the exact 19-bone rig.",
+ "rig": {
+  "bones": 19,
+  "canonicalSlots": 19,
+  "height": 1.8,
+  "feetY": 0,
+  "vertices": 207897,
+  "unweighted": 0,
+  "maxInfluences": 4,
+  "armLength": 0.3573,
+  "legLength": 0.4054,
+  "joints": {
+   "pelvis": 0.0048,
+   "torso": 0.0296,
+   "head": 0.0022,
+   "leftArm": 0.0246,
+   "leftFore": 0.0808,
+   "rightArm": 0.0246,
+   "rightFore": 0.081,
+   "leftLeg": 0.0708,
+   "leftShin": 0.0461,
+   "rightLeg": 0.0708,
+   "rightShin": 0.0461,
+   "spine": 0.1018,
+   "leftClavicle": 0.06,
+   "rightClavicle": 0.06,
+   "neck": 0.0489,
+   "leftHand": 0.0016,
+   "rightHand": 0.0016,
+   "leftFoot": 0.0229,
+   "rightFoot": 0.0228
+  },
+  "symmetry": {
+   "leftArm": 0,
+   "leftFore": 0,
+   "leftHand": 0,
+   "leftLeg": 0,
+   "leftShin": 0,
+   "leftFoot": 0
+  }
+ },
+ "validation": "artifacts/rig-batch/validation.json",
+ "stagedAt": "2026-11-10T18:47:44.295Z",
+ "animation": {
+  "clips": 25,
+  "donor": "public/models/characters/roster/thor.glb",
+  "retarget": "scripts/rig-clips-to-body.mjs retarget",
+  "approach": "bind-pose retarget at 30 fps; grounded clips lifted once at the Hips, root motion omitted",
+  "report": "artifacts/rig-batch/animated/spider_man-retarget.json"
+ }
+}

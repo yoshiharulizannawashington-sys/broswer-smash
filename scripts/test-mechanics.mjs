@@ -516,8 +516,8 @@ try {
     advance(p, 20);
     out.scaledHitDamage = c.percent;
 
-    // Cover and flight collision both use the real stage volumes on the Death Star.
-    window.__browserSmashSelect.chooseArena('deathstar');
+    // Cover and flight collision both use the real stage volumes on the Hogwarts stage.
+    window.__browserSmashSelect.chooseArena('hogwarts');
     const layout = window.__browserSmashLayout();
     const wall = (layout.blocks || []).find(b => b.r == null && b.top != null
       && (b.bottom ?? 0) <= 1.2 && b.top >= 2.8
@@ -671,7 +671,7 @@ try {
       };
     }
     return null;
-  }, ['deathstar', 'hogwarts', 'asgard', 'konoha', 'nyc']);
+  }, ['hogwarts', 'asgard', 'konoha', 'nyc']);
   await frames(8);
   const wallAfter = await page.evaluate(() => window.__browserSmashProjectiles().length);
   check('a wall in the line of fire is detected by the solid-volume test',

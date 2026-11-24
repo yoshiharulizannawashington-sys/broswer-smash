@@ -7,7 +7,7 @@
 //
 //   P1  WASD move · J attack · K special · U grab · SPACE jump · SHIFT sprint/dash
 //       E guard (tap to parry) · F flight · C descend · X flight brake · G web swing
-//       I transform · O ultimate
+//       (G also stows/deploys Iron Spider's appendages, or Thor/Sephiroth's weapon) · I transform · O ultimate
 //   P2  ARROWS move · , attack · . special · / grab · ENTER jump · RIGHT SHIFT sprint/dash
 //       ; guard (tap to parry) · [ flight · ] descend · \ web swing · N transform · M ultimate
 //   Gamepad: D-pad up transforms, D-pad down casts the ultimate, for either player.
@@ -133,8 +133,14 @@ export default class SmashInputHandler {
       // releasing the stick and waiting for drag.
       brake: anyHeld(this.keys, map.brake) || pressed(9),
       webSwing: anyHeld(this.keys, map.web) || pressed(5),
+      // Iron Spider uses the web button as its appendage stow/deploy toggle. Other fighters
+      // still read the same key as a held web-swing input, so this costs no existing binding.
+      stow: buffer.take(map.web) || pressed(5),
       attack: buffer.take(map.attack) || pressed(0),
       special: buffer.take(map.special) || pressed(1),
+      // The edge is still what fires one-shot specials. Link's bow also needs to know the button
+      // is still down so it can draw instead of releasing on the next frame.
+      specialHeld: anyHeld(this.keys, map.special) || pressed(1),
       special2: buffer.take(map.special2) || pressed(2),
       special3: buffer.take(map.special3) || pressed(3),
       special4: buffer.take(map.special4) || pressed(14),

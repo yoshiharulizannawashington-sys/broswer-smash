@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import './glb-node-compat.mjs';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { buildRigGlb, FIXTURE_PATH, FIXTURE_JOINTS } from './make-rig-fixture.mjs';
@@ -16,6 +17,9 @@ import { resolveRig, classifyBone, CANONICAL_BONES, describeRig, resetRig } from
 import { retargetClip } from '../public/js/anim/animation_loader.js';
 import { buildAllClips, retimeClip, CLIP_SPECS } from '../public/js/anim/clip_library.js';
 import { AnimationController, attackClipId, attachAnimation } from '../public/js/anim/animation_controller.js';
+import { maskClip, maskCoverage, UPPER_BODY_BONES, LOWER_BODY_BONES } from '../public/js/anim/body_mask.js';
+import { ensureAnimationOverlays, updateAnimationOverlays, describeAnimationOverlays, resetAnimationOverlays } from '../public/js/anim/animation_overlays.js';
+import { clipFamily, resolveTransition, syncActionPhase } from '../public/js/anim/transition_policy.js';
 import { attachSpiderLegs, updateSpiderLegs, spiderLegTips, describeSpiderLegs, POSES, REACH } from '../public/js/anim/spider_legs.js';
 import { collectFormSurfaces, applyFormPresentation, clearFormPresentation, formPresentationReport } from '../public/js/anim/form_presentation.js';
 import { makeProceduralCharacter } from '../public/js/models.js';
@@ -42,6 +46,7 @@ function fakeFighter(overrides = {}) {
     hitstun: 0,
     guardHeld: false,
     guardBreak: 0,
+    victoryPose: 0,
     dodgeTimer: 0,
     flightMode: false,
     attackQueue: [],
@@ -82,16 +87,34 @@ for (const [key, alt] of [['goku', 'goku-alt'], ['iron_man_tony_stark', 'iron-ma
     Boolean(superseded?.url) && existsSync(resolve('public', String(superseded.url).replace(/^\//, ''))),
     String(superseded?.url || ''));
   const entry = manifest.characters[key];
-  check(`${key} is served by the validated roster body`,
-    entry?.enabled === true && /\/models\/characters\/roster\//.test(String(entry.url || '')),
+  const servedUrl = String(entry?.url || '');
+  // Goku's validated body is the licensed bespoke import, or the derived face-rigged export baked
+  // from it; the roster/goku.glb export is kept as the disabled rollback entry. Accept that
+  // deliberate exception only when the manifest records the runtime verification that justified it.
+  const validatedBespoke = key === 'goku'
+    && /\/models\/characters\/bespoke\/goku_body(?:_face_rigged)?\.glb$/.test(servedUrl)
+    && Boolean(entry?.verified?.runtimeTest);
+  // Iron Spider is the first promoted supplied body outside the generated roster directory. It is
+  // accepted only at its exact source-backed path and only with recorded runtime evidence.
+  const validatedIronSpider = key === 'iron_spider'
+    && /\/models\/characters\/iron_spider\/iron_spider_source_animated\.glb$/.test(servedUrl)
+    && Boolean(entry?.verified?.runtimeTest);
+  check(`${key} is served by the validated ${key === 'goku' ? 'bespoke' : key === 'iron_spider' ? 'promoted Iron Spider' : 'roster'} body`,
+    entry?.enabled === true && (/\/models\/characters\/roster\//.test(servedUrl) || validatedBespoke || validatedIronSpider),
     `${key}: enabled=${entry?.enabled} url=${entry?.url}`);
   const target = entry?.urls?.[0] || entry?.url || '';
   check(`${key} points at a file that is really on disk`,
     Boolean(target) && existsSync(resolve('public', target.replace(/^\//, ''))), target);
+  // A roster body names the licensed asset it stands in for; Goku's bespoke import is the
+  // licensed asset itself, so its recorded source and runtime verification are the proof.
+  const licensedSource = entry?.pendingLicensedAsset || entry?.source || '';
   check(`${key} still names the licensed source it stands in for`,
-    Boolean(entry?.pendingLicensedAsset), String(entry?.pendingLicensedAsset || ''));
+    Boolean(licensedSource), String(licensedSource || ''));
+  // The roster export, the bespoke import and a rejected HD import all record their evidence
+  // differently; every flagship entry must still carry an inspection and a runtime verdict.
   check(`${key} records how the export was verified`,
-    Boolean(entry.verified?.inspectedWith) && Boolean(entry.verified?.rosterTest),
+    Boolean(entry.verified?.inspectedWith)
+      && Boolean(entry.verified?.rosterTest || entry.verified?.runtimeTest || entry.verified?.runtimeStatus),
     JSON.stringify(entry.verified || null));
 }
 // And the general rule the flagship case is an exception to: every enabled entry resolves to a
@@ -102,6 +125,28 @@ for (const [key, entry] of entries) {
   check(`${key} is enabled only because its asset exists`, existsSync(resolve('public', target.replace(/^\//, ''))), target);
   check(`${key} does not claim to be the licensed source asset`, entry.assetKind !== 'licensed', String(entry.assetKind));
 }
+
+// The produced Goku asset is not just the licensed body with a runtime overlay: the registered file
+// must carry the baked face root and all four morph families. Parse the actual served file so a
+// stale or un-baked export fails CI rather than silently falling back to the runtime layer.
+const gokuAsset = readFileSync(resolve('public', manifest.characters.goku.url.replace(/^\//, '')));
+const gokuGltf = await parseGlb(gokuAsset);
+let gokuBakedRoot = null;
+let gokuBakedMeshes = 0;
+const gokuMorphs = new Set();
+gokuGltf.scene.traverse(node => {
+  if (node.userData?.gokuBakedFaceRig) gokuBakedRoot = node;
+  if (String(node.name || '').startsWith('Goku_Baked') && node.morphTargetDictionary) {
+    gokuBakedMeshes++;
+    for (const name of Object.keys(node.morphTargetDictionary)) gokuMorphs.add(name);
+  }
+});
+check('the registered Goku body carries the baked face morph rig',
+  Boolean(gokuBakedRoot) && gokuBakedRoot.parent?.name === 'Head'
+    && gokuBakedMeshes === 9
+    && ['Guard', 'Hit', 'Victory', 'Blink'].every(name => gokuMorphs.has(name)),
+  JSON.stringify({ root: gokuBakedRoot?.name, parent: gokuBakedRoot?.parent?.name,
+    meshes: gokuBakedMeshes, morphs: [...gokuMorphs] }));
 
 // ---------------------------------------------------------------- skinned glTF -> canonical rig
 console.log('\n[skinned glTF]');
@@ -144,6 +189,28 @@ check('the library covers locomotion, combat, defence, flight and objectives',
   ['idle', 'walk', 'run', 'jab', 'heavy_punch', 'block', 'dodge_right', 'hit_heavy', 'knockdown', 'get_up', 'fly_loop', 'knockout']
     .every(id => library.has(id)));
 
+// ---------------------------------------------------------------- body masks
+console.log('\n[body masks]');
+const runSource = library.get('run');
+const lowerRun = maskClip(runSource, rig, 'lower');
+const upperRun = maskClip(runSource, rig, 'upper');
+const lowerCoverage = maskCoverage(runSource, rig, 'lower');
+const upperCoverage = maskCoverage(runSource, rig, 'upper');
+const lowerNames = new Set(lowerRun.tracks.map(track => track.name));
+const upperNames = new Set(upperRun.tracks.map(track => track.name));
+check('a lower-body mask keeps pelvis and leg tracks', lowerRun.tracks.length > 0
+  && lowerCoverage.bones.includes('pelvis') && lowerCoverage.bones.includes('leftLeg')
+  && lowerCoverage.bones.every(bone => LOWER_BODY_BONES.includes(bone)), lowerCoverage.bones.join(','));
+check('an upper-body mask keeps torso, head and arm tracks', upperRun.tracks.length > 0
+  && upperCoverage.bones.includes('torso') && upperCoverage.bones.includes('leftArm')
+  && upperCoverage.bones.every(bone => UPPER_BODY_BONES.includes(bone)), upperCoverage.bones.join(','));
+check('the two masks drive disjoint tracks', [...lowerNames].every(name => !upperNames.has(name)));
+check('masking returns a copy, not a shortened source clip',
+  lowerRun !== runSource && upperRun !== runSource && runSource.tracks.length === lowerRun.tracks.length + upperRun.tracks.length,
+  `${runSource.tracks.length} = ${lowerRun.tracks.length} + ${upperRun.tracks.length}`);
+check('masked clips retain provenance', lowerRun.userData.mask === 'lower' && upperRun.userData.mask === 'upper'
+  && lowerRun.userData.maskSource === runSource.name);
+
 const peakTest = retimeClip(library.get('jab'), 0.4, 0.5);
 check('attack clips retime so the strike peak lands on the gameplay window',
   Math.abs(peakTest.duration - 0.4) < 0.001, `${peakTest.duration}`);
@@ -151,6 +218,10 @@ check('move kinds map onto authored clips',
   attackClipId({ kind: 'grab' }) === 'grab' && attackClipId({ kind: 'throw' }) === 'throw'
   && attackClipId({ kind: 'heavy' }, { comboStep: 3 }) === 'spinning_kick'
   && attackClipId({ kind: 'melee' }, { comboStep: 1 }) === 'jab');
+check('a resolved kick id wins over the light-attack fallback',
+  attackClipId({ id: 'front_kick', kind: 'melee' }, { comboStep: 1 }, new Map([['front_kick', true]])) === 'front_kick');
+check('a resolved move whose identity clip is absent falls back to the controller library',
+  attackClipId({ id: 'light1', kind: 'melee' }, { identityKey: 'superman', archetype: 'warrior' }, new Map([['jab', true]])) === 'jab');
 
 // ---------------------------------------------------------------- controller drives the rig
 console.log('\n[animation controller]');
@@ -163,6 +234,227 @@ for (let i = 0; i < 12; i++) { fighter.velocity.set(6.5, 0, 0); controller.updat
 check('clips actually rotate the skeleton', shoulder.quaternion.angleTo(before) > 0.01,
   `${shoulder.quaternion.angleTo(before).toFixed(4)} rad`);
 check('locomotion selects a walk/run clip', ['walk', 'run', 'sprint'].includes(controller.describe().active), controller.describe().active);
+
+// ---------------------------------------------------------------- layered playback
+console.log('\n[layered playback]');
+fighter.guardHeld = true; fighter.velocity.set(6.5, 0, 0);
+controller.update(1 / 60);
+let layers = controller.describe().layers;
+check('guard splits into lower locomotion and an upper-body block',
+  layers?.overlay === 'block' && layers?.overlayRegion === 'upper'
+    && layers?.baseRegion === 'lower' && ['walk', 'run', 'sprint'].includes(layers?.base), JSON.stringify(layers));
+check('both guard lanes are live on the mixer',
+  Boolean(controller._baseAction?.isRunning()) && Boolean(controller._overlayAction?.isRunning()),
+  `${controller._baseAction?.getClip().name} / ${controller._overlayAction?.getClip().name}`);
+check('the live guard action is the upper-only copy',
+  controller._overlayAction.getClip().userData.mask === 'upper'
+    && controller._baseAction.getClip().userData.mask === 'lower');
+
+fighter.guardHeld = false;
+fighter.attackQueue = [{ kind: 'melee', start: 0.05, end: 0.16, total: 0.32, hit: false, t: 0 }];
+controller.update(1 / 60);
+layers = controller.describe().layers;
+check('a punch layers over locomotion instead of replacing it',
+  layers?.overlay === 'jab' && layers?.overlayRegion === 'upper'
+    && layers?.baseRegion === 'lower' && ['walk', 'run', 'sprint'].includes(layers?.base), JSON.stringify(layers));
+check('the layered punch is retimed and still reports the attack as active',
+  controller.describe().active === 'jab' && controller._overlayAction.getClip().userData.mask === 'upper');
+
+fighter.attackQueue = [{ id: 'front_kick', kind: 'melee', start: 0.05, end: 0.2, total: 0.38, hit: false, t: 0 }];
+controller.update(1 / 60);
+layers = controller.describe().layers;
+check('a kick reverses the split: stance on top, kick on the legs',
+  layers?.overlay === 'front_kick' && layers?.overlayRegion === 'lower'
+    && layers?.baseRegion === 'upper' && layers?.base === 'fighting_idle', JSON.stringify(layers));
+
+fighter.attackQueue = [];
+fighter.hitstun = 0.5;
+controller.update(1 / 60);
+check('hitstun tears both lanes down and owns the whole body',
+  controller.describe().layers === null && /hit_/.test(controller.describe().active),
+  JSON.stringify(controller.describe().layers));
+
+fighter.hitstun = 0; fighter.guardHeld = false; fighter.velocity.set(6.5, 0, 0);
+// The reaction one-shot intentionally holds its authored duration; release that test lock so this
+// assertion measures the post-lock layer teardown rather than the reaction hold itself.
+controller._lock = null;
+controller.update(1 / 60);
+check('returning to locomotion clears the mask and resumes one whole-body action',
+  controller.describe().layers === null && ['walk', 'run', 'sprint'].includes(controller.describe().active),
+  JSON.stringify(controller.describe()));
+
+// ---------------------------------------------------------------- additive overlays
+console.log('\n[additive face + weapon overlays]');
+// Build a tiny face/weapon rig with the same material contract as the sculpted bodies. This runs
+// the real overlay module, not a controller-specific stub, so both owners share the proof.
+const overlayModel = new THREE.Group();
+const overlayHead = new THREE.Group();
+overlayHead.name = 'head';
+const overlayNeck = new THREE.Group();
+overlayNeck.name = 'neck';
+const overlayBrow = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.01, 0.01), new THREE.MeshBasicMaterial({ name: 'fighter-brow' }));
+overlayBrow.position.set(0.04, 0.03, 0.1);
+overlayBrow.rotation.z = 0.2;
+const overlayMouth = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.01), new THREE.MeshBasicMaterial({ name: 'fighter-mouth' }));
+overlayMouth.position.set(0, -0.03, 0.1);
+const overlayEye = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), new THREE.MeshBasicMaterial({ name: 'fighter-eye-white' }));
+overlayEye.name = 'eye-l';
+overlayEye.position.set(-0.04, 0.01, 0.1);
+const overlayLid = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), new THREE.MeshBasicMaterial({ name: 'fighter-blink' }));
+overlayLid.name = 'eyelid-l';
+overlayLid.position.set(-0.04, 0.012, 0.102);
+overlayLid.scale.set(1, 1, 0.35);
+overlayHead.add(overlayBrow, overlayMouth, overlayEye, overlayLid);
+overlayModel.add(overlayHead, overlayNeck);
+const overlayHand = new THREE.Group();
+overlayHand.name = 'hand-r';
+const overlayWeapon = new THREE.Group();
+overlayWeapon.name = 'overlay-test-sword';
+overlayWeapon.position.set(0.1, -0.05, 0.2);
+overlayWeapon.rotation.set(0.1, 0.2, 0.3);
+overlayHand.add(overlayWeapon);
+overlayModel.add(overlayHand);
+overlayModel.userData = { head: overlayHead, neck: overlayNeck, rightHand: overlayHand, equippedWeaponRight: overlayWeapon, weaponKind: 'sword' };
+const overlayFighter = fakeFighter({ velocity: new THREE.Vector3(5, 0, 0), guardHeld: false });
+const overlayState = ensureAnimationOverlays(overlayModel, overlayFighter);
+check('the overlay binds the face and weapon once',
+  ensureAnimationOverlays(overlayModel, overlayFighter) === overlayState
+    && overlayState.faceParts.length === 4 && overlayState.weapons.length === 1,
+  `${overlayState.faceParts.length} face parts, ${overlayState.weapons.length} weapons`);
+const baseHead = overlayHead.quaternion.clone();
+const baseNeck = overlayNeck.quaternion.clone();
+const baseBrow = overlayBrow.rotation.z;
+const baseMouth = overlayMouth.scale.y;
+const baseLid = overlayLid.scale.y;
+const baseWeapon = overlayWeapon.quaternion.clone();
+const baseWeaponPosition = overlayWeapon.position.clone();
+for (let i = 0; i < 24; i++) updateAnimationOverlays(overlayModel, overlayFighter, 1 / 60, { owner: 'test', active: 'walk' });
+check('the face overlay moves the head without replacing the clip pose',
+  overlayHead.quaternion.angleTo(baseHead) > 0.002, `${overlayHead.quaternion.angleTo(baseHead).toFixed(4)} rad`);
+check('the brow and mouth receive additive expression offsets',
+  Math.abs(overlayBrow.rotation.z - baseBrow) > 0.002
+    && Math.abs(overlayMouth.scale.y - baseMouth) > 0.001,
+  `brow ${overlayBrow.rotation.z.toFixed(3)}, mouth ${overlayMouth.scale.y.toFixed(3)}`);
+check('the authored lid stays a thin line outside the blink pulse',
+  overlayLid.scale.y < baseLid * 0.2, `${overlayLid.scale.y.toFixed(4)}`);
+overlayFighter.guardHeld = true;
+for (let i = 0; i < 18; i++) updateAnimationOverlays(overlayModel, overlayFighter, 1 / 60, { owner: 'test', active: 'block' });
+const guardLid = overlayLid.scale.y;
+overlayState.clock = 3.74;
+updateAnimationOverlays(overlayModel, overlayFighter, 1 / 60, { owner: 'test', active: 'walk' });
+const blinkReport = describeAnimationOverlays(overlayModel);
+check('the authored lid closes on the blink pulse',
+  blinkReport.face.blink > 0.8 && overlayLid.scale.y > baseLid * 0.9,
+  `blink ${blinkReport.face.blink}, lid ${overlayLid.scale.y.toFixed(3)}`);
+const guardExpression = describeAnimationOverlays(overlayModel);
+check('guard requests the guard expression on the face channel',
+  guardExpression.face.expression === 'guard' && guardExpression.face.expressionWeight > 0.5,
+  JSON.stringify(guardExpression.face));
+check('guard narrows the eyes without closing them',
+  guardLid > baseLid * 0.2 && guardLid < baseLid * 0.5, `${guardLid.toFixed(4)}`);
+overlayFighter.guardHeld = false;
+overlayFighter.hitstun = 0.30;
+for (let i = 0; i < 18; i++) updateAnimationOverlays(overlayModel, overlayFighter, 1 / 60, { owner: 'test', active: 'hit_heavy' });
+const hitExpression = describeAnimationOverlays(overlayModel);
+check('hitstun requests the hit expression on the face channel',
+  hitExpression.face.expression === 'hit' && hitExpression.face.expressionWeight > 0.5,
+  JSON.stringify(hitExpression.face));
+overlayFighter.hitstun = 0;
+overlayFighter.victoryPose = 4;
+for (let i = 0; i < 18; i++) updateAnimationOverlays(overlayModel, overlayFighter, 1 / 60, { owner: 'test', active: 'victory' });
+const victoryExpression = describeAnimationOverlays(overlayModel);
+check('the victory pose requests the victory expression on the face channel',
+  victoryExpression.face.expression === 'victory' && victoryExpression.face.expressionWeight > 0.5,
+  JSON.stringify(victoryExpression.face));
+overlayFighter.victoryPose = 0;
+for (let i = 0; i < 18; i++) updateAnimationOverlays(overlayModel, overlayFighter, 1 / 60, { owner: 'test', active: 'idle' });
+const neutralExpression = describeAnimationOverlays(overlayModel);
+check('the face returns to neutral after the expression ends',
+  neutralExpression.face.expression === 'neutral' && neutralExpression.face.expressionWeight < 0.1,
+  JSON.stringify(neutralExpression.face));
+check('the weapon overlay moves the grip, not the hand bone',
+  overlayWeapon.quaternion.angleTo(baseWeapon) > 0.002
+    && overlayWeapon.position.distanceTo(baseWeaponPosition) > 0.0005,
+  `${overlayWeapon.quaternion.angleTo(baseWeapon).toFixed(4)} rad, ${overlayWeapon.position.distanceTo(baseWeaponPosition).toFixed(4)} m`);
+const overlayReport = describeAnimationOverlays(overlayModel);
+check('the overlay report names both owned channels',
+  overlayReport?.owner === 'test' && overlayReport.face.parts.includes('brow')
+    && overlayReport.face.parts.includes('mouth') && overlayReport.face.parts.includes('blink')
+    && overlayReport.weapon.count === 1,
+  JSON.stringify(overlayReport));
+check('resetting the overlay restores the face and grip base transforms',
+  resetAnimationOverlays(overlayModel)
+    && overlayHead.quaternion.angleTo(baseHead) < 1e-6
+    && overlayNeck.quaternion.angleTo(baseNeck) < 1e-6
+    && Math.abs(overlayBrow.rotation.z - baseBrow) < 1e-6
+    && Math.abs(overlayMouth.scale.y - baseMouth) < 1e-6
+    && Math.abs(overlayLid.scale.y - baseLid) < 1e-6
+    && overlayWeapon.quaternion.angleTo(baseWeapon) < 1e-6
+    && !overlayModel.userData.animationOverlays,
+  'reset restores snapshots');
+
+// The controller owns the body; the overlay must not disturb the two mask lanes it just wrote.
+const controllerOverlayWeapon = new THREE.Object3D();
+controllerOverlayWeapon.name = 'controller-test-sword';
+controllerOverlayWeapon.position.set(0.02, -0.04, 0.18);
+rig.joints.rightHand.add(controllerOverlayWeapon);
+gltf.scene.userData.equippedWeaponRight = controllerOverlayWeapon;
+fighter.guardHeld = true;
+fighter.attackQueue = [];
+fighter.velocity.set(6.5, 0, 0);
+controller.update(1 / 60);
+const controllerOverlayReport = controller.describe();
+check('the controller keeps its body mask while the overlay runs',
+  controllerOverlayReport.layers?.overlay === 'block'
+    && controllerOverlayReport.layers?.overlayRegion === 'upper'
+    && controllerOverlayReport.layers?.baseRegion === 'lower',
+  JSON.stringify(controllerOverlayReport.layers));
+check('the controller exposes the additive weapon overlay',
+  controllerOverlayReport.overlays?.owner === 'controller'
+    && controllerOverlayReport.overlays?.weapon.count === 1
+    && controllerOverlayReport.overlays?.weapon.weight > 0,
+  JSON.stringify(controllerOverlayReport.overlays));
+// Return the shared controller to locomotion before the transition-policy checks below; those
+// assertions deliberately measure run -> sprint, not the guard state used to prove the overlay.
+fighter.guardHeld = false;
+fighter.velocity.set(6.5, 0, 0);
+controller.update(1 / 60);
+
+// ---------------------------------------------------------------- transition policy
+console.log('\n[transition policy]');
+check('imported and authored names resolve to the same families',
+  clipFamily('Naruto_hit_light') === 'reaction' && clipFamily('hit_heavy') === 'reaction'
+    && clipFamily('authored_light1') === 'attack' && clipFamily('SpiderMan_Jab') === 'attack'
+    && clipFamily('authored_form_formSage') === 'form' && clipFamily('Naruto_idle') === 'idle',
+  ['Naruto_hit_light', 'hit_heavy', 'authored_light1', 'SpiderMan_Jab', 'authored_form_formSage', 'Naruto_idle']
+    .map(name => `${name}:${clipFamily(name)}`).join(', '));
+const gaitTransition = resolveTransition('walk', 'run', { requestedFade: 0.13 });
+const attackTransition = resolveTransition('walk', 'jab', { requestedFade: 0.13 });
+const reactionTransition = resolveTransition('idle', 'Naruto_hit_light', { requestedFade: 0.13 });
+check('walk-to-run inherits the gait phase', gaitTransition.syncPhase === true, JSON.stringify(gaitTransition));
+check('an attack does not inherit a gait phase', attackTransition.syncPhase === false, JSON.stringify(attackTransition));
+check('reactions blend faster than locomotion transitions', reactionTransition.fade < gaitTransition.fade,
+  `${reactionTransition.fade} vs ${gaitTransition.fade}`);
+check('reactions are sharper than attack transitions', reactionTransition.fade < attackTransition.fade,
+  `${reactionTransition.fade} vs ${attackTransition.fade}`);
+const phaseSource = { getClip: () => ({ duration: 2 }), time: 1.5 };
+const phaseTarget = { getClip: () => ({ duration: 0.8 }), time: 0 };
+const transferred = syncActionPhase(phaseTarget, phaseSource);
+check('gait phase transfer preserves the cycle position',
+  Math.abs(transferred - 0.75) < 1e-9 && Math.abs(phaseTarget.time - 0.6) < 1e-9,
+  `${transferred} @ ${phaseTarget.time}s`);
+
+const runPhase = controller.currentTime / Math.max(1e-4, controller._action.getClip().duration);
+fighter.velocity.set(13, 0, 0);
+controller.update(1 / 60);
+const gaitSwitch = controller.lastTransition;
+check('the controller records its own transition decision', Boolean(gaitSwitch?.from && gaitSwitch?.to), JSON.stringify(gaitSwitch));
+check('run-to-sprint is phase-synced by the controller',
+  gaitSwitch?.syncPhase === true && gaitSwitch?.to === 'sprint', JSON.stringify(gaitSwitch));
+check('the synced phase matches the outgoing run cycle',
+  Number.isFinite(gaitSwitch?.phase) && Math.abs(gaitSwitch.phase - runPhase) < 0.12,
+  `${gaitSwitch?.phase} vs ${runPhase}`);
+fighter.velocity.set(0, 0, 0);
 
 fighter.attackQueue = [{ kind: 'melee', start: 0.05, end: 0.16, total: 0.32, hit: false, t: 0 }];
 controller.update(1 / 60);

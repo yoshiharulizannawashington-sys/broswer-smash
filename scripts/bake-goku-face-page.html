@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bake Goku face rig</title>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/","three/examples/jsm/":"/node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { bakeGokuFace } from '/scripts/goku-face-bake-browser.js';
+window.THREE = THREE;
+window.GLTFLoader = GLTFLoader;
+window.GLTFExporter = GLTFExporter;
+window.bakeGokuFace = bakeGokuFace;
+window.__bakeReady = true;
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// Explicit in-session arena transition chain: Asgard → Hogwarts → Death Star → Tournament → Asgard.
+// Explicit in-session arena transition chain: Asgard → Hogwarts → Tournament → Asgard.
 //
 // For each switch this checks that the intended arena actually mounted and is the only visible
 // arena, that floor material, fog, background and exposure match that arena, that the switch
@@ -32,11 +32,10 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? '  ok ' : ' FAIL'} ${name}${detail ? ' — ' + detail : ''}`);
 };
 
-const SEQUENCE = ['asgard', 'hogwarts', 'deathstar', 'tournament', 'asgard'];
+const SEQUENCE = ['asgard', 'hogwarts', 'tournament', 'asgard'];
 const EXPECTED = {
   asgard: { background: '7fa3c6', fog: '8fa3b4', exposure: 0.8 },
   hogwarts: { background: '171a2d', fog: '41414b', exposure: 1 },
-  deathstar: { background: '070b14', fog: '202b3a', exposure: 1.06 },
   tournament: { background: '4a7596', fog: '9ab5c5', exposure: 0.98 }
 };
 

@@ -107,8 +107,8 @@ export const ABILITY_KIT = Object.freeze({
     ab('SHOCKWAVE STRIKE', 'shockwave', 29, 6, { behavior: 'shockwave', radius: 6.6, speed: 24, stun: .5, knockback: 15, color: 0xfff0b8, note: 'Air-pressure hit: the largest knockback in the roster.' })
   ]),
   l_death_note_style: Object.freeze([
-    ab('PSYCHOLOGICAL FEINT', 'psychic', 7, 3.4, { speed: 20, stun: 1.2, knockback: 1.6, color: 0xe6e8f2, note: 'Baits a whiff and holds the opponent still.' }),
-    ab('PREPARED TRAP', 'earth', 17, 5.2, { behavior: 'shockwave', radius: 4.2, speed: 18, stun: .9, knockback: 7.2, color: 0xd4d6e0, note: 'Small marked zone; must be placed before it matters.' })
+    ab('CALCULATED FEINT', 'psychic', 7, 3.4, { speed: 20, stun: 1.2, knockback: 1.6, color: 0xe6e8f2, note: 'Baits a whiff and holds the opponent still.' }),
+    ab('WRITTEN TRAP', 'psychic', 17, 5.2, { behavior: 'shockwave', radius: 4.2, speed: 18, stun: .9, knockback: 7.2, color: 0xd4d6e0, note: 'A marked zone that closes only after the plan is set.' })
   ]),
   all_might: Object.freeze([
     ab('OKLAHOMA SMASH', 'shockwave', 24, 4.4, { behavior: 'shockwave', radius: 5.4, speed: 24, stun: .62, knockback: 12.2, color: 0xffdf78, note: 'Heroic area blow with real recovery.' }),
@@ -161,8 +161,8 @@ export const ABILITY_KIT = Object.freeze({
     ab('DEEP FOREST', 'wood', 18, 5.2, { behavior: 'shockwave', radius: 6, speed: 18, stun: .85, knockback: 8.8, color: 0x8fe0a2, note: 'Roots erupt across a wide zone.' })
   ]),
   lord_voldemort: Object.freeze([
-    ab('SERPENT SUMMONING', 'curse', 20, 4.2, { speed: 26, stun: 1, knockback: 6, color: 0x9dffb8, note: 'Dark summons that hold a lane.' }),
-    ab('APPARITION STRIKE', 'magic', 18, 3.6, { behavior: 'dashStrike', dashSpeed: 40, range: 17, speed: 40, stun: .45, knockback: 5.6, color: 0x7dffa6, note: 'Teleport behind the guard and curse from close.' })
+    ab('EXPECTO PATRONUM', 'magic', 20, 4.2, { speed: 26, stun: 1, knockback: 6, color: 0xcfe8ff, note: 'A silver guardian holds the lane and buys space.' }),
+    ab('DISARMING CHARM', 'magic', 18, 3.6, { behavior: 'dashStrike', dashSpeed: 40, range: 17, speed: 40, stun: .45, knockback: 5.6, color: 0xffd76a, note: 'Closes distance and knocks the guard open.' })
   ]),
   sasuke_uchiha: Object.freeze([
     ab('AMATERASU', 'curse', 24, 5.4, { behavior: 'shockwave', radius: 4.6, speed: 20, stun: .9, knockback: 7.6, color: 0x2f2f4f, note: 'Black flame that punishes standing still.' }),
@@ -228,7 +228,7 @@ export const LIGHT_EXTENSIONS = Object.freeze({
   naruto_uzumaki: ['Dual-Clone Assault', 'Uzumaki Uppercut'],
   vegeta: ['Rapid Punch', 'Explosive Uppercut'],
   saitama: ['Spinning Strike', 'Powerful Uppercut'],
-  l_death_note_style: ['Deceptive Kick', 'Prepared Counterattack'],
+  l_death_note_style: ['Calculated Kick', 'Countermeasure'],
   all_might: ['Spinning Punch', 'Detroit Uppercut'],
   edward_elric: ['Weapon Strike', 'Transmuted Uppercut'],
   levi_ackerman: ['Aerial Cross Slash', 'Precision Finisher'],
@@ -241,7 +241,7 @@ export const LIGHT_EXTENSIONS = Object.freeze({
   aang: ['Elemental Strike', 'Rising Air Blast'],
   madara_uchiha: ['Weapon-Assisted Strike', 'Fire-Enhanced Finisher'],
   hashirama_senju: ['Wooden Staff Hit', 'Wood Dragon Finisher'],
-  lord_voldemort: ['Curse Strike', 'Explosive Spell Finisher'],
+  lord_voldemort: ['Wand Sweep', 'Disarming Finisher'],
   sasuke_uchiha: ['Sharingan Counter', 'Chidori Finisher'],
   edna_mode: ['Mechanical Punch', 'Explosive Gadget Finisher'],
   captain_jack_sparrow: ['Reverse Sword Strike', 'Deceptive Finisher'],
@@ -263,12 +263,12 @@ export const HEAVY_EXTENSIONS = Object.freeze({
   doctor_strange: 'Dimensional Ground Slam', arnold_schwarzenegger: 'Tactical Ground Strike',
   goku: 'Ki-Enhanced Ground Slam', naruto_uzumaki: 'Whirlwind Barrage',
   vegeta: 'Ground Impact Punch', saitama: 'Ground-Shattering Punch',
-  l_death_note_style: 'Prepared Impact Strike', all_might: 'United States Smash Setup',
+  l_death_note_style: 'Calculated Impact Strike', all_might: 'United States Smash Setup',
   edward_elric: 'Ground Transmutation', levi_ackerman: 'Spinning Ground Assault',
   mario: 'Spinning Heavy Attack', luigi: 'Poltergust Slam', kratos: 'Spartan Ground Breaker',
   link: 'Spin Attack', master_chief: 'Armored Ground Slam', thor: 'Mjolnir Ground Slam',
   aang: 'Elemental Ground Slam', madara_uchiha: 'Meteor Technique',
-  hashirama_senju: 'Giant Wood Slam', lord_voldemort: 'Forbidden Magic Slam',
+  hashirama_senju: 'Giant Wood Slam', lord_voldemort: 'Patronus Ground Burst',
   sasuke_uchiha: 'Susanoo Ground Slam', edna_mode: 'Mechanical Ground Trap',
   captain_jack_sparrow: "Pirate's Dirty Trick", spider_man: 'Aerial Slam',
   iron_spider: 'Four-Leg Ground Slam', wolverine_logan: 'Berserker Ground Slam',

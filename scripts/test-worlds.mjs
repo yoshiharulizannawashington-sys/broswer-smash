@@ -8,7 +8,8 @@ import {
   WORLDS, WORLD_ORDER, WORLD_LOCATIONS, PALETTES, worldParts, blocksFromParts, worldGroups, worldLocation
 } from '../public/js/worlds/world_catalog.js';
 import {
-  ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds, solidAt
+  ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds, solidAt,
+  STEP_HEIGHT
 } from '../public/js/world/arena_layouts.js';
 import { HOGWARTS_CONNECTIONS, HOGWARTS_GRAPH_NOTES, HOGWARTS_INTERIOR_AREAS, HOGWARTS_INTERIOR_LOCATIONS, HOGWARTS_NAV_ROUTES } from '../public/js/worlds/hogwarts_interior.js';
 
@@ -21,7 +22,7 @@ function ok(condition, message) {
 const near = (a, b, tolerance) => Math.abs(a - b) <= tolerance;
 
 // ---- worlds register -------------------------------------------------------
-ok(WORLD_ORDER.length === 6, `expected six worlds, got ${WORLD_ORDER.length}`);
+ok(WORLD_ORDER.length === 5, `expected five worlds, got ${WORLD_ORDER.length}`);
 for (const id of WORLD_ORDER) {
   const world = WORLDS[id];
   ok(Boolean(world), `world ${id} exists`);
@@ -30,12 +31,12 @@ for (const id of WORLD_ORDER) {
   ok(Boolean(PALETTES[world.paletteKey]), `${id} has a palette`);
 }
 
-// Several dozen distinct landmark stages across the six worlds.
+// Several dozen distinct landmark stages across the five worlds.
 ok(WORLD_LOCATIONS.length >= 20, `expected 20+ battle locations, got ${WORLD_LOCATIONS.length}`);
 const ids = new Set(WORLD_LOCATIONS.map(location => location.id));
 ok(ids.size === WORLD_LOCATIONS.length, 'battle location ids are unique');
 const groups = worldGroups();
-ok(groups.length === 6 && groups.every(group => group.locations.length >= 5), 'every world exposes its locations to the menu');
+ok(groups.length === 5 && groups.every(group => group.locations.length >= 5), 'every world exposes its locations to the menu');
 ok(groups.flatMap(group => group.locations).length === WORLD_LOCATIONS.length, 'menu lists every battle location');
 
 // ---- geometry plans --------------------------------------------------------
@@ -182,20 +183,6 @@ for (const id of WORLD_ORDER) {
   }
 }
 {
-  // A catwalk is overhead, not a wall: the Reactor Core deck must be walkable under and on.
-  const layout = layoutFor('deathstar_reactor');
-  const deck = layout.blocks.find(block => block.bottom != null && block.bottom > 5 && block.top < 12);
-  ok(Boolean(deck), 'Reactor Core has raised catwalks');
-  if (deck) {
-    const under = { x: (deck.x0 + deck.x1) / 2, y: 0, z: (deck.z0 + deck.z1) / 2 };
-    const probe = { ...under };
-    resolveCollision(probe, { x: 0, y: 0, z: 0 }, 0.7, layout);
-    ok(near(probe.x, under.x, 0.001) && near(probe.z, under.z, 0.001), 'a fighter stands under a catwalk without being pushed');
-    ok(near(groundHeightAt(under.x, under.z, layout, deck.top + 0.1, 0.6), deck.top, 0.01), 'the catwalk deck is walkable from above');
-    ok(groundHeightAt(under.x, under.z, layout, 0) < deck.bottom, 'from the floor the catwalk is not ground');
-  }
-}
-{
   // The DBZ island edge is a cliff stage: leaving it is a ring-out, not a clamp.
   const layout = layoutFor('dbz_cliffs');
   ok(isOutOfBounds({ x: 220, y: 3.2, z: -100 }, layout), 'outside the tournament island counts as out');
@@ -227,7 +214,11 @@ for (const id of WORLD_ORDER) {
 ok(worldLocation('dbz_grand_prize')?.world === 'dbz', 'world lookup resolves a DBZ stage');
 ok(worldLocation('konoha_main_street')?.world === 'konoha', 'world lookup resolves a Konoha stage');
 ok(worldLocation('nyc_stark_roof')?.world === 'nyc', 'world lookup resolves a New York stage');
-ok(worldLocation('deathstar_hangar')?.world === 'deathstar', 'world lookup resolves a Death Star stage');
+for (const id of ['nyc_stark_plaza', 'nyc_stark_roof']) {
+  const landmarkStage = worldLocation(id);
+  ok(landmarkStage?.camera?.skyline === true, `${id} opens the camera toward the imported skyline`);
+  ok(Number.isFinite(landmarkStage?.camera?.yaw) && landmarkStage.camera.yaw !== 0, `${id} offsets the skyline shot past the playable tower`);
+}
 ok(worldLocation('nope') === null, 'unknown locations return null');
 
 // ---- landmark presence (geometry, not visual claims) -----------------------
@@ -236,7 +227,6 @@ const has = (id, mat) => matSet(id).has(mat);
 ok(has('dbz', 'water') && has('dbz', 'gold') && has('dbz', 'banner'), 'DBZ island has ocean, gold trim and banners');
 ok(has('dbz', 'cloud') && has('dbz', 'mountain'), 'DBZ island has clouds and a mountain horizon');
 ok(has('asgard', 'crystalGlow') && has('asgard', 'goldLight') && has('asgard', 'crystal'), 'Asgard has glowing Bifrost and gold architecture');
-ok(has('deathstar', 'glowRed') && has('deathstar', 'glowGreen') && has('deathstar', 'star'), 'Death Star has warning lights, core glow and starfield');
 ok(has('hogwarts', 'floorHall') && has('hogwarts', 'bannerRed') && has('hogwarts', 'flame'), 'Great Hall has floors, house banners and candles');
 ok(has('hogwarts', 'water') && has('hogwarts', 'leaf'), 'Hogwarts has the Black Lake and forest');
 ok(has('konoha', 'cliff') && has('konoha', 'mountain') && has('konoha', 'glassWarm'), 'Konoha has the Hokage cliff, mountain horizon and lit windows');
@@ -382,6 +372,51 @@ for (const id of WORLD_ORDER) {
     const proven = HOGWARTS_CONNECTIONS.filter(edge => edge.route).length;
     ok(proven >= 8, `${proven} graph edges are proven by a walked route`);
   }
+
+// ---- walkable routes to raised ground --------------------------------------
+// A raised platform is only usable if a fighter can walk up to it: a riser taller than
+// STEP_HEIGHT is a wall, not a stair. These walk the routes the way the game does, sampling
+// the ground under the feet and failing on any riser the fighter could not step onto.
+function walkRoute(layout, points) {
+  let y = groundHeightAt(points[0][0], points[0][1], layout, layout.ground);
+  for (let i = 1; i < points.length; i++) {
+    const [ax, az] = points[i - 1], [bx, bz] = points[i];
+    const legs = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / .4));
+    for (let s = 1; s <= legs; s++) {
+      const x = ax + (bx - ax) * s / legs, z = az + (bz - az) * s / legs;
+      const next = groundHeightAt(x, z, layout, y);
+      if (next > y + STEP_HEIGHT + 1e-6) {
+        return { y, failed: `${(next - y).toFixed(2)} m riser at ${x.toFixed(1)}, ${z.toFixed(1)}` };
+      }
+      y = next;
+    }
+  }
+  return { y };
+}
+{
+  // Asgard's residential terraces sit 1.3 m and 1.7 m above the plaza.
+  const layout = layoutFor('asgard_marketplace');
+  const first = walkRoute(layout, [[42, 55], [42, 61]]);
+  ok(!first.failed, `Asgard's first terrace is walkable from the plaza (${first.failed || 'ok'})`);
+  ok(near(first.y, 1.8, .1), `Asgard's first terrace stair reaches its top (${first.y.toFixed(2)} m)`);
+  const second = walkRoute(layout, [[-74, -3], [-74, -12]]);
+  ok(!second.failed, `Asgard's second terrace is walkable from the avenue (${second.failed || 'ok'})`);
+  ok(near(second.y, 2.2, .1), `Asgard's second terrace stair reaches its top (${second.y.toFixed(2)} m)`);
+}
+{
+  // The Valley of the End rim stair: up, across, back, across, up, across, back, out onto the
+  // lookout deck. Each leg is one flight or one landing of the switchback.
+  const layout = layoutFor('konoha_valley');
+  const route = walkRoute(layout, [
+    [-31.8, 249], [-31.8, 265],
+    [-35.6, 267.8], [-35.6, 252.2],
+    [-31.8, 252.2], [-31.8, 268],
+    [-35.6, 270.8], [-35.6, 256],
+    [-44, 253]
+  ]);
+  ok(!route.failed, `the Valley of the End rim stair is walkable from the valley floor (${route.failed || 'ok'})`);
+  ok(near(route.y, 21.6, .2), `the rim stair reaches the lookout deck (${route.y.toFixed(2)} m)`);
+}
 
 // ---- report ----------------------------------------------------------------
 if (failures.length) {

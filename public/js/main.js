@@ -14,12 +14,19 @@ import { createCombatItems } from './combat_items.js?v=browser-smash-phase3-v45-
 import { makeProceduralCharacter, upgradeCharacterWithBlenderModel, equipCharacterWeapons } from './models.js?v=browser-smash-phase3-v45-20261027';
 import { releaseModelTextures, textureOwnershipReport } from './render/texture_ownership.js';
 import { validateFighterRig, isEquippedWeapon } from './rig_validation.js?v=browser-smash-phase3-v45-20261027';
+import { applyHeightProfile, AUTHORING_BASELINE_HEIGHT } from './character_scale.js';
+import { installHeightLineup } from './height_lineup.js';
 import { resolveRig } from './anim/rig_map.js?v=browser-smash-phase3-v45-20261027';
 import { createFinalValley } from './arenas/final_valley.js?v=browser-smash-phase3-v45-20261027';
-import { setCinematicArena } from './arenas/cinematic_arenas.js?v=browser-smash-phase3-v45-20261027';
-import { upgradeFighterModel, animateHumanFighter, applyHulkDebrisPose } from './human_fighter.js?v=browser-smash-phase3-v45-20261027';
+import { setCinematicArena } from './arenas/cinematic_arenas.js?v=cinematic-atoll-shelf-v7-20261114';
+import { upgradeFighterModel, animateHumanFighter, applyHulkDebrisPose } from './human_fighter.js?v=browser-smash-phase3-v49-20261124';
 import { attachAnimation } from './anim/animation_controller.js?v=browser-smash-phase3-v45-20261027';
+import { applyLocomotionPresentation } from './anim/foot_plant.js?v=browser-smash-locomotion-v2-20261124';
+import { applyFlightLocomotionPose } from './anim/flight_locomotion.js?v=browser-smash-flight-locomotion-v1-20261123';
+import { applyWeaponCarryPoses, applyWeaponStowPose } from './anim/weapon_carry.js';
 import { attachSpiderLegs, updateSpiderLegs, spiderLegTips } from './anim/spider_legs.js?v=browser-smash-phase3-v45-20261027';
+import { applyNativeSpiderStow, resetNativeSpiderStow } from './anim/native_spider_stow.js?v=browser-smash-phase3-v45-20261027';
+import { nativeSpiderLegTipVolumes } from './anim/native_spider_legs.js?v=browser-smash-native-leg-tips-20261111';
 import { signatureFor } from './combat/character_identity.js';
 import { describeModes } from './ui/game_modes.js';
 import { createDestruction } from './world/destruction.js';
@@ -36,7 +43,9 @@ import createCombatVFX from './combat_vfx.js?v=browser-smash-phase3-v45-20261027
 import { createMatch, resetMatch, evaluateRound, awardRound, nextRound, matchSummary } from './combat/combat_rules.js?v=browser-smash-phase3-v45-20261027';
 import { sweptSphere, segmentSolid } from './combat/projectile_hit.js?v=browser-smash-phase3-v45-20261027';
 import { blocksFromGroup as arenaCameraBlocks } from './world/camera_blocks.js?v=browser-smash-phase3-v45-20261027';
-import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds, solidAt } from './world/arena_layouts.js?v=browser-smash-phase3-v45-20261027';
+import { buildTerrainHeightfield } from './world/terrain_heightfield.js?v=skyloft-terrain-v1-20261114';
+import { buildSkyloftCollision } from './world/skyloft_collision.js?v=skyloft-collision-v2-20261114';
+import { ARENA_LAYOUTS, layoutFor, spawnPoints, groundHeightAt, resolveCollision, clampToBounds, isOutOfBounds, solidAt } from './world/arena_layouts.js?v=atoll-shelf-v1-20261114';
 import { initCharacterSelect } from './ui/character_select.js?v=browser-smash-phase3-v45-20261027';
 import { initPauseMenu } from './ui/pause_menu.js?v=browser-smash-phase3-v45-20261027';
 import { initTrainingPanel } from './ui/training_panel.js?v=browser-smash-phase3-v45-20261027';
@@ -44,6 +53,9 @@ import { skillFor, normalizeSkillLevel, DEFAULT_SKILL_LEVEL } from './combat/cpu
 import { applyEquipmentState } from './equipment_state.js';
 import { worldLocation, worldGroups, WORLD_LOCATIONS, STAGE_LIGHTING } from './worlds/world_catalog.js?v=browser-smash-phase3-v45-20261027';
 import { buildWorldGroup, disposeWorldGroup } from './worlds/world_builder.js?v=browser-smash-phase3-v45-20261027';
+import { setNycSkyline } from './worlds/nyc_skyline.js?v=nyc-skyline-v2-20261111';
+import { setKonohaLandmarks } from './worlds/konoha_landmarks.js?v=konoha-landmarks-v1-20261113';
+import { setDbzLandmarks } from './worlds/dbz_landmarks.js?v=dbz-landmarks-v1-20261114';
 import { syncEquippedWeapons } from './models.js';
 import { resolveProjectileOrigin, distanceFromBodyAxis } from './combat/projectile_origin.js';
 import { applyTitleCamera, titleCameraState, clearTitleCamera } from './title_camera.js?v=browser-smash-phase3-v45-20261027';
@@ -54,7 +66,7 @@ const canvas=$('#gl');const scene=new THREE.Scene();scene.background=new THREE.C
 // Development-only combat volume overlay (F3). Pooled wireframe spheres, off by default.
 const combatDebug=createCombatDebug(scene);
 const {renderer,camera,composer,bloom,enableSSR}=createSmashRenderPipeline(canvas,scene);
-window.__browserSmashScene=scene;window.__browserSmashThree=THREE;
+window.__browserSmashScene=scene;window.__browserSmashThree=THREE;window.__browserSmashCamera=camera;
 // Arena switching hook: the verification needs to change arena inside a running match and check that
 // nothing from the previous arena is left mounted. Same development surface as the scene handle above.
 window.__browserSmashApplyMapState={key:null,seq:0,ok:null,error:null};window.__browserSmashApplyMapHistory=[];window.__browserSmashFloorState=()=>({key:window.__browserSmashApplyMapState?.key||activeLayoutKey,material:floor.material?.name||null,uuid:floor.material?.uuid||null,color:floor.material?.color?.getHexString?.()||null,tone:renderer.toneMappingExposure});window.__browserSmashApplyMap=(key)=>{const entry={key,seq:(window.__browserSmashApplyMapState?.seq||0)+1,ok:false,error:null,at:Date.now()};window.__browserSmashApplyMapState=entry;window.__browserSmashApplyMapError=null;try{const result=applyMap(key);entry.ok=true;return result;}catch(error){const message=String(error?.message||error);entry.error=message;entry.context='arena '+key+': '+message;window.__browserSmashApplyMapError=message;console.warn('[arena:'+key+'] switch failed',error);}finally{window.__browserSmashApplyMapHistory.push({...entry});if(window.__browserSmashApplyMapHistory.length>100)window.__browserSmashApplyMapHistory.shift();}};
@@ -207,7 +219,6 @@ function makeFinalValleyGround(){
 }
 const arenaFloorMaterials={
  valley:grassMaterial,
- deathstar:makeArenaSurface('#454b56','#6d7580','#8bdcff',.72,.58),
  finalvalley:makeFinalValleyGround(),
  tournament:makeArenaSurface('#8c8067','#6b6150','#b9a888',.92,.04),
  starktower:makeArenaSurface('#30394b','#4e5c75','#35eaff',.62,.4),
@@ -253,7 +264,7 @@ window.combatPowers=combatPowers;
 // next-round / rematch path run, instead of setting `ko` by hand and calling that a KO.
 import { spawnClones, updateClones, clearClones, cloneCount, cloneReport } from './combat/clones.js';
 import { createPresenter } from './presentation/attack_events.js';
-import { createDialogue } from './presentation/dialogue.js';
+import { createDialogue, lineFor } from './presentation/dialogue.js';
 import { createCinematics } from './presentation/cinematics.js';
 import { createMapScore } from './presentation/map_score.js';
 import { createAsgardAtmosphere } from './world/asgard_atmosphere.js';
@@ -336,7 +347,7 @@ window.__browserSmashControlMode=()=>({twoPlayer,exploration,paused,started,roun
 window.__browserSmashMatch=()=>({...matchSummary(matchState),maxPercent:matchState.rules.maxPercent,mode:twoPlayer?'2p':'1p',arena:activeLayoutKey,hitStop,twoPlayer,twoPlayerControls:true});
 
 const combatCallout=document.createElement('div');combatCallout.id='combatCallout';combatCallout.setAttribute('aria-live','polite');Object.assign(combatCallout.style,{position:'fixed',left:'50%',top:'23%',zIndex:'7',pointerEvents:'none',opacity:'0',transform:'translateX(-50%)',font:'1000 clamp(22px,4vw,42px)/1 system-ui,sans-serif',letterSpacing:'.12em',textAlign:'center',whiteSpace:'nowrap',textShadow:'0 3px 0 #06111d,0 0 18px currentColor,0 0 34px #00131e',WebkitTextStroke:'1px #05111b',maxWidth:'96vw'});document.body.appendChild(combatCallout);window.showCombatCallout=(label,color='#a8f6ff')=>{combatCallout.textContent=label;combatCallout.style.color=color;combatCallout.animate([{opacity:0,transform:'translate(-50%,8px) scale(.82)'},{opacity:1,transform:'translate(-50%,0) scale(1.04)',offset:.18},{opacity:1,transform:'translate(-50%,0) scale(1)',offset:.62},{opacity:0,transform:'translate(-50%,-12px) scale(1.02)'}],{duration:760,easing:'cubic-bezier(.16,1,.3,1)',fill:'forwards'});};
-const allRoster=[["Infantry","cyborg"],["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"],["Iron Spider","cyborg"],["Kaze","warrior"]];const roster=[["Infantry","cyborg"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Geralt of Rivia","warrior"],["Doom Slayer","brawler"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"],["Iron Spider","cyborg"],["Kaze","warrior"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","aang","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const fighterDisplay=id=>allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
+const allRoster=[["Infantry","cyborg"],["The Rock","brawler"],["Samuel L. Jackson","cyborg"],["Bruce Lee","ninja"],["Jean-Claude Van Damme","warrior"],["Lucy Liu","ninja"],["Sigourney Weaver","cyborg"],["Keanu Reeves","ninja"],["Burt Reynolds","brawler"],["Grace Jones","ninja"],["Arnold Schwarzenegger","brawler"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["Levi Ackerman","ninja"],["Edward Elric","mage"],["Roronoa Zoro","ninja"],["All Might","brawler"],["Jotaro Kujo","brawler"],["Mario","warrior"],["Luigi","ninja"],["Solid Snake","cyborg"],["Geralt of Rivia","warrior"],["Kratos","brawler"],["Link","ninja"],["Lara Croft","ninja"],["Sephiroth","mage"],["Master Chief","cyborg"],["Doom Slayer","brawler"],["Shrek","brawler"],["Aladdin","ninja"],["Ariel","mage"],["Ursula","mage"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Sesshomaru","mage"],["Norman Bates","ninja"],["Han Solo","cyborg"],["Indiana Jones","ninja"],["Sasuke Uchiha","ninja"],["Hashirama Senju","warrior"],["Madara Uchiha","warrior"],["Lord Voldemort","mage"],["Thor","warrior"],["Aang","mage"],["Spider-Man","ninja"],["Iron Spider","cyborg"],["Kaze","warrior"]];const roster=[["Infantry","cyborg"],["Superman","warrior"],["Iron Man (Tony Stark)","cyborg"],["Hulk (Bruce Banner)","brawler"],["Green Lantern (Hal Jordan)","mage"],["Wolverine (Logan)","ninja"],["Wonder Woman","warrior"],["Professor X (Charles Xavier)","mage"],["The Flash (Barry Allen)","ninja"],["Aquaman","warrior"],["Doctor Strange","mage"],["Arnold Schwarzenegger","brawler"],["Goku","warrior"],["Naruto Uzumaki","ninja"],["Vegeta","warrior"],["Saitama","brawler"],["L (Death Note Style)","cyborg"],["All Might","brawler"],["Edward Elric","mage"],["Levi Ackerman","ninja"],["Mario","warrior"],["Luigi","ninja"],["Kratos","brawler"],["Link","ninja"],["Master Chief","cyborg"],["Geralt of Rivia","warrior"],["Doom Slayer","brawler"],["Thor","warrior"],["Aang","mage"],["Madara Uchiha","warrior"],["Hashirama Senju","warrior"],["Lord Voldemort","mage"],["Sasuke Uchiha","ninja"],["Edna Mode","cyborg"],["Captain Jack Sparrow","ninja"],["Spider-Man","ninja"],["Iron Spider","cyborg"],["Kaze","warrior"]];const dlcRoster=allRoster.filter(([name])=>!roster.some(([launchName])=>name===launchName));window.characterRosters={launch:roster,dlc:dlcRoster,all:allRoster};const flightCapable=new Set(["superman","iron_man_tony_stark","green_lantern_hal_jordan","wonder_woman","doctor_strange","goku","naruto_uzumaki","vegeta","thor","aang","madara_uchiha","lord_voldemort","sasuke_uchiha"]);const canCharacterFly=name=>flightCapable.has(String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''));const archetypes=['warrior','ninja','brawler','mage','cyborg'];const fighterNames={warrior:'Superman',ninja:'Naruto Uzumaki',brawler:'Hulk (Bruce Banner)',mage:'Doctor Strange',cyborg:'Iron Man (Tony Stark)'};const fighterArchetype=id=>allRoster.find(([name])=>name===id)?.[1]|| (archetypes.includes(id)?id:'warrior');const FIGHTER_DISPLAY_ALIASES={"L (Death Note Style)":"Light Yagami","Lord Voldemort":"Harry Potter","Arnold Schwarzenegger":"T-800"};const fighterDisplay=id=>FIGHTER_DISPLAY_ALIASES[id]||allRoster.find(([name])=>name===id)?.[0]||fighterNames[id]||id;const normalizeFighter=id=>roster.some(([name])=>name===id)?id:(fighterNames[allRoster.find(([name])=>name===id)?.[1]]||fighterNames[id]||'Superman');let playerType=normalizeFighter(localStorage.getItem('browserSmashP1')||'Superman'),cpuType=normalizeFighter(localStorage.getItem('browserSmashCPU')||'Goku');
 // Signature specials use distinct attack silhouettes and balance values instead of recolored generic bolts.
 const SPECIAL_MOVES={...IMPORTED_SPECIAL_MOVES,
 infantry:{label:'MARKSMAN SHOT',type:'orb',color:0xffd27a,damage:12,speed:44,cooldown:.9,stun:.36,knockback:4.2},
@@ -358,7 +369,7 @@ goku:{label:'KAMEHAMEHA',type:'beam',color:0x4b9dff,damage:22,speed:31,cooldown:
 naruto_uzumaki:{label:'RASENSHURIKEN',type:'spinning',color:0x55bfff,damage:19,speed:28,cooldown:.9,stun:.5,knockback:7.2},
 vegeta:{label:'GALICK GUN',type:'beam',color:0xc06bff,damage:22,speed:32,cooldown:1.1,stun:.52,knockback:8.4},
 saitama:{label:'SERIOUS PUNCH',type:'shockwave',color:0xffe4a2,damage:27,speed:24,cooldown:1.32,stun:.46,knockback:12,behavior:'shockwave',radius:7.8},
-l_death_note_style:{label:'DEATH NOTE HEX',type:'psychic',color:0xd4d6e0,damage:8,speed:18,cooldown:1.35,stun:1.05,knockback:1.2},
+l_death_note_style:{label:'NAME IN THE NOTEBOOK',type:'psychic',color:0xd4d6e0,damage:8,speed:18,cooldown:1.35,stun:1.05,knockback:1.2},
 all_might:{label:'DETROIT SMASH',type:'shockwave',color:0xffdf78,damage:25,speed:22,cooldown:1.2,stun:.55,knockback:10.5,behavior:'shockwave',radius:7.1},
 edward_elric:{label:'ALCHEMY SPIKE',type:'earth',color:0xff765f,damage:16,speed:25,cooldown:.88,stun:.48,knockback:5.6},
 levi_ackerman:{label:'THUNDER SPEAR',type:'blade',color:0xe5f1ff,damage:17,speed:35,cooldown:.76,stun:.35,knockback:5.5,behavior:'dashStrike',dashSpeed:37,range:14},
@@ -372,7 +383,7 @@ kratos:{label:'LEVIATHAN AXE RUSH',type:'frost',color:0x8ee6ff,damage:22,speed:3
 aang:{label:'AIR SCOOTER',type:'wind',color:0xb7fff0,damage:12,speed:27,cooldown:.72,stun:.36,knockback:4.2,behavior:'airScooter',dashSpeed:23,range:9.5,lift:5.2},
 madara_uchiha:{label:'GREAT FIRE ANNIHILATION',type:'fireball',color:0xff4b2e,damage:22,speed:25,cooldown:1.12,stun:.55,knockback:8.7},
 hashirama_senju:{label:'WOOD DRAGON',type:'wood',color:0x78d18a,damage:18,speed:22,cooldown:1.05,stun:.75,knockback:4.8},
-lord_voldemort:{label:'AVADA KEDAVRA',type:'curse',color:0x55ff86,damage:20,speed:32,cooldown:1.12,stun:.7,knockback:7.4},
+lord_voldemort:{label:'EXPECTO PATRONUM',type:'curse',color:0x55ff86,damage:20,speed:32,cooldown:1.12,stun:.7,knockback:7.4},
 sasuke_uchiha:{label:'CHIDORI',type:'lightning',color:0x78d8ff,damage:20,speed:33,cooldown:.95,stun:.42,knockback:7.2,behavior:'dashStrike',dashSpeed:39,range:15.5},
 edna_mode:{label:'FASHION EMERGENCY GADGET',type:'gadget',color:0xff5ca8,damage:9,speed:25,cooldown:.8,stun:.38,knockback:2.8},
 captain_jack_sparrow:{label:'PIRATE PISTOL',type:'bullet',color:0xffd39a,damage:14,speed:40,cooldown:.9,stun:.32,knockback:4.5},
@@ -393,7 +404,11 @@ function upgradeFighterVisual(fighter){
   upgradeCharacterWithBlenderModel(fighter).catch(error=>{
     console.warn('Blender character prefab unavailable; keeping the procedural body.',error);
     return false;
-  }).then(()=>upgradeFighterModel(fighter,fighter.archetype)).then(loaded=>{
+  }).then(()=>{
+    applyHeightProfile(fighter,{stageScale:activeStageScale});
+    return upgradeFighterModel(fighter,fighter.archetype);
+  }).then(loaded=>{
+    applyHeightProfile(fighter,{stageScale:activeStageScale});
     if(!loaded)return false;
     // The imported body is mounted now. Bind its clip owner in this same turn: waiting for the
     // next syncFighterAnimation left a window where a clip-less body showed only its two reaction
@@ -440,6 +455,15 @@ if(f.animationBindModel!==f.model)attachFighterAnimation(f);
   // now owns a looping pendulum clip, so it keeps driving the same skeleton through the swing.
   if(!controller.enabled)controller.resume();
   controller.update(dt);
+  // The controller has written the final pose. Solve stance feet and the transition compression
+  // after that write, before weapons and overlays read the hands.
+  applyLocomotionPresentation(f.model, f, dt);
+  // Flight bank/pitch is a presentation layer over whichever clip the controller selected. It
+  // runs after the final controller pose and before the equipment/appendage overlays.
+  applyFlightLocomotionPose(f, { dt, root: f.model });
+  // The clip controller has written the skeleton: fold/deploy the native appendages on top of
+  // the authored clip, never before it.
+  applyNativeSpiderStow(f, dt);
   // The clip controller owns Hulk's rig and writes after animateHumanFighter. Apply the authored
   // debris reach/hold/throw beat after that write, never before it.
   applyHulkDebrisPose(f);
@@ -464,15 +488,19 @@ function disposeSubtree(root){
   });
   if(root.parent)root.parent.remove(root);else scene.remove(root);
 }
-function spawn(name,x,archetype,player){const model=makeProceduralCharacter(archetype,name);model.position.set(x,0,0);scene.add(model);const identityKey=String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');const combatProfile=COMBAT_PROFILES[identityKey]||{damage:1,knockback:1,weight:1,launch:1};const f=new Fighter3D({name,model,weight:(player?88:82)*combatProfile.weight,player});f.archetype=archetype;f.identity=name;f.identityKey=identityKey;f.combatProfile=combatProfile;f.specialProfile=SPECIAL_MOVES[identityKey]||{label:'SIGNATURE STRIKE',type:'orb',color:0x62caff,damage:14,speed:22,cooldown:.82,stun:.42,knockback:4.5};combatPowers.attachMoveset(f,f.specialProfile);f.canFly=canCharacterFly(name);f.canWebSwing=name==='Spider-Man';f.flightMode=false;f.webSwinging=false;window.fighters.push(f);f.characterModelLoaded=false;upgradeFighterVisual(f);attachFighterAnimation(f);return f;}
-const player=spawn(fighterDisplay(playerType),-12,fighterArchetype(playerType),true),cpu=spawn(fighterDisplay(cpuType),12,fighterArchetype(cpuType),false);player.facing=1;cpu.facing=-1;
+let activeStageScale=1;
+function spawn(name,x,archetype,player){const model=makeProceduralCharacter(archetype,name);model.position.set(x,0,0);scene.add(model);const identityKey=String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');const combatProfile=COMBAT_PROFILES[identityKey]||{damage:1,knockback:1,weight:1,launch:1};const f=new Fighter3D({name:fighterDisplay(name),model,weight:(player?88:82)*combatProfile.weight,player});f.archetype=archetype;f.identity=name;f.displayName=fighterDisplay(name);f.identityKey=identityKey;f.combatProfile=combatProfile;f.specialProfile=SPECIAL_MOVES[identityKey]||{label:'SIGNATURE STRIKE',type:'orb',color:0x62caff,damage:14,speed:22,cooldown:.82,stun:.42,knockback:4.5};combatPowers.attachMoveset(f,f.specialProfile);f.canFly=canCharacterFly(name);f.canWebSwing=name==='Spider-Man';f.flightMode=false;f.webSwinging=false;window.fighters.push(f);f.characterModelLoaded=false;applyHeightProfile(f,{stageScale:activeStageScale});upgradeFighterVisual(f);attachFighterAnimation(f);return f;}
+const player=spawn(playerType,-12,fighterArchetype(playerType),true),cpu=spawn(cpuType,12,fighterArchetype(cpuType),false);player.facing=1;cpu.facing=-1;
+// Debug-only production-roster lineup, installed on the real spawn/mount path. It is inert
+// unless window.__browserSmashHeightLineup() is called by a height audit.
+installHeightLineup({spawn,scene,camera,renderer,roster:allRoster});
 const combatItems=createCombatItems(THREE,scene,(fighter,item)=>{window.spawnImpact?.(fighter.position.clone().add(new THREE.Vector3(0,1,0)),8);window.showCombatCallout?.(fighter.name.toUpperCase()+' · '+item.label.toUpperCase(),'#b8ffd0');combatAudio.play('pickup',{position:{x:fighter.position.x,y:fighter.position.y+1,z:fighter.position.z}});});
 // The CPU reads one skill profile per decision, so difficulty changes decision quality and
 // never health or damage (see combat/cpu_skill.js).
 const cpuSkill=()=>skillFor(cpuSkillLevel);
 window.__browserSmashCpuSkill=()=>({...cpuSkill(),level:cpuSkillLevel});
 window.__browserSmashAiPersona=(name)=>{const f=(window.fighters||[]).find(x=>x.identity===name);return personalityFor(name,f?.combatProfile||{},f?.specialProfile||{});};window.__browserSmashCpuPersona=()=>personalityFor(cpu.identity,cpu.combatProfile||{},cpu.specialProfile||{});
-const NEUTRAL_INPUTS=()=>({left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,shield:false,parry:false,ascend:false,descend:false,flightToggle:false});
+const NEUTRAL_INPUTS=()=>({left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,specialHeld:false,shield:false,parry:false,ascend:false,descend:false,flightToggle:false});
 // Training dummy: holds still, holds guard or paces instead of fighting back. The
 // window.__browserSmashTrainingDummy hook tests already use still forces a passive opponent.
 function dummyInputs(){
@@ -483,7 +511,7 @@ function dummyInputs(){
   if(mode==='walk'){const right=Math.floor(performance.now()/900)%2===0;inputs.left=!right;inputs.right=right;}
   return inputs;
 }
-const ai={getInputs(){try{const dummy=dummyInputs();if(dummy)return dummy;if(exploration)return NEUTRAL_INPUTS();if(typeof window!=="undefined"&&window.__browserSmashFreezeAI)return NEUTRAL_INPUTS();const dx=player.position.x-cpu.position.x,dz=player.position.z-cpu.position.z,dist=Math.hypot(dx,dz);if(cpu.canFly&&(player.flightMode||player.position.y>3&&dist<11))cpu.flightMode=true;cpu.aiTimer-=clockDelta;const skill=cpuSkill();const persona=personalityFor(cpu.identity,cpu.combatProfile||{},cpu.specialProfile||{});// Declared after `persona`: reading it earlier is a temporal-dead-zone error that killed the AI.
+const ai={getInputs(){try{if(typeof window!=="undefined"&&window.__browserSmashP2Probe){const probe=window.__browserSmashP2Probe;window.__browserSmashP2ProbeHits=(window.__browserSmashP2ProbeHits||0)+1;return {...NEUTRAL_INPUTS(),...probe,player:2};}const dummy=dummyInputs();if(dummy)return dummy;if(exploration)return NEUTRAL_INPUTS();if(typeof window!=="undefined"&&window.__browserSmashFreezeAI)return NEUTRAL_INPUTS();const dx=player.position.x-cpu.position.x,dz=player.position.z-cpu.position.z,dist=Math.hypot(dx,dz);if(cpu.canFly&&(player.flightMode||player.position.y>3&&dist<11))cpu.flightMode=true;cpu.aiTimer-=clockDelta;const skill=cpuSkill();const persona=personalityFor(cpu.identity,cpu.combatProfile||{},cpu.specialProfile||{});// Declared after `persona`: reading it earlier is a temporal-dead-zone error that killed the AI.
 const hurtRespect=cpu.percent>=(persona.retreatPercent||150)&&dist<3.2;const attack=dist<skill.range*persona.attackRangeScale&&cpu.aiTimer<=0&&!hurtRespect;if(attack)cpu.aiTimer=skill.cooldown+Math.random()*skill.cooldownJitter;const incoming=dist<skill.notice&&player.attackQueue.some(a=>!a.hit&&a.t<a.start&&a.start-a.t<skill.readAhead);const parry=incoming&&cpu.parryCooldown<=0&&Math.random()<skill.parry*persona.defenceBias;const shield=incoming&&!parry&&Math.random()<skill.block*persona.defenceBias;const dodge=incoming&&!parry&&!shield&&cpu.dodgeTimer<=0&&Math.random()<skill.dodge*persona.defenceBias;const specialReady=cpu.specialCooldown<=0;const formReady=!!(cpu.moveset?.form&&!cpu.transform&&(cpu.power||0)>=(cpu.moveset.form.cost||0)&&(cpu.transformCooldown||0)<=0&&dist<11&&Math.random()<skill.form);const wantUltimate=!!((cpu.meter||0)>=100&&dist>1.4&&dist<16&&Math.random()<skill.ultimate*persona.ultimateBias);const useSpecial=specialReady&&dist>2.8&&dist<12&&Math.random()<skill.special*persona.specialBias;return {left:dx< -1.1,right:dx>1.1,up:dz< -1.1,down:dz>1.1,run:dist>4.5*(2-persona.approachBias),sprint:dist>7,jump:!cpu.flightMode&&player.position.y>2.6&&cpu.position.y<1.5,ascend:cpu.flightMode&&player.position.y>cpu.position.y+1.0,descend:cpu.flightMode&&player.position.y<cpu.position.y-2.3,dodge,attack:attack&&Math.random()>skill.hesitation&&!shield,special:useSpecial,special2:!((cpu.abilityReadyAt?.[1]||0)>performance.now()/1000)&&dist>1.6&&dist<13&&Math.random()<skill.special*persona.specialBias*.8,shield,parry,flightToggle:false,transform:formReady,ultimate:wantUltimate};}catch(error){window.__browserSmashAiError=String(error&&error.message||error);return NEUTRAL_INPUTS();}}};
 // Hit sparks. Small, additive and capped on purpose: a cluster of full-brightness spheres used
 // to read as one opaque cloud sitting on the fighter, and the `bloom.strength` bump the effect
@@ -577,7 +605,9 @@ window.performSignatureMove=(owner,profile)=>{
    // the sweep drives that rig into its strike pose; the tips it throws out are the visible
    // source of the shockwave and also count as contact points in the hit test below.
    if(profile.legs>0)owner.legStrike=.7;
-   signatureMoves.push({kind:'shockwave',owner,profile,age:0,life:.48,radius:profile.radius||6,origin:owner.position.clone(),direction:facing.clone(),outer,inner,hitTargets:new Set()});
+   owner.lastSignatureContact=null;
+   owner.legTipVolumes=[];
+   signatureMoves.push({kind:'shockwave',owner,profile,age:0,life:.48,radius:profile.radius||6,origin:owner.position.clone(),direction:facing.clone(),outer,inner,hitTargets:new Set(),tipVolumes:[],tipSource:null});
    owner.velocity.x+=facing.x*1.5;owner.velocity.z+=facing.z*1.5;owner.velocity.y=Math.max(owner.velocity.y,1.1);
    burst(owner.position.clone().add(new THREE.Vector3(0,.18,0)),profile.color||0xffb764,18,4.8,.4);
    window.spawnImpact?.(owner.position.clone().add(new THREE.Vector3(0,.18,0)),12,profile.color||0xffb764);
@@ -639,6 +669,24 @@ window.performSignatureMove=(owner,profile)=>{
    const trailMaterial=new THREE.LineBasicMaterial({color:meshColor,transparent:true,opacity:.85});
    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([origin.clone().add(new THREE.Vector3(0,1.0,0)),origin.clone().add(new THREE.Vector3(0,1.0,0))]),trailMaterial);
    line.frustumCulled=false;scene.add(line);
+   // The Flash's signature is a speed rush, not a generic dash: a wide additive ribbon follows
+   // the real travelled path while the thin line keeps the exact strike vector readable.
+   const identity=String(owner.identityKey||owner.identity||owner.name||'').toLowerCase();
+   const speedster=/the_flash_barry_allen|\bflash\b/.test(identity);
+   let ribbon=null;
+   if(speedster){
+     const geometry=new THREE.BufferGeometry();
+     // Two crossed quads: a narrow horizontal wake and a taller vertical sheet, so the streak
+     // has volume from the overhead gameplay camera rather than reading as a yellow carpet.
+     geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(24),3));
+     geometry.setIndex([0,1,2,2,1,3,4,5,6,6,5,7]);
+     const material=new THREE.MeshBasicMaterial({color:0xffc21a,transparent:true,opacity:.38,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending,toneMapped:false});
+     ribbon=new THREE.Mesh(geometry,material);
+     ribbon.name='flash-speed-force-ribbon';
+     ribbon.userData.owner='the_flash_barry_allen';
+     ribbon.frustumCulled=false;
+     scene.add(ribbon);
+   }
    let ring=null;
    if(behavior==='airScooter'){
      ring=new THREE.Mesh(new THREE.TorusGeometry(.62,.11,8,32),new THREE.MeshBasicMaterial({color:meshColor,transparent:true,opacity:.78,emissive:meshColor,emissiveIntensity:1.4,depthWrite:false}));
@@ -647,7 +695,7 @@ window.performSignatureMove=(owner,profile)=>{
    }
    owner.invulnerable=Math.max(owner.invulnerable,behavior==='dashStrike'?.08:0);
    owner.isGrounded=false;
-   signatureMoves.push({kind:behavior,owner,target:dashTarget,profile,age:0,life:behavior==='airScooter'?.44:.42,range:profile.range||14,speed:profile.dashSpeed||(behavior==='airScooter'?22:38),traveled:0,direction:direction.clone(),origin,trail:line,ring,hit:false,lastBurst:0});
+   signatureMoves.push({kind:behavior,owner,target:dashTarget,profile,age:0,life:behavior==='airScooter'?.44:.42,range:profile.range||14,speed:profile.dashSpeed||(behavior==='airScooter'?22:38),traveled:0,direction:direction.clone(),origin,trail:line,ribbon,ring,hit:false,lastBurst:0});
    return true;
  }
  return false;
@@ -666,14 +714,22 @@ window.updateSignatureMoves=(dt)=>{
      if(profile.legs>0){
        // Sample the real leg tips: they are the strike, and a target touching one is hit even
        // outside the facing cone. Ground sparks fire once, where the tips land.
-       const rig=owner.model?.userData?.spiderLegs;
-       if(rig){
-         move.tipBuffer=move.tipBuffer||[];
-         spiderLegTips(rig,move.tipBuffer);
-         if(!move.tipSparks){
-           move.tipSparks=true;
-           for(const tip of move.tipBuffer)window.spawnImpact?.(tip.clone(),7,profile.color||0xffc23d);
+       const nativeTips=nativeSpiderLegTipVolumes(owner.model,move.tipVolumes||[]);
+       if(nativeTips.length){
+         move.tipVolumes=nativeTips;move.tipSource='native';
+       }else{
+         const rig=owner.model?.userData?.spiderLegs;
+         if(rig){
+           move.tipBuffer=move.tipBuffer||[];
+           spiderLegTips(rig,move.tipBuffer);
+           move.tipVolumes=move.tipBuffer.map((tip,index)=>({pos:tip,radius:.9,bone:`procedural-leg-${index+1}`,leg:index+1}));
+           move.tipSource='procedural';
          }
+       }
+       owner.legTipVolumes=move.tipVolumes||[];
+       if(!move.tipSparks){
+         move.tipSparks=true;
+         for(const tip of move.tipVolumes||[])window.spawnImpact?.(tip.pos.clone(),7,profile.color||0xffc23d);
        }
      }
      for(const other of (window.fighters||[])){
@@ -681,9 +737,16 @@ window.updateSignatureMoves=(dt)=>{
        const offset=other.position.clone().sub(move.origin);const horizontal=Math.hypot(offset.x,offset.z);
        const facingDot=(offset.x*move.direction.x+offset.z*move.direction.z)/(horizontal||1);
        const chest=other.position.clone().add(new THREE.Vector3(0,1,0));
-       const tipContact=Boolean(move.tipBuffer&&move.tipBuffer.some(tip=>tip.distanceTo(chest)<(other.hurtboxRadius||.7)+.9));
+       let tipContact=null;
+       for(const tip of move.tipVolumes||[]){
+         const distance=tip.pos.distanceTo(chest);
+         const reach=(other.hurtboxRadius||.7)+(tip.radius||.5);
+         if(distance<=reach){tipContact={...tip,distance,reach};break;}
+       }
        if((horizontal<=radius+(other.hurtboxRadius||.7)&&Math.abs(offset.y)<3.5&&facingDot>-.38)||tipContact){
-         move.hitTargets.add(other);applySignatureHit(owner,other,profile,'shockwave');
+         move.hitTargets.add(other);
+         const hit=applySignatureHit(owner,other,profile,'shockwave');
+         if(hit)owner.lastSignatureContact={source:tipContact?'leg-tip':'shockwave',target:other.name,bone:tipContact?.bone||null,leg:tipContact?.leg||null,radius:tipContact?.radius||null,distance:tipContact?+tipContact.distance.toFixed(3):null,at:+move.age.toFixed(3)};
        }
      }
    }else if(move.kind==='impactPulse'){
@@ -713,15 +776,38 @@ window.updateSignatureMoves=(dt)=>{
        move.trail.geometry.computeBoundingSphere();
        move.trail.material.opacity=Math.max(0,1-move.age/move.life);
      }
+     if(move.ribbon){
+       // Widen toward the fighter and keep the ribbon at chest height, so the eye reads a
+       // body-length wake even at the gameplay camera's distance.
+       const start=move.origin.clone().add(new THREE.Vector3(0,1.05,0));
+       const end=owner.position.clone().add(new THREE.Vector3(0,1.05,0));
+       const along=end.clone().sub(start);along.y=0;
+       if(along.lengthSq()<.0001)along.copy(move.direction);
+       along.normalize();
+       const across=new THREE.Vector3(-along.z,0,along.x);
+       const up=new THREE.Vector3(0,1,0);
+       const a=start.clone().addScaledVector(across,.04),b=start.clone().addScaledVector(across,-.04);
+       const c=end.clone().addScaledVector(across,.16),d=end.clone().addScaledVector(across,-.16);
+       const e=start.clone().addScaledVector(up,.07),f=start.clone().addScaledVector(up,-.07);
+       const g=end.clone().addScaledVector(up,.22),h=end.clone().addScaledVector(up,-.22);
+       const position=move.ribbon.geometry.attributes.position;
+       position.array.set([a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z,d.x,d.y,d.z,
+         e.x,e.y,e.z,f.x,f.y,f.z,g.x,g.y,g.z,h.x,h.y,h.z]);
+       position.needsUpdate=true;
+       move.ribbon.geometry.computeBoundingSphere();
+       move.ribbon.material.opacity=.38*Math.max(0,1-move.age/move.life);
+     }
      if(move.ring){move.ring.position.copy(owner.position);move.ring.position.y+=.7;move.ring.rotation.z+=dt*10;move.ring.material.opacity=Math.max(0,.82-move.age/move.life);}
      if(move.age>=move.lastBurst+.065){burst(owner.position.clone().add(new THREE.Vector3(0,1.15,0)),profile.color||0x78ddff,5,1.4);combatVFX.dash(owner.position.clone().add(new THREE.Vector3(0,.8,0)),move.direction,profile.color||0x78ddff);move.lastBurst=move.age;}
    }
    if(remove){
+     if(owner&&owner.legTipVolumes===move.tipVolumes)owner.legTipVolumes=[];
      if(move.outer){scene.remove(move.outer);move.outer.geometry.dispose();move.outer.material.dispose();}
      if(move.inner){scene.remove(move.inner);move.inner.geometry.dispose();move.inner.material.dispose();}
      if(move.legParts){for(const leg of move.legParts)scene.remove(leg.pivot);move.legGeometry?.dispose();move.legMaterial?.dispose();}
      if(move.visual){scene.remove(move.visual);move.visual.traverse(node=>{node.geometry?.dispose();if(node.material){if(Array.isArray(node.material))node.material.forEach(material=>material.dispose());else node.material.dispose();}});}
      if(move.trail){scene.remove(move.trail);move.trail.geometry?.dispose();move.trail.material?.dispose();}
+     if(move.ribbon){scene.remove(move.ribbon);move.ribbon.geometry?.dispose();move.ribbon.material?.dispose();}
      if(move.ring){scene.remove(move.ring);move.ring.geometry?.dispose();move.ring.material?.dispose();}
      signatureMoves.splice(i,1);
    }
@@ -862,7 +948,7 @@ window.spawnProjectile=(owner,options={})=>{
  if(options.source!=='weapon')window.smashCamera?.focus?.(owner,{seconds:.45,zoom:.12});
  const palette={warrior:0xff713c,ninja:0x16bfff,brawler:0xff8d36,mage:0x9d67ff,cyborg:0x26e8e0};
  const weaponKind=options.weaponKind||owner.model?.userData?.weaponKind||'';
- const profile=options.source==='special'?(owner.specialProfile||{}):options.source==='ability'?options:{};
+ const profile=options.source==='special'?{...(owner.specialProfile||{}),...options}:options.source==='ability'?options:{};
  const moveType=profile.type||(options.source==='web'?'web':options.source==='weapon'?'weapon':owner.archetype==='mage'?'magic':owner.archetype==='ninja'?'spinning':'orb');
  if(moveType==='debris'&&!options.debrisRelease){startHulkDebrisSequence(owner,options);return;}
  const webShot=options.source==='web'||moveType==='web';
@@ -966,7 +1052,11 @@ if(['lightning','fireball','frost','curse','grenade','wood','earth','gadget'].in
 const _origin=resolveProjectileOrigin({owner,options,direction});
 const start=new THREE.Vector3(_origin.point.x,_origin.point.y,_origin.point.z);
 window.__browserSmashLastShot={identity:owner.identity||null,source:options.source||'unknown',moveType,policy:_origin.policy,originObject:_origin.objectName,fallback:_origin.usedFallback,spawn:{x:+start.x.toFixed(3),y:+start.y.toFixed(3),z:+start.z.toFixed(3)},selfDistance:+distanceFromBodyAxis(start,owner).toFixed(3)};window.__browserSmashPresent?.('projectile',{owner,label:profile.label||profile.moveType||'SIGNATURE',color:profile.color,origin:start});
- group.position.copy(start);scene.add(group);
+ group.position.copy(start);
+ // The arrow mesh is authored at arm's length; at the signature camera's close focus a 1:1
+ // projectile filled the frame. Scale only its visual, never its collision or damage.
+ if(moveType==='arrow'&&options.originPolicy==='bow')group.scale.setScalar(.28);
+ scene.add(group);
  const speed=profile.speed||(webShot?26:ballistic?(weaponKind==='shotgun'?22:weaponKind==='plasma_rifle'?24:30):17);
  const life=profile.life||(webShot?1.35:ballistic?1.28:1.6),damage=profile.damage||(webShot?7:ballistic?(weaponKind==='shotgun'?15:12):14);
  // Pitch varies by move type so a beam, a bullet and a fireball do not sound identical.
@@ -1053,6 +1143,7 @@ function applyFighterSelection(side,name){
  fighter.position=fresh.position;
  fighter.archetype=archetype;
  fighter.identity=display;
+ fighter.displayName=fighterDisplay(display);
  fighter.identityKey=String(display||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
  fighter.combatProfile=COMBAT_PROFILES[fighter.identityKey]||{damage:1,knockback:1,weight:1,launch:1};
  fighter.specialProfile=SPECIAL_MOVES[fighter.identityKey]||{label:'SIGNATURE STRIKE',type:'orb',color:0x62caff,damage:14,speed:22,cooldown:.82,stun:.42,knockback:4.5};
@@ -1067,6 +1158,7 @@ function applyFighterSelection(side,name){
  fighter.webSwinging=false;
  window.endWebSwing?.(fighter,false);
  fighter.characterModelLoaded=false;
+ applyHeightProfile(fighter,{stageScale:activeStageScale});
  fighter.animationController?.dispose();
  fighter.animationController=null;
  upgradeFighterVisual(fighter);
@@ -1088,6 +1180,7 @@ function getFighter(side){
  return {
   side:key,
   name:fighter.name,
+  displayName:fighter.displayName||fighterDisplay(fighter.identity),
   identity:fighter.identity,
   identityKey:fighter.identityKey,
   archetype:fighter.archetype,
@@ -1130,20 +1223,21 @@ function ensureWorldGroup(worldId){
 function applyWorldStage(key){
  const location=worldLocation(key);
  // The procedural valley skyline only belongs to the valley maps - and an authored Blender arena
- // (Asgard, Hogwarts, Death Star, ...) is not a valley either. This was the mounting defect: Asgard
+ // (Asgard, Hogwarts, ...) is not a valley either. This was the mounting defect: Asgard
  // has no world location, so `!location` came out true and 1 178 CinematicValleyEnvironment meshes
  // (ridges, city, forest, glints) stayed visible on top of the 559-mesh Asgard palace, while the
  // Final Valley group next to it was correctly hidden. Visibility is now decided by both facts.
  cinematicEnvironment.visible=!location&&!authoredArenaKeys.has(key);
  if(!location){
-  worldStage.visible=false;floor.visible=true;buildExitMarkers(null);
-  // An authored arena (asgard, deathstar, ...) has no world location, so it lands here - and this
+  const authoredStage=authoredArenaKeys.has(key)?ARENA_LAYOUTS[key]:null;
+  worldStage.visible=false;floor.visible=!authoredStage?.hideFloor;buildExitMarkers(null);
+  // An authored arena (asgard, hogwarts, ...) has no world location, so it lands here - and this
   // line used to blank the stage back to a bare overhead shot. The authored GLB only streams in a
   // second later, so every match OPENED unframed: measured tilt 0, scale 1, zero collision volumes
   // and a 23.8 m spawn shot pointed into a palace wall. Keep the arena's own layout framing from the
   // first frame; syncAuthoredArena upgrades it with the mesh volumes once the file lands.
-  const authoredStage=authoredArenaKeys.has(key)?ARENA_LAYOUTS[key]:null;
   smashCamera.setStageTilt?.(authoredStage?.16:0,authoredStage?1.0:1);
+  smashCamera.setStageSkyline?.(false);
   smashCamera.setStageYaw?.(authoredStage?.camera?.yaw??0);
   smashCamera.setStageBounds?.(authoredStage?(authoredStage.bounds||null):null,authoredStage?(authoredStage.blocks||null):null);
   sun.castShadow=true;
@@ -1159,11 +1253,12 @@ function applyWorldStage(key){
  // Larger arenas get a lower, pulled-back shot so the architecture is visible.
  // Enclosed rooms get a steeper, higher shot: a shallow pitch over a long interior filled
  // the frame with table tops instead of the room.
- const tiltByWorld={asgard:.16,hogwarts:.07,deathstar:.1};
+ const tiltByWorld={asgard:.16,hogwarts:.07};
  // A stage can override its shot: tight interiors need a shorter reach than the default
  // wide pull-back, or the camera ends up outside the room looking at its roof.
  const camHint=location.camera||{};
  smashCamera.setStageTilt?.(camHint.tilt??tiltByWorld[location.world]??.19,camHint.scale??1.45);
+ smashCamera.setStageSkyline?.(Boolean(camHint.skyline));
  smashCamera.setStageYaw?.(camHint.yaw??0);
  // The layout's hand-authored blocks do not describe a built stage, so the camera is also given
  // the arena's own meshes as collision volumes (see world/camera_blocks.js).
@@ -1212,18 +1307,18 @@ for(const world of worldGroups()){
 }
 // The launch roster has 38 fighters, including the three recovered promotions (Wolverine,
 // Geralt of Rivia and Doom Slayer); the rest remain in dlcRoster.
-function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=name;select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
+function populateRoster(select, selected){if(!select)return;select.replaceChildren();for(const [name] of roster){const option=document.createElement('option');option.value=name;option.textContent=fighterDisplay(name);select.appendChild(option);}select.value=roster.some(([name])=>name===selected)?selected:roster[0][0];}
 
-const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},deathstar:{label:'DEATH STAR · BRIEFING ROOM & THRONE ROOM',sky:0x070b14,fog:0x202b3a,floor:0x424954,platform:0x262d38,ringA:0x78cfff,ringB:0xff453b,light:0xc8d9ff,sun:0x8799bb,density:.004},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x2c4460,fog:0xc08a5e,floor:0x5d6552,platform:0x4e5445,ringA:0x9fb4a6,ringB:0xb98a63,light:0xffc389,sun:0xff8f45,density:.006},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'AVENGERS HELICARRIER · NYC SKYDECK / STARK PENTHOUSE',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x7fa3c6,fog:0x8fa3b4,floor:0x8a8578,platform:0x5f6158,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.0055},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005}};
-// The five reference worlds (Dragon Ball Z tournament island, Asgard, Death Star, Hogwarts,
-// Konoha) register every one of their battle locations as a normal map, so map selection,
+const mapThemes={valley:{label:'VALLEY OF ECHOES · ANCIENT GATE',sky:0x111b30,fog:0x253448,floor:0x26313b,platform:0x343a42,ringA:0x287b9e,ringB:0x8e613e,light:0xffd2a1,sun:0xffb66f,density:.012},finalvalley:{label:'FINAL VALLEY · HASHIRAMA & MADARA · SHINOBI CLIFFS',sky:0x2c4460,fog:0xc08a5e,floor:0x5d6552,platform:0x4e5445,ringA:0x9fb4a6,ringB:0xb98a63,light:0xffc389,sun:0xff8f45,density:.006},tournament:{label:'DBZ WORLD TOURNAMENT · MARTIAL ARTS RING',sky:0x4a7596,fog:0x9ab5c5,floor:0xb7a17b,platform:0xd9d0b8,ringA:0x35c9ff,ringB:0xffb44f,light:0xffedc2,sun:0xffd08b,density:.003},starktower:{label:'AVENGERS HELICARRIER · NYC SKYDECK / STARK PENTHOUSE',sky:0x101a35,fog:0x303d61,floor:0x343947,platform:0x202735,ringA:0x35eaff,ringB:0xff563c,light:0x9dd8ff,sun:0xffa16c,density:.005},asgard:{label:'ASGARD · GOLDEN CITY & ROYAL PALACE',sky:0x7fa3c6,fog:0x8fa3b4,floor:0x8a8578,platform:0x5f6158,ringA:0x58d8ef,ringB:0xf4c65e,light:0xffe2b3,sun:0xffd6a1,density:.0055},hogwarts:{label:'HOGWARTS · THE GREAT HALL',sky:0x171a2d,fog:0x41414b,floor:0x3c3e43,platform:0x292b31,ringA:0xe3c477,ringB:0x9f252e,light:0xffd59b,sun:0xd5c4a1,density:.005},skyloft:{label:'SKYLOFT · SKYWARD ISLE',sky:0x4b8fd4,fog:0xcfe4f4,floor:0x546b61,platform:0x8b8570,ringA:0x8ee9ff,ringB:0xf4d48a,light:0xfff3d2,sun:0xffe3a8,density:.0045},mariokart:{label:'MARIO KART · WUHU ISLAND HEADLAND',sky:0x52aee8,fog:0xd9f1fb,floor:0x2d757b,platform:0x30353c,ringA:0xffd34d,ringB:0xe8483c,light:0xfff8df,sun:0xffeeae,density:.0038},konoha_overlook:{label:'KONOHA · HIDDEN LEAF VILLAGE',sky:0x4c8bcf,fog:0xd8e5e7,floor:0x43543d,platform:0x8b8570,ringA:0x67d9ef,ringB:0xf0c15b,light:0xfff3da,sun:0xffe2b0,density:.0045}};
+// The reference worlds (Dragon Ball Z tournament island, Asgard, Hogwarts, Konoha and
+// New York) register every one of their battle locations as a normal map, so map selection,
 // lighting, HUD labels and match flow all keep using the existing map plumbing.
 for(const location of WORLD_LOCATIONS){mapThemes[location.id]={label:location.worldLabel.toUpperCase()+' · '+location.label.toUpperCase(),sky:location.theme.sky,fog:location.theme.fog,floor:location.theme.floor,platform:location.theme.platform,ringA:location.theme.ringA,ringB:location.theme.ringB,light:location.theme.light,sun:location.theme.sun,density:location.theme.density,world:location.world};}
-// Five maps also ship as authored Blender arenas (public/assets/arenas/*.glb). They are the
+// Four maps also ship as authored Blender arenas (public/assets/arenas/*.glb). They are the
 // same designs the procedural build inside applyMap() reproduces, so exactly one of the two
 // is shown at a time: the authored GLB once it has loaded, and the procedural set dressing
 // until then - or permanently if the file is missing, so a match never depends on it.
-const authoredArenaKeys=new Set(['asgard','starktower','deathstar','hogwarts','tournament']);
+const authoredArenaKeys=new Set(['asgard','starktower','hogwarts','tournament','skyloft','mariokart','konoha_overlook']);
 let authoredArenaRequest=0;
 function authoredArenaEnabled(){return window.__browserSmashAuthoredArenas!==false;}
 async function syncAuthoredArena(key){
@@ -1240,10 +1335,73 @@ async function syncAuthoredArena(key){
  // blocks, which is why the shot opened against a palace wall with nothing to shorten it. Give the
  // authored path the same treatment the world stages already get.
  if(group){
+  // Skyloft's imported island rises above its paved courtyard. Bake the actual surface now that
+  // the GLB is in the scene, so fighters follow the grass and rock instead of a flat overlay.
+  if(key==='skyloft'||key==='mariokart'||key==='konoha_overlook'){
+   const baseLayout=ARENA_LAYOUTS[key];
+   const isMariokart=key==='mariokart';
+   const isKonoha=key==='konoha_overlook';
+   const terrainRoot=isMariokart?group:isKonoha?group.getObjectByName('konoha_village'):group;
+   // The Mario stage spans both imported lands plus the authored isthmus, so bake the combined
+   // group instead of only the Wuhu headland.
+   const terrainBounds=isMariokart||isKonoha?baseLayout?.bounds:{x0:-70,x1:70,z0:-70,z1:70};
+   const terrainStep=isMariokart||isKonoha?1:2;
+   const terrainMax=isMariokart?5.0:isKonoha?3.0:6;
+   const terrainLabel=isMariokart?'Mariokart':isKonoha?'Konoha':'Skyloft';
+   if(baseLayout&&typeof baseLayout.heightAt!=='function'){
+    try{
+     if(!terrainRoot)throw new Error((isMariokart?'combined Wuhu + airport':isKonoha?'konoha_village':'arena')+' group is missing');
+     const terrain=buildTerrainHeightfield(terrainRoot,{bounds:terrainBounds,ground:baseLayout.ground??0,step:terrainStep,maxHeight:(baseLayout.ground??0)+terrainMax});
+     baseLayout.heightAt=terrain.heightAt;
+     if(activeLayout&&activeLayoutKey===key)activeLayout.heightAt=terrain.heightAt;
+     window['__browserSmash'+terrainLabel+'Terrain']=terrain.info;
+    }catch(error){
+     window['__browserSmash'+terrainLabel+'TerrainError']=String(error?.message||error);
+     console.warn('[arena:'+key+'] terrain heightfield failed',error);
+    }
+   }
+   if(baseLayout){
+    try{
+     // The imported heightfield makes the surface walkable, but cliffs, rock faces and walls are
+     // vertical solids: rasterise those wall triangles into the same collision-block vocabulary so
+     // fighters walk up grass and stop at Wuhu's rocks, Skyloft's buildings and Konoha's walls.
+     const collisionRoot=terrainRoot;
+     const collision=buildSkyloftCollision(collisionRoot,{bounds:baseLayout.bounds,ground:baseLayout.ground??0,spawns:baseLayout.spawns||[]});
+     baseLayout.blocks=collision.blocks;
+     // The imported Wuhu south-cliff colliders cut straight across the authored land bridge, even
+     // though the bridge surface is modeled above/through that rock. Clear only a narrow corridor
+     // through those tall blocks so the bridge is actually walkable; keep side walls and every
+     // obstacle outside the corridor.
+     if(isMariokart){
+      const bridge=group.getObjectByName('mariokart_land_bridge');
+      if(bridge){
+       const bridgeBox=new THREE.Box3().setFromObject(bridge);
+       const bridgeZ=(bridgeBox.min.z+bridgeBox.max.z)/2;
+       const beforeBlocks=baseLayout.blocks.length;
+       baseLayout.blocks=baseLayout.blocks.filter(block=>{
+        if(block.r!=null||block.top==null||block.top<=bridgeBox.max.y+.5)return true;
+        const overlapsX=block.x1>bridgeBox.min.x-1.6&&block.x0<bridgeBox.max.x+1.6;
+        const overlapsZ=block.z1>bridgeZ-1.95&&block.z0<bridgeZ+1.95;
+        return !(overlapsX&&overlapsZ);
+       });
+       if(activeLayout&&activeLayoutKey===key)activeLayout.blocks=baseLayout.blocks;
+       window.__browserSmashMariokartBridgeCorridor={beforeBlocks,afterBlocks:baseLayout.blocks.length,bridgeZ:+bridgeZ.toFixed(3),top:+bridgeBox.max.y.toFixed(3)};
+      }
+     }
+     if(activeLayout&&activeLayoutKey===key)activeLayout.blocks=baseLayout.blocks;
+     window['__browserSmash'+(isMariokart?'Mariokart':isKonoha?'Konoha':'Skyloft')+'Collision']=collision.info;
+    }catch(error){
+     window['__browserSmash'+(isMariokart?'Mariokart':isKonoha?'Konoha':'Skyloft')+'CollisionError']=String(error?.message||error);
+     console.warn('[arena:'+key+'] collision bake failed',error);
+    }
+   }
+  }
   const layoutHere=(window.__browserSmashLayout?.()||{});
   const arenaVolumes=arenaCameraBlocks(group,layoutHere.bounds||null);
-  smashCamera.setStageTilt?.(.16,1.0);
-  smashCamera.setStageYaw?.(ARENA_LAYOUTS[key]?.camera?.yaw??0);
+  const cameraHint=ARENA_LAYOUTS[key]?.camera||{};
+  smashCamera.setStageTilt?.(cameraHint.tilt??.16,cameraHint.scale??1.0);
+  smashCamera.setStageSkyline?.(Boolean(cameraHint.skyline));
+  smashCamera.setStageYaw?.(cameraHint.yaw??0);
   smashCamera.setStageBounds?.(layoutHere.bounds||null,arenaVolumes.length?[...(layoutHere.blocks||[]),...arenaVolumes]:null);
   window.__browserSmashCameraColliders={meshVolumes:arenaVolumes.length,layoutBlocks:(layoutHere.blocks||[]).length,
     used:smashCamera.collisionBlocks?.length??0,budget:arenaCameraBlocks.budget||null};
@@ -1254,8 +1412,11 @@ async function syncAuthoredArena(key){
  }
  window.__browserSmashAssets.authoredArena={key:group?key:null,status:group?'loaded':'procedural'};
 }
-function applyFloorFootprint(){const key=mapSelect?.value||'valley';const footprint=key==='starktower'?.17:key==='deathstar'?.18:1;floor.scale.set(footprint,1,footprint);}
-function applyMap(key){activeLayout=null;window.__browserSmashApplySky?.(scene,key);const t=mapThemes[key]||mapThemes.valley;const worldHere=worldLocation(key);applyFloorFootprint();scene.environment=skyEnvironment(renderer,worldHere?.theme?.skyPreset||key);for(const fighter of (window.fighters||[])){const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='deathstar'?.84:key==='asgard'?.96:key==='hogwarts'?.93:1;const scale=(fighter.model.userData.characterScale||1)*stageScale;fighter.model.userData.visualScale=scale;fighter.model.scale.setScalar(scale);}try{cinematicEnvironment.userData.setMap?.(key);}catch(error){window.__browserSmashArenaStageError=String(error?.message||error);console.warn('[arena:'+key+'] mount stage failed',error);}try{if(key!=='asgard'){const stone=tuneArchitecturalStone(cinematicEnvironment,key);window.__browserSmashStoneTuning=stone;}}catch(error){window.__browserSmashStoneError=String(error?.message||error);console.warn('[arena:'+key+'] stone pass failed',error);}window.__browserSmashSkyColour=t.sky;if(scene.background?.setHex)scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;if((key==='hogwarts'||key==='deathstar')&&floor.material){const tonedKey=key+'#floorToned';if(!arenaFloorMaterials[tonedKey]){const base=floor.material;const toned=base.clone();toned.name=(base.name||key)+'-toned';toned.color?.multiplyScalar(key==='hogwarts'?0.55:0.78);arenaFloorMaterials[tonedKey]=toned;}floor.material=arenaFloorMaterials[tonedKey];}explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);const interiorStage=key==='hogwarts'||key==='deathstar'||key==='starktower'||Boolean(worldHere?.interior);sun.color.setHex(t.light);sun.intensity=interiorStage?2.05:(key==='finalvalley'?3.1:2.75);rim.intensity=interiorStage?1.2:(key==='finalvalley'?1.6:1.75);rim.color.setHex(key==='finalvalley'?0x6f92b8:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0x9fb8cf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x3a3529:0x191421);hemisphere.intensity=interiorStage?0.78:(key==='finalvalley'?0.86:0.72);renderer.toneMappingExposure=interiorStage?1.0:(key==='finalvalley'?1.06:key==='asgard'?.96:0.98);if(key==='deathstar'||key==='starktower'){renderer.toneMappingExposure=1.06;}if(key==='asgard'){sun.intensity=2.3;rim.intensity=1.15;hemisphere.intensity=0.62;renderer.toneMappingExposure=0.8;}if(key==='finalvalley'){sun.position.set(27,36,-54);rim.position.set(25,24,-82);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
+function applyFloorFootprint(){const key=mapSelect?.value||'valley';const footprint=key==='starktower'?.17:1;floor.scale.set(footprint,1,footprint);}
+function applyMap(key){activeLayout=null;setNycSkyline(worldLocation(key)?.world==='nyc',scene);setKonohaLandmarks(worldLocation(key)?.world==='konoha',scene);setDbzLandmarks(worldLocation(key)?.world==='dbz',scene);window.__browserSmashApplySky?.(scene,key);const t=mapThemes[key]||mapThemes.valley;const worldHere=worldLocation(key);applyFloorFootprint();scene.environment=skyEnvironment(renderer,worldHere?.theme?.skyPreset||key);const stageScale=key==='finalvalley'?1.16:key==='starktower'?.76:key==='asgard'?.96:key==='hogwarts'?.93:1;activeStageScale=stageScale;for(const fighter of (window.fighters||[])){applyHeightProfile(fighter,{stageScale});}try{cinematicEnvironment.userData.setMap?.(key);}catch(error){window.__browserSmashArenaStageError=String(error?.message||error);console.warn('[arena:'+key+'] mount stage failed',error);}try{if(key!=='asgard'){const stone=tuneArchitecturalStone(cinematicEnvironment,key);window.__browserSmashStoneTuning=stone;}}catch(error){window.__browserSmashStoneError=String(error?.message||error);console.warn('[arena:'+key+'] stone pass failed',error);}window.__browserSmashSkyColour=t.sky;if(scene.background?.setHex)scene.background.setHex(t.sky);scene.fog.color.setHex(t.fog);scene.fog.density=t.density;floor.material=arenaFloorMaterials[key]||grassMaterial;floor.material.needsUpdate=true;if(key==='hogwarts'&&floor.material){const tonedKey=key+'#floorToned';if(!arenaFloorMaterials[tonedKey]){const base=floor.material;const toned=base.clone();toned.name=(base.name||key)+'-toned';toned.color?.multiplyScalar(0.55);arenaFloorMaterials[tonedKey]=toned;}floor.material=arenaFloorMaterials[tonedKey];}explorationWorld.visible=key==='valley';horizon.visible=key==='valley';finalValleyArena.group.visible=key==='finalvalley';platform.material.color.setHex(t.platform);const interiorStage=key==='hogwarts'||key==='starktower'||Boolean(worldHere?.interior);sun.color.setHex(t.light);sun.intensity=interiorStage?2.05:(key==='finalvalley'?3.1:2.75);rim.intensity=interiorStage?1.2:(key==='finalvalley'?1.6:1.75);rim.color.setHex(key==='finalvalley'?0x6f92b8:0x218cff);hemisphere.color.setHex(key==='finalvalley'?0x9fb8cf:0x9ecfff);hemisphere.groundColor.setHex(key==='finalvalley'?0x3a3529:0x191421);hemisphere.intensity=interiorStage?0.78:(key==='finalvalley'?0.86:0.72);renderer.toneMappingExposure=interiorStage?1.0:(key==='finalvalley'?1.06:key==='asgard'?.96:0.98);if(key==='starktower'){renderer.toneMappingExposure=1.06;}if(key==='asgard'){sun.intensity=2.3;rim.intensity=1.15;hemisphere.intensity=0.62;renderer.toneMappingExposure=0.8;}if(key==='finalvalley'){sun.position.set(27,36,-54);rim.position.set(25,24,-82);}else{sun.position.set(-18,7,-20);rim.position.set(10,7,-12);}
+// Imported open stages are lit by a high front key, not the low backlight used by the dark
+// procedural valley. Their pale stone and grass otherwise clip to white under a backlit 2.75 sun.
+if(key==='skyloft'||key==='mariokart'||key==='konoha_overlook'){sun.intensity=1.35;rim.intensity=.52;hemisphere.intensity=.46;renderer.toneMappingExposure=.9;sun.position.set(30,50,24);rim.position.set(-20,26,-30);}while(mapDecor.children.length){const o=mapDecor.children[mapDecor.children.length-1];mapDecor.remove(o);o.traverse(n=>{if(n.geometry)n.geometry.dispose();if(n.material){if(Array.isArray(n.material))n.material.forEach(x=>x.dispose());else n.material.dispose();}});}const addProp=(geometry,material,x,y,z,sx=1,sy=1,sz=1)=>{const o=new THREE.Mesh(geometry,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;o.receiveShadow=true;mapDecor.add(o);return o;};
  // Large worlds bring their own geometry; the small-map procedural dressing below is skipped.
  if(!worldHere){
   if(key==='finalvalley'){
@@ -1286,60 +1447,7 @@ function applyMap(key){activeLayout=null;window.__browserSmashApplySky?.(scene,k
  const landmark=(x,z,scale=1)=>{const base=addProp(new THREE.DodecahedronGeometry(1,2),landmarkMat,x,.25*scale,z,6*scale,.7*scale,5*scale);base.rotation.y=.2;for(let side=-1;side<=1;side+=2){const pillar=addProp(new THREE.BoxGeometry(1.3*scale,9*scale,1.5*scale),landmarkMat,x+side*4*scale,4.5*scale,z);pillar.rotation.z=side*.06;const seam=addProp(new THREE.BoxGeometry(.12*scale,7*scale,.15*scale),glowMat,x+side*4*scale,4.6*scale,z+.82*scale);seam.rotation.z=side*.06;}const arch=addProp(new THREE.BoxGeometry(10*scale,1.2*scale,1.5*scale),landmarkMat,x,9*scale,z);const beacon=addProp(new THREE.OctahedronGeometry(1.1*scale,2),glowMat,x,6*scale,z+.5*scale);beacon.rotation.y=.6;};
  if(key==='valley'){landmark(-92,-72,1.6);landmark(104,56,1.2);for(let i=0;i<18;i++){const x=-125+i*14,z=88+Math.sin(i*.4)*9;addProp(new THREE.CylinderGeometry(.35,.6,5+Math.random()*9,7),landmarkMat,x,3,z);}}
   // Iconic-world silhouettes are built from procedural geometry so each arena works offline without downloading copyrighted art.
- if(key==='deathstar'){
-   // Exterior station silhouette.
-   const stationMat=mat(0x68717d,.72,.42),darkPanel=mat(0x252d39,.55,.55),laserMat=new THREE.MeshBasicMaterial({color:0x79dfff});
-   const sphere=addProp(new THREE.SphereGeometry(27,40,28),stationMat,0,29,-105,1,1,1);sphere.rotation.z=.18;
-   addProp(new THREE.SphereGeometry(7,24,18),darkPanel,10,38,-80,1,1,1);
-   for(let i=0;i<14;i++){const a=i*Math.PI*2/14;const rib=addProp(new THREE.BoxGeometry(1.4,25,.7),darkPanel,Math.cos(a)*24,29+Math.sin(a)*24,-105);rib.rotation.z=-a;}
-   addProp(new THREE.TorusGeometry(5.7,.42,8,40),laserMat,10,38,-72).rotation.x=Math.PI/2;
-   for(let i=0;i<8;i++){const col=addProp(new THREE.BoxGeometry(4,12,4),darkPanel,-28+i*8,6,-38);addProp(new THREE.BoxGeometry(4.1,.2,4.1),laserMat,col.position.x,12.2,-38);}
-   // Interior one: Imperial briefing room, circular conference table and luminous wall panels.
-   const panelGlow=new THREE.MeshBasicMaterial({color:0x9aaebf,transparent:true,opacity:.58});
-   const briefingX=-38,briefingZ=-31;
-   addProp(new THREE.BoxGeometry(35,.22,34),darkPanel,briefingX,-.13,briefingZ);
-   for(let i=0;i<13;i++){
-     const a=(i/13)*Math.PI*2,x=briefingX+Math.cos(a)*15,z=briefingZ+Math.sin(a)*15;
-     const panel=addProp(new THREE.BoxGeometry(3.6,7.5,.35),darkPanel,x,3.8,z);panel.rotation.y=-a;
-     addProp(new THREE.BoxGeometry(2.5,4.5,.06),panelGlow,x,4.1,z-Math.cos(a)*.22);
-   }
-   addProp(new THREE.CylinderGeometry(7.5,7.5,.35,48),stationMat,briefingX,.28,briefingZ);
-   addProp(new THREE.CylinderGeometry(6.9,6.9,.15,48),darkPanel,briefingX,.52,briefingZ);
-   addProp(new THREE.SphereGeometry(1.3,20,16),laserMat,briefingX,.9,briefingZ);
-   for(let i=0;i<9;i++){
-     const a=i*Math.PI*2/9,x=briefingX+Math.cos(a)*9,z=briefingZ+Math.sin(a)*9;
-     addProp(new THREE.CylinderGeometry(.65,.8,1.6,10),darkPanel,x,.7,z);
-     addProp(new THREE.BoxGeometry(1.2,1.2,.25),darkPanel,x,1.4,z-Math.sin(a)*.3);
-   }
-   // Interior two: Emperor's throne chamber with deep-space viewport and raised black throne.
-   const throneX=39,throneZ=-32,starSteel=mat(0x7f90a5,.82,.28);
-   addProp(new THREE.BoxGeometry(37,.22,38),darkPanel,throneX,-.13,throneZ);
-   addProp(new THREE.BoxGeometry(29,18,.25),new THREE.MeshBasicMaterial({color:0x080d1a}),throneX,9,-51.1);
-   for(let i=0;i<65;i++){
-     const x=throneX+(Math.random()-.5)*26,y=2+Math.random()*14;
-     addProp(new THREE.SphereGeometry(.04+Math.random()*.035,5,4),new THREE.MeshBasicMaterial({color:0xbed8ff}),x,y,-50.8);
-   }
-   addProp(new THREE.TorusGeometry(9,.24,8,72),starSteel,throneX,9,-50.5);
-   addProp(new THREE.BoxGeometry(14,.7,8),stationMat,throneX,.32,-39);
-   addProp(new THREE.BoxGeometry(5.6,6.8,.9),stationMat,throneX,4,-42.1);
-   addProp(new THREE.BoxGeometry(7,.65,1.15),darkPanel,throneX,1.6,-41);
-   for(const x of [throneX-3.7,throneX+3.7]){
-     addProp(new THREE.BoxGeometry(1.0,2.8,1.1),stationMat,x,1.5,-39.4);
-     addProp(new THREE.BoxGeometry(1.4,.22,1.15),starSteel,x,2.9,-39.4);
-   }
-  // Walkable connector between the Imperial briefing room and the Emperor's throne chamber.
-  const corridor=mat(0x333d4b,.58,.48),wallPanel=mat(0x525e6d,.72,.32),doorGlow=new THREE.MeshBasicMaterial({color:0x8ecbdf});
-  addProp(new THREE.BoxGeometry(40,.2,7),corridor,0,-.06,-31);
-  for(let i=0;i<14;i++){const x=-19+i*2.9;addProp(new THREE.BoxGeometry(.15,.12,6.8),wallPanel,x,.09,-31);}
-  for(const z of [-48.1,-14.0])addProp(new THREE.BoxGeometry(35,10,.3),wallPanel,-38,5,z);
-  for(const z of [-42.3,-20.0])addProp(new THREE.BoxGeometry(.3,10,11.6),wallPanel,-20.3,5,z);
-  addProp(new THREE.BoxGeometry(.3,10,34),wallPanel,-55.7,5,-31);
-  for(let i=0;i<9;i++){const x=-53+i*3.75;addProp(new THREE.BoxGeometry(2.1,4.8,.08),darkPanel,x,4,-47.88);addProp(new THREE.BoxGeometry(1.5,.08,.08),doorGlow,x,6.5,-47.82);}
-  for(const z of [-42.0,-20.0])addProp(new THREE.BoxGeometry(.3,10,9.4),wallPanel,20.4,5,z);
-  addProp(new THREE.BoxGeometry(.3,10,38),wallPanel,57.6,5,-32);
-  for(const x of [21.7,56.3])addProp(new THREE.BoxGeometry(3.1,10,.25),wallPanel,x,5,-50.8);
-  for(let i=0;i<10;i++){const x=23+i*3.5;addProp(new THREE.BoxGeometry(1.8,4.6,.08),darkPanel,x,4,-50.7);addProp(new THREE.BoxGeometry(1.35,.08,.08),doorGlow,x,6.1,-50.63);}
-  } else if(key==='tournament'){
+  if(key==='tournament'){
    // Tenkaichi Budokai-inspired Papaya Island tournament grounds: tiled ring, temple gate, spectators and sea.
    const limestone=mat(0xe3dac6,.08,.78),shadowStone=mat(0x776e62,.15,.82),red=mat(0x8e3028,.2,.56),redLight=mat(0xb94735,.15,.5);
    const jade=mat(0x395a45,.52,.3),jadeLight=mat(0x588264,.4,.32),wood=mat(0x573927,.06,.88),gold=mat(0xd8b75c,.7,.25);
@@ -1666,7 +1774,7 @@ function resolveArenaCollision(fighter){
  else if(fighter.position.y<=ground+.02)fighter.isGrounded=true;
 }
 if(mapSelect){const savedMap=localStorage.getItem('browserSmashMap');mapSelect.value=(savedMap&&mapSelect.querySelector('option[value="'+savedMap+'"]'))?savedMap:'finalvalley';mapSelect.addEventListener('change',()=>applyArenaSelection(mapSelect.value));if(menuMapSelect){menuMapSelect.value=mapSelect.value;menuMapSelect.addEventListener('change',()=>applyArenaSelection(menuMapSelect.value));}window.__browserSmashApplyMap(mapSelect.value);}
-const selectScreen=initCharacterSelect({roster,specials:SPECIAL_MOVES,themes:mapThemes,worlds:worldGroups(),arenas:Object.keys(ARENA_LAYOUTS).map(key=>[key,ARENA_LAYOUTS[key]]).filter(([key])=>document.querySelector('#menuMapSelect option[value="'+key+'"]')||document.querySelector('#mapSelect option[value="'+key+'"]')),onFighter:(side,name)=>applyFighterSelection(side,name),onArena:(key)=>applyArenaSelection(key),onMode:(mode)=>{twoPlayer=mode==='2p';fighterTypeRefresh();updateHud();},rules:matchRules,difficulty:cpuSkillLevel,onRules:applyMatchRules,onDifficulty:setCpuSkill,modes:window.__browserSmashModes.all});
+const selectScreen=initCharacterSelect({roster,specials:SPECIAL_MOVES,displayNameFor:fighterDisplay,themes:mapThemes,worlds:worldGroups(),arenas:Object.keys(ARENA_LAYOUTS).map(key=>[key,ARENA_LAYOUTS[key]]).filter(([key])=>document.querySelector('#menuMapSelect option[value="'+key+'"]')||document.querySelector('#mapSelect option[value="'+key+'"]')),onFighter:(side,name)=>applyFighterSelection(side,name),onArena:(key)=>applyArenaSelection(key),onMode:(mode)=>{twoPlayer=mode==='2p';fighterTypeRefresh();updateHud();},rules:matchRules,difficulty:cpuSkillLevel,onRules:applyMatchRules,onDifficulty:setCpuSkill,modes:window.__browserSmashModes.all});
 function getArena(){return activeLayoutKey;}
 function applyArenaSelection(key){
  const value=String(key||'');
@@ -1852,11 +1960,19 @@ window.__browserSmashRigCheck=(fighter=player)=>{
    return validateFighterRig(model,{ground:fighter.position?.y??0,ignore:isEquippedWeapon});
  }
  const ground=fighter.position?.y??0;
- const validation=validateFighterRig(model,{ground,ignore:isEquippedWeapon,requireJoints:false});
+ // The holder carries the arena stage scale (for example 1.16 on Final Valley); the rig gate
+ // must judge the body against its own authored target height, not that stage multiplier. The
+ // mount path already validates with this profile scale; the audit hook has to use the same rule
+ // or short fighters such as Edna and seated Professor X are rejected only when a stage is scaled.
+ const profileHeight=Number(fighter.heightProfile?.targetHeight)||Number(fighter.height)||AUTHORING_BASELINE_HEIGHT;
+ const profileScale=profileHeight/AUTHORING_BASELINE_HEIGHT;
+ const validation=validateFighterRig(model,{ground,ignore:isEquippedWeapon,requireJoints:false,scale:profileScale});
  const rig=resolveRig(model);
  const issues=[...validation.issues];
  if(!rig||rig.kind!=='bone')issues.push('imported model has no skeleton');
- else if(rig.missing?.length)issues.push('skeleton is missing canonical bones: '+rig.missing.join(', '));
+ // `neck` and the wrists/ankles are extension slots: rig_map deliberately reports them
+ // separately because a supplied skeleton can animate all eleven core roles without them.
+ else if(rig.missingCore?.length)issues.push('skeleton is missing core bones: '+rig.missingCore.join(', '));
  // The same head-above-pelvis measurement the prefab gate reports, taken from the resolved
  // bones so a skinned character is held to the identical proportion rule.
  const metrics={...validation.metrics};
@@ -1868,7 +1984,7 @@ window.__browserSmashRigCheck=(fighter=player)=>{
    if(metrics.headAbovePelvis<0.35)issues.push('head is only '+metrics.headAbovePelvis+' m above the pelvis');
  }
  return {...validation,metrics,ok:validation.ok&&issues.length===0,issues,
-   rig:{kind:rig?.kind||null,bound:rig?.boundCount||0,missing:rig?.missing||[],
+   rig:{kind:rig?.kind||null,bound:rig?.boundCount||0,missing:rig?.missing||[],missingCore:rig?.missingCore||[],extensions:rig?.extensions||[],
      bones:rig?.bones?Object.keys(rig.bones):null,model:model.name,asset:model.userData?.characterAssetUrl||null}};
 };
 roundHud();
@@ -1876,7 +1992,7 @@ function clearFighterCombatState(f){
  f.velocity.set(0,0,0);f.percent=0;f.hitstun=0;f.attackQueue=[];f.attackBuffer=0;f.hitboxes=[];
  f.comboStep=0;f.comboWindow=0;f.comboHitCount=0;f.specialCooldown=0;f.guardBreak=0;f.invulnerable=0;
  f.dodgeTimer=0;f.dashCooldown=0;f.dashTimer=0;f.flightMode=false;f.isGrounded=true;f.jumps=0;f.airDashUsed=false;
- f.groundLevel=0;f.webSwinging=false;f.parryTimer=0;f.counterWindow=0;f.shield=100;f.guardRegenDelay=0;f.guardBreakFlash=0;f.guardStun=0;f.grabAim='forward';f.grabbedBy=null;f.grabTarget=null;f.grabHold=0;f.grabEscapeTimer=0;f.heldThrow=null;f.lastThrow=null;f.airHits=0;f.activeMoveId=null;f.state='idle';f.ko=false;f.victoryPose=0;f.casting=null;
+ f.groundLevel=0;f.webSwinging=false;f.parryTimer=0;f.counterWindow=0;f.shield=100;f.guardRegenDelay=0;f.guardBreakFlash=0;f.guardStun=0;f.grabAim='forward';f.grabbedBy=null;f.grabTarget=null;f.grabHold=0;f.grabEscapeTimer=0;f.heldThrow=null;f.lastThrow=null;f.airHits=0;f.activeMoveId=null;f.state='idle';f.ko=false;f.victoryPose=0;f.casting=null;f.ironSpiderStowed=false;resetNativeSpiderStow(f);
 }
 // Test hook: place both fighters on the active stage's real spawn points without restarting a match.
 window.__browserSmashSpawnFighters=()=>{const {spawns}=applyArenaLayout();placeFightersAtSpawns(spawns);return spawns;};
@@ -1933,6 +2049,14 @@ function resolveRoundEnd(){
    else{player.ko=true;cpu.ko=true;}
    {const cw=matchState.winner;for(const f of [player,cpu]){const u=f.model?.userData;if(!u?.humanMixer)continue;const act=cw==='p1'?(f===player?u.victoryAction:u.defeatAction):cw==='p2'?(f===cpu?u.victoryAction:u.defeatAction):u.victoryAction;if(!act)continue;f.model.visible=true;for(const a of Object.values(u.animationActions||{}))if(a&&a!==act)a.fadeOut(.18);const isWinner=cw==='p1'?f===player:cw==='p2'?f===cpu:false;if(isWinner){act.setLoop(THREE.LoopRepeat,Infinity);act.clampWhenFinished=false;}else{act.setLoop(THREE.LoopOnce,1);act.clampWhenFinished=true;}act.reset().setEffectiveTimeScale(1).fadeIn(.18).play();}}{const cw=matchState.winner;for(const f of [player,cpu]){const c=f.model?.userData?.animationController;if(c)c.celebrate(cw==='p1'?(f===player?'victory':'defeat'):cw==='p2'?(f===cpu?'victory':'defeat'):'victory');}}
    const resultText=matchState.winner==='p1'?'VICTORY · '+fighterDisplay(playerType).toUpperCase():matchState.winner==='p2'?'DEFEAT · '+fighterDisplay(cpuType).toUpperCase():'DRAW';
+   // Every fighter already had original win/lose writing, but no match ever reached it: the result
+   // panel only showed the headline. Speak the winner's bank, and in single-player give the player's
+   // own character the defeat line so a loss still closes on that identity rather than the CPU's.
+   const resultSpeaker=matchState.winner==='p1'?player:matchState.winner==='p2'&&twoPlayer?cpu:matchState.winner==='p2'?player:null;
+   const resultBank=resultSpeaker===player&&matchState.winner==='p2'?'lose':'win';
+   const resultLine=resultSpeaker?presentation.dialogue.say(resultSpeaker.displayName||resultSpeaker.identityKey,lineFor(resultSpeaker.identityKey,resultBank,0),{seconds:4.6,bank:resultBank}):null;
+   // Hold the authored pose long enough to read the line, but never turn the result screen into a wait.
+   const resultLineHold=resultLine?Math.min(4.8,Math.max(2.8,1.1+String(resultLine.text).length*.05)):0;
    const framed=matchState.winner==='p2'?cpu:player;
    const hulkLoser=framed===player?cpu:framed===cpu?player:null;
    if(hulkLoser?.identityKey==='hulk_bruce_banner'){
@@ -1948,10 +2072,11 @@ function resolveRoundEnd(){
      window.__browserSmashVictoryTrace.push({where:'defeat-set',hold:matchEndHold,started,paused,result:document.querySelector('#result')?.textContent||''});
    }else if(framed?.identityKey==='hulk_bruce_banner'){
      stageHulkPresentation(framed,{anchor:{x:6,z:-6}});
-     // Hulk's skill04 carries root displacement. Use the body-following presentation camera and
-     // let the 3.6 s celebration play before handing the frame to the result panel. These are the
-     // exact lens parameters the acceptance suite frames at this bank position; the arena block
-     // set shifted the bearing and put a foreground boulder over the legs.
+     // Hulk's authored `succ_cam` success animation carries root displacement. Use the
+     // body-following presentation camera and let the 3.8 s celebration play before handing the
+     // frame to the result panel. These are the exact lens parameters the acceptance suite frames
+     // at this bank position; the arena block set shifted the bearing and put a foreground boulder
+     // over the legs.
      smashCamera.hulkVictory?.(framed,{opponent:framed===player?cpu:player,floorY:framed.groundLevel??0,distance:6.4,pitch:5,fov:52});
      matchEndHold=3.8;
      matchEndText=resultText;
@@ -1977,6 +2102,8 @@ function resolveRoundEnd(){
      window.__browserSmashVictoryTrace=(window.__browserSmashVictoryTrace||[]);
      window.__browserSmashVictoryTrace.push({where:defeat?'roster-defeat':'roster-victory',subject:subject?.identityKey||null,hold:matchEndHold});
    }
+   if(resultLineHold)matchEndHold=Math.max(matchEndHold,resultLineHold);
+   if(resultLine)window.__browserSmashVictoryTrace.push({where:'result-line',subject:resultSpeaker?.identityKey||null,bank:resultBank,text:resultLine.text});
  }else{
    roundPause=1.8;
  }
@@ -2051,8 +2178,27 @@ function stagePresentationRoot(f){
  f.isGrounded=true;
  f.groundLevel=groundY;
 }
-function reset(isPractice=false){player.forceDefeatPose=false;cpu.forceDefeatPose=false;player.victoryPose=0;cpu.victoryPose=0;for(const presented of [player,cpu]){if(presented.model?.userData)delete presented.model.userData.presentationHandsFree;applyEquipmentState(presented,0);}matchEndHold=0;matchEndText='';exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);window.endWebSwing?.(cpu,false);player.attackBuffer=0;cpu.attackBuffer=0;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;$('#timer').style.display='';$('#exploreHint').style.display='none';exitMarkers.visible=true;canvas.style.cursor='';lookingAround=false;smashCamera.endSpectate?.();smashCamera.resetOrbit?.();player.roamMode=true;cpu.roamMode=true;const arenaLayoutNow=applyArenaLayout();const {spawns}=arenaLayoutNow;placeFightersAtSpawns(spawns);for(const f of [player,cpu])combatPowers.attachMoveset(f,f.specialProfile);seedDestructibles(arenaLayoutNow);resetMatch(matchState);combatPowers.resetFighter(player,{keepMeter:false});combatPowers.resetFighter(cpu,{keepMeter:false});hitStop=0;roundPause=0;remaining=matchState.timer;started=true;paused=false;clearTitleCamera();smashCamera.snap?.();pauseMenu?.close();combatAudio.setPaused?.(false);combatAudio.startAmbience?.(activeLayoutKey==='hogwarts'||activeLayoutKey==='deathstar'?'interior':'outdoor');combatAudio.startMusic?.();presentation.score.start(activeLayoutKey||'valley');
- if(!isPractice&&introsEnabled()){const introSeconds=presentation.cinematics.playIntro({p1:player,p2:cpu,arena:(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES'),seconds:window.__browserSmashIntroSeconds});if(introSeconds){presentation.introHold=true;roundPause=Math.max(roundPause,introSeconds);}}
+function reset(isPractice=false){presentation.introPending=false;presentation.introHold=false;player.forceDefeatPose=false;cpu.forceDefeatPose=false;player.victoryPose=0;cpu.victoryPose=0;for(const presented of [player,cpu]){if(presented.model?.userData)delete presented.model.userData.presentationHandsFree;applyEquipmentState(presented,0);}matchEndHold=0;matchEndText='';exploration=false;player.roamMode=false;player.flightMode=false;cpu.flightMode=false;window.endWebSwing?.(player,false);window.endWebSwing?.(cpu,false);player.attackBuffer=0;cpu.attackBuffer=0;cpu.model.visible=true;applyFloorFootprint();platform.scale.set(1,1,1);platform.visible=false;$('#timer').style.display='';$('#exploreHint').style.display='none';exitMarkers.visible=true;canvas.style.cursor='';lookingAround=false;smashCamera.endSpectate?.();smashCamera.resetOrbit?.();player.roamMode=true;cpu.roamMode=true;const arenaLayoutNow=applyArenaLayout();const {spawns}=arenaLayoutNow;placeFightersAtSpawns(spawns);for(const f of [player,cpu])combatPowers.attachMoveset(f,f.specialProfile);seedDestructibles(arenaLayoutNow);resetMatch(matchState);roundHud();combatPowers.resetFighter(player,{keepMeter:false});combatPowers.resetFighter(cpu,{keepMeter:false});hitStop=0;roundPause=0;remaining=matchState.timer;started=true;paused=false;clearTitleCamera();smashCamera.snap?.();pauseMenu?.close();combatAudio.setPaused?.(false);combatAudio.startAmbience?.(activeLayoutKey==='hogwarts'?'interior':'outdoor');combatAudio.startMusic?.();presentation.score.start(activeLayoutKey||'valley');
+ if(!isPractice&&introsEnabled()){
+  // Start the entrance only after the match-loading gate has actually cleared. Starting it in
+  // reset() put the whole five-second cinematic behind the loader; on a slow software renderer
+  // the first frame can take longer than that, so the player lifted the loader onto a finished
+  // intro. While waiting, introPending freezes the round so neither fighter nor the clock moves.
+  const startIntro=()=>{
+   if(!presentation.introPending||!started||practice)return false;
+   const introSeconds=presentation.cinematics.playIntro({p1:player,p2:cpu,arena:(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES'),seconds:window.__browserSmashIntroSeconds});
+   presentation.introPending=false;
+   if(introSeconds){presentation.introHold=true;roundPause=Math.max(roundPause,introSeconds);}
+   return Boolean(introSeconds);
+  };
+  presentation.introPending=true;
+  presentation.introStart=startIntro;
+  if(window.__bbLoading?.describe?.().visible){
+   window.addEventListener('browsersmash:matchready',()=>{if(presentation.introPending)startIntro();},{once:true});
+  }else{
+   startIntro();
+  }
+ }
  practice=isPractice;training.dealt=0;training.hits=0;training.biggest=0;training.invulnerable=false;resetMatchStats();if(!isPractice)training.dummy='stand';trainingPanel?.setState({dummy:training.dummy,invulnerable:false});trainingPanel?.setVisible(Boolean(isPractice));document.body.classList.remove('in-menu');$('#menu').classList.add('hidden');selectScreen?.clearResult?.();$status.textContent=isPractice?'PRACTICE MODE · POWERS ENABLED':(mapThemes[mapSelect?.value||'valley']?.label||'VALLEY OF ECHOES')+' · ROUND 01';}
 // ---------------------------------------------------------------------------------------------
 // Presentation: one pipeline for attack timelines, dialogue, cinematics and the per-map score.
@@ -2163,7 +2309,7 @@ function leaveExploration(){
 }
 addEventListener('keydown',e=>{if(e.key==='Escape'){if(exploration){leaveExploration();return;}if(started){e.preventDefault();setPaused(!paused);}return;}if(started&&practice&&!exploration&&(e.key==='r'||e.key==='R')){resetTrainingPositions();return;}if(started&&practice&&!exploration&&(e.key==='t'||e.key==='T')){resetTrainingDamage();return;}if(e.key==='F3'){e.preventDefault();const on=combatDebug.toggle();window.showCombatCallout?.(on?'HITBOX / HURTBOX DEBUG ON':'HITBOX / HURTBOX DEBUG OFF','#9bffb0');}});
 /**
- * Walking off the island edge, out of the Death Star hull or off a Konoha roof would drop an
+ * Walking off the island edge, out of a castle corridor or off a Konoha roof would drop an
  * explorer forever. Put them back on the seat they started from instead.
  */
 function respawnExplorer(){
@@ -2182,7 +2328,7 @@ function updateTitleView(dt){
   applyTitleCamera(camera,(mapSelect?.value)||activeLayoutKey);
 }
 window.__browserSmashTitleCamera=()=>({...titleCameraState(),started,exploration,paused,map:(mapSelect?.value)||activeLayoutKey});
-window.__browserSmashVictoryState=()=>({hold:matchEndHold,text:matchEndText,started,paused,result:document.querySelector('#result')?.textContent||'',spectating:Boolean(smashCamera.spectateState),trace:window.__browserSmashVictoryTrace||[]});
+window.__browserSmashVictoryState=()=>({hold:matchEndHold,text:matchEndText,started,paused,result:document.querySelector('#result')?.textContent||'',spectating:Boolean(smashCamera.spectateState),dialogue:presentation.dialogue.report(),trace:window.__browserSmashVictoryTrace||[]});
 window.__browserSmashReturnToTitle=()=>returnToTitle();
 function finish(text){window.__browserSmashVictoryTrace=(window.__browserSmashVictoryTrace||[]);window.__browserSmashVictoryTrace.push({where:'finish',text,started,paused,result:document.querySelector('#result')?.textContent||''});matchEndHold=0;matchEndText='';const outcome=String(text||'');combatAudio.play(outcome.startsWith('VICTORY')?'victory':outcome.startsWith('DEFEAT')?'defeat':'ko');combatPowers.clear('round');exploration=false;player.roamMode=false;cpu.model.visible=true;hitStop=0;roundPause=0;applyFloorFootprint();platform.scale.set(1,1,1);exitMarkers.visible=true;canvas.style.cursor='';lookingAround=false;$('#timer').style.display='';$('#exploreHint').style.display='none';started=false;paused=false;pauseMenu?.close();combatAudio.setPaused?.(false);trainingPanel?.setVisible(false);combatAudio.stopMusic?.();presentation.score.stop();presentation.score.sting(outcome.startsWith('VICTORY')?'victory':'defeat');presentation.dialogue.cancel();presentation.cinematics.end();const payload={text:String(text||''),winner:matchState.winner,markup:resultMarkup(text),stats:{...matchStats,dealt:[...matchStats.dealt],wins:[...matchState.wins],round:matchState.round}};window.__browserSmashLastResult=payload;selectScreen?.showResult?.(payload);window.dispatchEvent(new CustomEvent('browsersmash:matchend',{detail:payload}));trainingPanel?.setVisible(false);}
 /** The result screen: the headline plus the real numbers the match produced. */
@@ -2301,16 +2447,25 @@ function simulationStep(dt){
     if(matchEndHold===0){const text=matchEndText;matchEndText='';finish(text);}
     return;
   }
-  if(roundPause>0){
-    roundPause=Math.max(0,roundPause-dt);
-    if(roundPause===0)beginNextRound();
+  // An intro hold is not a between-round pause: when its timer ran out the old branch called
+  // beginNextRound(), so the first cinematic ended by silently advancing the match to round 2.
+  // Hold the pause while the intro is active, then let the frame loop release it when the
+  // cinematic reports inactive (or the player skips it).
+  if(presentation.introPending){
+    // The loader is still up. Hold the round at its opening state until the intro can own the
+    // frame; otherwise simulation and the round clock run behind the loading screen.
+  }else if(roundPause>0){
+    if(!presentation.introHold){
+      roundPause=Math.max(0,roundPause-dt);
+      if(roundPause===0)beginNextRound();
+    }
   }else{
     player.simulate(dt,cameraPlayerInput);
     cpu.simulate(dt,twoPlayer&&!exploration?cameraP2Input:ai);
     updateWorldTravel(dt);
     // Appendage pose belongs to the simulation: the sweep's leg-tip hit test reads the tips this
     // step, so the pose cannot wait for a render frame (that would lag a hit behind the visual).
-    for(const f of window.fighters){if(f.identityKey==='iron_spider'&&!f.model.userData.spiderLegs)attachSpiderLegs(f.model);updateSpiderLegs(f,dt);}
+    for(const f of window.fighters){if(f.identityKey==='iron_spider'&&!f.model.userData.spiderLegs&&!f.model.userData.nativeSpiderLegs)attachSpiderLegs(f.model);updateSpiderLegs(f,dt);}
     window.updateSignatureMoves?.(dt);
     combatPowers.update(dt);
     // The debris reach/hold/release beat is simulation state, not a render effect. Advancing it in
@@ -2321,7 +2476,9 @@ function simulationStep(dt){
     if(!exploration)resolveArenaCollision(cpu);
   }
   trackMatchSample(dt);
-  if(!practice&&!exploration){
+  // The entrance is presentation, not match time: keep the round clock stopped until the
+  // cinematic has handed control back, or a five-second intro would shorten every round.
+  if(!practice&&!exploration&&!presentation.introHold&&!presentation.introPending){
     matchState.timer=Math.max(0,matchState.timer-dt);
     remaining=matchState.timer;
     if(roundPause<=0)resolveRoundEnd();
@@ -2337,7 +2494,7 @@ window.__browserSmashStep=(seconds=1)=>{
   // Advance the camera on the same fixed step: it damps toward its target inside the render
   // loop, so an automated probe that only advanced the simulation used to judge a shot that
   // was still in flight (much more so on a software renderer running at a few fps).
-  for(let i=0;i<steps;i++){input.update();combatPowers.updateCinematic?.(1/60);simulationStep((1/60)*(started?(combatPowers.cinematicTimeScale?.()??1):1));updateProjectiles(1/60);for(const f of (window.fighters||[])){animateHumanFighter(f,1/60);if(started||exploration)syncFighterAnimation(f,1/60);syncEquippedWeapons(f.model);}combatPowers.applyCinematicPose?.(1/60);smashCamera.update(player,exploration?player:cpu,1/60,exploration?'explore':cameraMode);updateTitleView(1/60);}
+  for(let i=0;i<steps;i++){input.update();combatPowers.updateCinematic?.(1/60);simulationStep((1/60)*(started?(combatPowers.cinematicTimeScale?.()??1):1));updateProjectiles(1/60);for(const f of (window.fighters||[])){animateHumanFighter(f,1/60);if(started||exploration)syncFighterAnimation(f,1/60);applyWeaponCarryPoses(f,1/60);syncEquippedWeapons(f.model);applyWeaponStowPose(f);}combatPowers.applyCinematicPose?.(1/60);smashCamera.update(player,exploration?player:cpu,1/60,exploration?'explore':cameraMode);updateTitleView(1/60);}
   return window.__browserSmashMatch();
 };
 
@@ -2352,7 +2509,7 @@ for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];p.life-=dt;if(p.
 
 }
 function frame(){requestAnimationFrame(frame);window.__browserSmashFrames=(window.__browserSmashFrames||0)+1;window.__browserSmashLastElapsed=0;const elapsed=Math.min(clock.getDelta(),.2);clockDelta=elapsed;accumulator+=elapsed;
-let __stepsRun=0;while(accumulator>=1/60&&__stepsRun<12){input.update();const cinematicScale=started?(combatPowers.cinematicTimeScale?.()??1):1;simulationStep((1/60)*cinematicScale);for(const f of (window.fighters||[]))syncEquippedWeapons(f.model);accumulator-=1/60;__stepsRun++;}
+let __stepsRun=0;while(accumulator>=1/60&&__stepsRun<12){input.update();const cinematicScale=started?(combatPowers.cinematicTimeScale?.()??1):1;simulationStep((1/60)*cinematicScale);for(const f of (window.fighters||[])){syncEquippedWeapons(f.model);applyWeaponStowPose(f);}accumulator-=1/60;__stepsRun++;}
 if(paused){accumulator=0;composer.render();const pausedDiagnostics=window.__browserSmashAssets;if(pausedDiagnostics){pausedDiagnostics.app=pausedDiagnostics.app||{};pausedDiagnostics.app.status='running';pausedDiagnostics.app.frames=(pausedDiagnostics.app.frames||0)+1;}return;}
 
 // The cinematic clock is real time and independent of the hit-stop freeze and the fixed-step
@@ -2364,13 +2521,13 @@ presentation.presenter.update(clockDelta);presentation.cinematics.update(clockDe
 // Before the bell (menu and attract screen) the simulation is paused, which used to leave
 // both fighters frozen in their T-pose bind pose. Keep them breathing and shifting weight
 // so the menu is a living shot rather than a mannequin display.
-if(!started&&!exploration){const idleInputs={left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,shield:false,parry:false,ascend:false,descend:false,flightToggle:false};for(const f of window.fighters){f.t+=elapsed;f.updateProceduralPose(idleInputs,elapsed);syncFighterAnimation(f,elapsed);}}
+if(!started&&!exploration){const idleInputs={left:false,right:false,up:false,down:false,run:false,sprint:false,jump:false,dodge:false,attack:false,special:false,specialHeld:false,shield:false,parry:false,ascend:false,descend:false,flightToggle:false};for(const f of window.fighters){f.t+=elapsed;f.updateProceduralPose(idleInputs,elapsed);syncFighterAnimation(f,elapsed);}}
 for(const f of window.fighters){const wasGrounded=groundedState.get(f);animateHumanFighter(f,elapsed);if(started||exploration)syncFighterAnimation(f,elapsed);
-  syncEquippedWeapons(f.model);if(wasGrounded===false&&f.isGrounded&&f.position.y<.9){const color=f.identityKey==='goku'?0x4b9dff:f.identityKey==='iron_man_tony_stark'?0x36eaff:0xffc978;combatVFX.landing(f.position,color);combatAudio.play('land',{intensity:f===player?7:4});}
+  applyWeaponCarryPoses(f,elapsed);syncEquippedWeapons(f.model);applyWeaponStowPose(f);if(wasGrounded===false&&f.isGrounded&&f.position.y<.9){const color=f.identityKey==='goku'?0x4b9dff:f.identityKey==='iron_man_tony_stark'?0x36eaff:0xffc978;combatVFX.landing(f.position,color);combatAudio.play('land',{intensity:f===player?7:4});}
   // Footsteps are driven by distance actually travelled, not by the clock, so a standing fighter
   // is silent and a sprinting one keeps a steady cadence; the voice's own throttle absorbs the
   // frames where the step interval is crossed.
-  if((started||exploration)&&f.isGrounded&&!f.ko){const speed=Math.hypot(f.velocity.x,f.velocity.z);f.stepPhase=(f.stepPhase||0)+elapsed*speed;if(speed>2.4&&f.stepPhase>=1.9){f.stepPhase=0;const surface=activeLayoutKey==='deathstar'||activeLayoutKey==='starktower'||activeLayoutKey==='asgard'?'metal':activeLayoutKey==='valley'||activeLayoutKey==='finalvalley'?'grass':'stone';combatAudio.play('footstep',{position:{x:f.position.x,y:f.position.y+.1,z:f.position.z},surface});}if(speed<.6)f.stepPhase=0;}
+  if((started||exploration)&&f.isGrounded&&!f.ko){const speed=Math.hypot(f.velocity.x,f.velocity.z);f.stepPhase=(f.stepPhase||0)+elapsed*speed;if(speed>2.4&&f.stepPhase>=1.9){f.stepPhase=0;const surface=activeLayoutKey==='starktower'||activeLayoutKey==='asgard'?'metal':activeLayoutKey==='valley'||activeLayoutKey==='finalvalley'?'grass':'stone';combatAudio.play('footstep',{position:{x:f.position.x,y:f.position.y+.1,z:f.position.z},surface});}if(speed<.6)f.stepPhase=0;}
   groundedState.set(f,!!f.isGrounded);updateContactShadow(f);}
 // Signature choreography writes the rig AFTER the animation controller and the procedural pose in
 // this same frame, otherwise the clip playing underneath would overwrite the pose.
@@ -2386,7 +2543,7 @@ for(let i=impactRings.length-1;i>=0;i--){
  ring.mesh.scale.setScalar(.35+(ring.max-.35)*p);ring.mesh.material.opacity=.92*(1-p);
  if(p>=1){scene.remove(ring.mesh);ring.mesh.geometry.dispose();ring.mesh.material.dispose();impactRings.splice(i,1);}
 }
-combatVFX.update(elapsed);smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'explore':cameraMode);updateTitleView(elapsed);camera.getWorldDirection(audioForward);combatAudio.setListener(camera.position,audioForward);composer.render();const assetDiagnostics=window.__browserSmashAssets;if(assetDiagnostics){assetDiagnostics.app=assetDiagnostics.app||{};assetDiagnostics.app.status='running';assetDiagnostics.app.frames=(assetDiagnostics.app.frames||0)+1;}}
+combatVFX.update(elapsed);if(!window.__browserSmashHeightLineupActive)smashCamera.update(player,exploration?player:cpu,elapsed,exploration?'explore':cameraMode);updateTitleView(elapsed);camera.getWorldDirection(audioForward);combatAudio.setListener(camera.position,audioForward);composer.render();const assetDiagnostics=window.__browserSmashAssets;if(assetDiagnostics){assetDiagnostics.app=assetDiagnostics.app||{};assetDiagnostics.app.status='running';assetDiagnostics.app.frames=(assetDiagnostics.app.frames||0)+1;}}
 addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,window.__graphicsPixelRatioCap||1.65));composer.setSize(innerWidth,innerHeight);});
 const loadingLabel=$('#loading');let loadingNoticeIssued=false;
 function checkAssetLoadingStatus(){

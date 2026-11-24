@@ -52,6 +52,17 @@ const STANCES = Object.freeze({
     rightArm: [0.30, 0, -1.02], rightFore: [-0.34, 0, -0.12], rightHand: [-0.10, 0, -0.06],
     leftLeg: [0.30, 0, 0.10], leftShin: [0.34, 0, 0], leftFoot: [-0.34, 0, 0.02],
     rightLeg: [0.22, 0, -0.10], rightShin: [0.40, 0, 0], rightFoot: [-0.34, 0, -0.02]
+  }),
+  // Iron Man's flight silhouette: boots carry the lift, so the legs trail and tuck while the arms
+  // stay close to the body with the palms directed back. This is deliberately not the wide-armed
+  // stance used by ki flyers; it keeps the thruster read distinct on a body with no source clips.
+  thruster: Object.freeze({
+    pelvis: [-0.20, 0, 0], spine: [0.10, 0, 0], torso: [0.28, 0, 0], neck: [0.04, 0, 0], head: [-0.36, 0, 0],
+    leftClavicle: [0, 0, 0.04], rightClavicle: [0, 0, -0.04],
+    leftArm: [0.62, 0, 0.42], leftFore: [-0.62, 0, 0.10], leftHand: [-0.12, 0, 0.08],
+    rightArm: [0.62, 0, -0.42], rightFore: [-0.62, 0, -0.10], rightHand: [-0.12, 0, -0.08],
+    leftLeg: [0.46, 0, 0.12], leftShin: [0.72, 0, 0], leftFoot: [-0.55, 0, 0.04],
+    rightLeg: [0.38, 0, -0.12], rightShin: [0.78, 0, 0], rightFoot: [-0.55, 0, -0.04]
   })
 });
 
@@ -219,6 +230,67 @@ export const CLIP_SPECS = Object.freeze({
       k(0.6, { torso: [0.06, 0, 0], leftLeg: [-0.04, 0, 0.05], leftShin: [0.10, 0, 0], rightLeg: [0.05, 0, -0.05], rightShin: [0.09, 0, 0] })
     ]
   },
+  iron_fly_start: {
+    label: 'Thruster Start', category: 'flight', stance: 'thruster', loop: false, duration: 0.55, priority: 7,
+    keys: [
+      k(0, { pelvis: [0.14, 0, 0], torso: [0.32, 0, 0], leftLeg: [-0.62, 0, 0.10], leftShin: [1.12, 0, 0], rightLeg: [-0.52, 0, -0.10], rightShin: [1.08, 0, 0], leftArm: [0.20, 0, 0.30], rightArm: [0.20, 0, -0.30] }),
+      k(0.2, { pelvis: [-0.22, 0, 0], torso: [0.16, 0, 0], head: [-0.30, 0, 0], leftLeg: [0.30, 0, 0.12], leftShin: [0.50, 0, 0], rightLeg: [0.24, 0, -0.12], rightShin: [0.56, 0, 0], leftArm: [0.30, 0, 0.58], rightArm: [0.30, 0, -0.58] }),
+      k(0.55, { torso: [0.28, 0, 0], head: [-0.36, 0, 0], leftArm: [0.62, 0, 0.42], rightArm: [0.62, 0, -0.42], leftLeg: [0.46, 0, 0.12], leftShin: [0.72, 0, 0], rightLeg: [0.38, 0, -0.12], rightShin: [0.78, 0, 0] })
+    ]
+  },
+  iron_fly_loop: {
+    label: 'Thruster Hover', category: 'flight', stance: 'thruster', loop: true, duration: 1.18, priority: 6,
+    keys: [
+      k(0, { torso: [0.28, 0, 0], head: [-0.36, 0, 0], leftArm: [0.62, 0, 0.42], rightArm: [0.62, 0, -0.42], leftLeg: [0.46, 0, 0.12], rightLeg: [0.38, 0, -0.12] }),
+      k(0.3, { torso: [0.25, 0.03, 0.02], head: [-0.34, 0.04, 0], leftArm: [0.58, 0, 0.48], rightArm: [0.58, 0, -0.48], leftLeg: [0.40, 0, 0.15], leftShin: [0.80, 0, 0], rightLeg: [0.44, 0, -0.09] }),
+      k(0.59, { torso: [0.31, 0, 0], head: [-0.39, 0, 0], leftArm: [0.66, 0, 0.38], rightArm: [0.66, 0, -0.38], leftLeg: [0.50, 0, 0.10], rightLeg: [0.34, 0, -0.14] }),
+      k(0.88, { torso: [0.25, -0.03, -0.02], head: [-0.34, -0.04, 0], leftArm: [0.58, 0, 0.46], rightArm: [0.58, 0, -0.46], leftLeg: [0.42, 0, 0.13], rightLeg: [0.42, 0, -0.10] }),
+      k(1.18, { torso: [0.28, 0, 0], head: [-0.36, 0, 0], leftArm: [0.62, 0, 0.42], rightArm: [0.62, 0, -0.42], leftLeg: [0.46, 0, 0.12], rightLeg: [0.38, 0, -0.12] })
+    ]
+  },
+  iron_fly_boost: {
+    label: 'Thruster Boost', category: 'flight', stance: 'thruster', loop: true, duration: 0.78, priority: 7,
+    keys: [
+      k(0, { pelvis: [-0.30, 0, 0], torso: [0.52, 0, 0], head: [-0.52, 0, 0], leftArm: [0.90, 0, 0.26], leftFore: [-0.34, 0, 0.08], rightArm: [0.90, 0, -0.26], rightFore: [-0.34, 0, -0.08], leftLeg: [0.64, 0, 0.06], leftShin: [0.34, 0, 0], rightLeg: [0.58, 0, -0.06], rightShin: [0.38, 0, 0] }),
+      k(0.39, { pelvis: [-0.34, 0.02, 0], torso: [0.58, 0.03, 0], head: [-0.56, 0, 0], leftArm: [0.98, 0, 0.22], rightArm: [0.98, 0, -0.22], leftLeg: [0.70, 0, 0.08], rightLeg: [0.54, 0, -0.04], leftShin: [0.30, 0, 0], rightShin: [0.32, 0, 0] }),
+      k(0.78, { pelvis: [-0.30, 0, 0], torso: [0.52, 0, 0], head: [-0.52, 0, 0], leftArm: [0.90, 0, 0.26], leftFore: [-0.34, 0, 0.08], rightArm: [0.90, 0, -0.26], rightFore: [-0.34, 0, -0.08], leftLeg: [0.64, 0, 0.06], leftShin: [0.34, 0, 0], rightLeg: [0.58, 0, -0.06], rightShin: [0.38, 0, 0] })
+    ]
+  },
+  iron_fly_turn: {
+    label: 'Thruster Turn', category: 'flight', stance: 'thruster', loop: true, duration: 0.66, priority: 7,
+    keys: [
+      k(0, { torso: [0.28, 0, 0], pelvis: [-0.20, 0, 0], head: [-0.36, 0, 0] }),
+      k(0.165, { torso: [0.28, 0.10, 0.30], pelvis: [-0.20, 0.10, 0.10], head: [-0.36, 0.22, 0], leftArm: [0.52, 0, 0.58], rightArm: [0.74, 0, -0.28], leftLeg: [0.46, 0, 0.24], rightLeg: [0.38, 0, 0.02] }),
+      k(0.33, { torso: [0.28, 0, 0], pelvis: [-0.20, 0, 0], head: [-0.36, 0, 0] }),
+      k(0.495, { torso: [0.28, -0.10, -0.30], pelvis: [-0.20, -0.10, -0.10], head: [-0.36, -0.22, 0], leftArm: [0.74, 0, 0.28], rightArm: [0.52, 0, -0.58], leftLeg: [0.46, 0, 0.10], rightLeg: [0.38, 0, -0.24] }),
+      k(0.66, { torso: [0.28, 0, 0], pelvis: [-0.20, 0, 0], head: [-0.36, 0, 0] })
+    ]
+  },
+  iron_fly_climb: {
+    label: 'Thruster Climb', category: 'flight', stance: 'thruster', loop: true, duration: 0.86, priority: 6,
+    keys: [
+      k(0, { pelvis: [-0.08, 0, 0], torso: [0.10, 0, 0], head: [-0.22, 0, 0], leftArm: [0.42, 0, 0.52], rightArm: [0.42, 0, -0.52], leftLeg: [0.62, 0, 0.12], leftShin: [0.84, 0, 0], rightLeg: [0.54, 0, -0.12], rightShin: [0.90, 0, 0] }),
+      k(0.43, { pelvis: [-0.12, 0.02, 0], torso: [0.06, 0.03, 0], head: [-0.26, 0, 0], leftArm: [0.38, 0, 0.58], rightArm: [0.38, 0, -0.58], leftLeg: [0.68, 0, 0.14], rightLeg: [0.48, 0, -0.10], leftShin: [0.76, 0, 0], rightShin: [0.96, 0, 0] }),
+      k(0.86, { pelvis: [-0.08, 0, 0], torso: [0.10, 0, 0], head: [-0.22, 0, 0], leftArm: [0.42, 0, 0.52], rightArm: [0.42, 0, -0.52], leftLeg: [0.62, 0, 0.12], leftShin: [0.84, 0, 0], rightLeg: [0.54, 0, -0.12], rightShin: [0.90, 0, 0] })
+    ]
+  },
+  iron_fly_dive: {
+    label: 'Thruster Dive', category: 'flight', stance: 'thruster', loop: true, duration: 0.86, priority: 6,
+    keys: [
+      k(0, { pelvis: [-0.32, 0, 0], torso: [0.46, 0, 0], head: [-0.30, 0, 0], leftArm: [0.82, 0, 0.30], rightArm: [0.82, 0, -0.30], leftLeg: [0.58, 0, 0.10], leftShin: [0.56, 0, 0], rightLeg: [0.50, 0, -0.10], rightShin: [0.60, 0, 0] }),
+      k(0.43, { pelvis: [-0.38, 0.02, 0], torso: [0.52, 0.03, 0], head: [-0.26, 0, 0], leftArm: [0.90, 0, 0.26], rightArm: [0.90, 0, -0.26], leftLeg: [0.64, 0, 0.12], rightLeg: [0.44, 0, -0.08], leftShin: [0.50, 0, 0], rightShin: [0.66, 0, 0] }),
+      k(0.86, { pelvis: [-0.32, 0, 0], torso: [0.46, 0, 0], head: [-0.30, 0, 0], leftArm: [0.82, 0, 0.30], rightArm: [0.82, 0, -0.30], leftLeg: [0.58, 0, 0.10], leftShin: [0.56, 0, 0], rightLeg: [0.50, 0, -0.10], rightShin: [0.60, 0, 0] })
+    ]
+  },
+  iron_fly_land: {
+    label: 'Thruster Land', category: 'flight', stance: 'thruster', loop: false, duration: 0.62, priority: 9,
+    keys: [
+      k(0, { torso: [0.28, 0, 0], head: [-0.36, 0, 0], leftArm: [0.62, 0, 0.42], rightArm: [0.62, 0, -0.42], leftLeg: [0.46, 0, 0.12], leftShin: [0.72, 0, 0], rightLeg: [0.38, 0, -0.12], rightShin: [0.78, 0, 0] }),
+      k(0.22, { pelvis: [0.04, 0, 0], torso: [0.12, 0, 0], head: [-0.18, 0, 0], leftArm: [-0.18, 0, 0.52], rightArm: [-0.18, 0, -0.52], leftLeg: [-0.24, 0, 0.10], leftShin: [0.38, 0, 0], rightLeg: [-0.08, 0, -0.10], rightShin: [0.34, 0, 0] }),
+      k(0.38, { pelvis: [0.14, 0, 0], torso: [0.32, 0, 0], leftLeg: [-0.66, 0, 0.12], leftShin: [1.18, 0, 0], rightLeg: [-0.56, 0, -0.12], rightShin: [1.14, 0, 0], leftArm: [0.32, 0, 0.34], rightArm: [0.32, 0, -0.34] }),
+      k(0.62, { torso: [0.06, 0, 0], leftLeg: [-0.04, 0, 0.05], leftShin: [0.10, 0, 0], rightLeg: [0.05, 0, -0.05], rightShin: [0.09, 0, 0] })
+    ]
+  },
 
   // ------------------------------------------------------------------- combat
   fighting_idle: {
@@ -369,6 +441,20 @@ export const CLIP_SPECS = Object.freeze({
       k(0.32, { pelvis: [-0.08, 0.36, 0], torso: [-0.16, 0.30, 0], rightArm: [-2.50, -0.10, -0.16], rightFore: [-0.30, 0, 0], leftArm: [-0.90, -0.20, 0.50], leftLeg: [-0.14, 0, 0.12], leftShin: [0.16, 0, 0] }),
       k(0.44, { pelvis: [0.0, 0.22, 0], torso: [0.04, -0.02, 0], rightArm: [-1.90, 0, -0.24], rightFore: [-0.80, 0, 0] }),
       k(0.56, { pelvis: [0.04, 0.10, 0], torso: [0.12, -0.20, 0], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10] })
+    ]
+  },
+  // A generic transformation wind-up for bodies whose source pack has no authored form
+  // sequence. It is the same semantic lane for every such body, compiled on its own rig: crouch,
+  // gather, burst, settle. Form-specific source or authored sequences still win when present.
+  charge: {
+    label: 'Charge', category: 'combat', stance: 'fight', loop: false, duration: 1.05, priority: 13, peak: 0.52,
+    keys: [
+      k(0, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], head: [-0.06, 0.18, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] }),
+      k(0.22, { pelvis: [0.16, -0.18, 0], torso: [0.34, -0.26, 0], head: [-0.20, 0.08, 0], leftArm: [0.52, -0.34, 0.60], leftFore: [-1.42, 0, 0.18], rightArm: [0.52, 0.34, -0.60], rightFore: [-1.42, 0, -0.18], leftLeg: [-0.34, 0, 0.16], leftShin: [0.52, 0, 0], rightLeg: [0.18, 0, -0.16], rightShin: [0.42, 0, 0] }),
+      k(0.40, { pelvis: [0.22, -0.22, 0], torso: [0.42, -0.30, 0], head: [-0.26, 0.04, 0], leftArm: [0.74, -0.40, 0.72], leftFore: [-1.52, 0, 0.24], rightArm: [0.74, 0.40, -0.72], rightFore: [-1.52, 0, -0.24], leftLeg: [-0.42, 0, 0.18], leftShin: [0.62, 0, 0], rightLeg: [0.22, 0, -0.18], rightShin: [0.50, 0, 0] }),
+      k(0.52, { pelvis: [-0.06, 0.04, 0], torso: [-0.10, 0.12, 0], head: [-0.22, 0.06, 0], leftArm: [-1.78, -0.18, 0.34], leftFore: [-0.16, 0, 0.04], rightArm: [-1.72, 0.18, -0.38], rightFore: [-0.16, 0, -0.04], leftLeg: [-0.22, 0, 0.14], leftShin: [0.26, 0, 0], rightLeg: [0.18, 0, -0.14], rightShin: [0.22, 0, 0] }),
+      k(0.72, { pelvis: [0.0, 0.08, 0], torso: [0.08, -0.12, 0], head: [-0.12, 0.10, 0], leftArm: [-1.54, -0.10, 0.30], leftFore: [-0.48, 0, 0.08], rightArm: [-1.46, 0.10, -0.34], rightFore: [-0.52, 0, -0.08] }),
+      k(1.05, { torso: [0.12, -0.20, 0], pelvis: [0.04, 0.10, 0], head: [-0.06, 0.18, 0], leftArm: [-1.28, -0.10, 0.26], leftFore: [-1.42, 0, 0.10], rightArm: [-1.12, 0.12, -0.30], rightFore: [-1.34, 0, -0.10] })
     ]
   },
   special_attack: {

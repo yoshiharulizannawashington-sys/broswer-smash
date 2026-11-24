@@ -113,13 +113,13 @@ export const EXTRA_LINES = Object.freeze({
     ability: ['Normal punch.']
   },
   l_death_note_style: {
-    voice: { pitch: .88, rate: 1.02 },
-    intro: ['I have already worked out how you lose.', 'Sit down. This is a deduction, not a fight.'],
-    win: ['Exactly as predicted. Every step.', 'You were the suspect from the beginning.'],
-    lose: ['Interesting. I was wrong about one variable.'],
-    form: ['Now the pieces are all in place.'],
-    ultimate: ['Checkmate.'],
-    ability: ['I know your name.']
+    voice: { pitch: .9, rate: 1.04 },
+    intro: ['I already know how this ends.', 'You are already part of the plan.'],
+    win: ['Just as planned.', 'Every move was accounted for.'],
+    lose: ['A miscalculation. I will correct it.'],
+    form: ['The pieces were in place from the start.'],
+    ultimate: ['Your name is written.'],
+    ability: ['Just as I calculated.']
   },
   all_might: {
     voice: { pitch: .84, rate: 1.04 },
@@ -237,5 +237,41 @@ export const EXTRA_LINES = Object.freeze({
     form: ['Nanotech online.'],
     ultimate: ['Everything at once!'],
     ability: ['Web grenade!']
+  },
+  infantry: {
+    voice: { pitch: .88, rate: 1.0 },
+    intro: ['Hold the line. That is all you need to know.', 'Command says you are the objective. I say you are in my way.'],
+    win: ['Sector secure. Moving on.', 'Threat down. No hero required.'],
+    lose: ['Position lost. Falling back.'],
+    form: ['Combat stims active.'],
+    ultimate: ['All units, fire!'],
+    ability: ['Contact front!']
+  },
+  wolverine_logan: {
+    voice: { pitch: .72, rate: .96 },
+    intro: ['You want a fight? Fine. Try to keep up.', 'I heal. You do not. Do the math.'],
+    win: ['Still standing. That is the whole trick.', 'Walk it off. Or do not.'],
+    lose: ['I will be back on my feet before you turn around.'],
+    form: ['Let the animal out.'],
+    ultimate: ['Everything I have got, claws and all!'],
+    ability: ['Stay down!']
+  },
+  geralt_of_rivia: {
+    voice: { pitch: .68, rate: .92 },
+    intro: ['I solve problems. You are one.', 'No contract says I have to be gentle.'],
+    win: ['Contract complete.', 'I gave you a chance to walk away.'],
+    lose: ['I misjudged you. It will not happen twice.'],
+    form: ['The potions are working.'],
+    ultimate: ['Aard, and through!'],
+    ability: ['Sign cast!']
+  },
+  doom_slayer: {
+    voice: { pitch: .52, rate: .84 },
+    intro: ['No words. Only the fight.', 'You are in the way.'],
+    win: ['Threat eliminated.', 'The mission continues.'],
+    lose: ['Not finished.'],
+    form: ['Armour overdrive.'],
+    ultimate: ['Nothing left standing.'],
+    ability: ['Move.']
   }
 });

@@ -254,14 +254,18 @@ export function styleFor(fighter) {
  * clamped, because matching a 12 m/s sprint to its true stride would look like a cartoon - keeps
  * the feet closer to the ground without changing any gameplay number.
  */
-export function gaitTimeScale(motionStyle, clipId, speed = 0) {
+export function gaitTimeScale(motionStyle, clipId, speed = 0, legLength = 0.86) {
   const tempo = Number(motionStyle?.tempo) > 0 ? Number(motionStyle.tempo) : 1;
   const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
   const v = Number.isFinite(speed) ? speed : 0;
-  if (clipId === 'walk') return tempo * clamp(1 + (v - 2) * 0.035, 0.82, 1.35);
-  if (clipId === 'run') return tempo * clamp(1 + (v - 7) * 0.02, 0.9, 1.3);
-  if (clipId === 'sprint') return tempo * clamp(1 + (v - 12) * 0.02, 0.95, 1.25);
-  if (clipId === 'strafe_left' || clipId === 'strafe_right') return tempo * 1.05;
+  // Cadence is stride-normalized. A 0.70 m leg takes a quicker cycle than a 1.10 m leg at the
+  // same ground speed; the clamp keeps the correction a cadence nudge, not a different walk.
+  const leg = Number.isFinite(legLength) && legLength > 0.2 ? legLength : 0.86;
+  const proportion = clamp(0.86 / leg, 0.78, 1.24);
+  if (clipId === 'walk') return tempo * proportion * clamp(1 + (v - 2) * 0.035, 0.82, 1.35);
+  if (clipId === 'run') return tempo * proportion * clamp(1 + (v - 7) * 0.02, 0.9, 1.3);
+  if (clipId === 'sprint') return tempo * proportion * clamp(1 + (v - 12) * 0.02, 0.95, 1.25);
+  if (clipId === 'strafe_left' || clipId === 'strafe_right') return tempo * proportion * 1.05;
   // Attacks are retimed against the gameplay active window; the personality must not fight that.
   return 1;
 }

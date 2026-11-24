@@ -246,7 +246,7 @@ try {
       assert.ok(result.canvasSize.width > 0 && result.canvasSize.height > 0, route + ': render canvas has no dimensions');
       assert.ok(glbResponses.some(item => item.url.includes('character_models.glb') && item.status === 200), route + ': character GLB was not requested successfully');
       assert.ok(glbResponses.some(item => item.url.includes('character_weapons.glb') && item.status === 200), route + ': weapon GLB was not requested successfully');
-      assert.ok(glbResponses.some(item => item.url.includes('final_valley.glb') && item.status === 200), route + ': Final Valley GLB was not requested successfully');
+      assert.ok(glbResponses.some(item => item.url.includes('valley_of_the_end.glb') && item.status === 200), route + ': Valley of the End GLB was not requested successfully');
       assert.deepEqual(pageErrors, [], route + ': browser runtime errors: ' + pageErrors.join('\n'));
       console.log(JSON.stringify({ smoke: 'pass', ...result }, null, 2));
     } catch (error) {

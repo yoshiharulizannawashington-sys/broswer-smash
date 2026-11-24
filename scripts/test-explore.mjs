@@ -246,10 +246,10 @@ try {
     `x ${fenced.x.toFixed(1)} in ${JSON.stringify(fenced.bounds)}`);
 
   // ---- every world clamps to the world, not to the stage ---------------------
-  // One corridor was walked for real above. For the other five worlds the fence itself is
+  // One corridor was walked for real above. For the other four worlds the fence itself is
   // the question, so stand near the far corner of the roam rectangle: a per-stage fence
   // would snap the fighter back to the stage, and the world fence must keep it in the world.
-  for (const key of ['nyc_stark_plaza', 'konoha_main_street', 'hogwarts_courtyard', 'asgard_palace_court', 'deathstar_hangar']) {
+  for (const key of ['nyc_stark_plaza', 'konoha_main_street', 'hogwarts_courtyard', 'asgard_palace_court']) {
     await page.evaluate(arena => window.__browserSmashSelect.chooseArena(arena), key);
     const opened = await page.evaluate(() => window.__browserSmashExplore());
     const stageHere = (await world()).bounds;

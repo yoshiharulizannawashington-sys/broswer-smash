@@ -37,7 +37,7 @@ await page.evaluate(() => document.querySelector('#play')?.click());
 await page.waitForFunction(() => document.querySelector('#menu')?.classList.contains('hidden'), null, { timeout: 30000, polling: 200 });
 await page.waitForTimeout(1400);
 
-for (const key of ['asgard', 'hogwarts', 'deathstar', 'tournament', 'starktower']) {
+for (const key of ['asgard', 'hogwarts', 'tournament', 'starktower']) {
   await page.evaluate(k => {
     const select = document.querySelector('#mapSelect');
     if (select) { select.value = k; select.dispatchEvent(new Event('change')); }

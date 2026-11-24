@@ -28,11 +28,13 @@
     <div id="bbAdapters" hidden>
       <select id="menuMapSelect" aria-label="Arena">
         <option value="finalvalley">Final Valley · Valley of the End</option>
-        <option value="deathstar">Death Star</option>
         <option value="tournament">DBZ World Tournament</option>
         <option value="starktower">Helicarrier / Stark Penthouse</option>
         <option value="asgard">Asgard</option>
         <option value="hogwarts">Hogwarts Great Hall</option>
+        <option value="konoha_overlook">Konoha · Hidden Leaf Village</option>
+        <option value="skyloft">Skyloft · Skyward Isle</option>
+        <option value="mariokart">Mario Kart · Wuhu Island Headland</option>
       </select>
       <select id="p1Character" aria-label="Player character"><option value="Superman">Superman</option></select>
       <select id="cpuCharacter" aria-label="CPU character"><option value="Goku">Goku</option></select>
@@ -57,11 +59,13 @@
   </select>
   <select id="mapSelect" aria-label="Arena map">
     <option value="finalvalley">Final Valley · Valley of the End</option>
-    <option value="deathstar">Death Star</option>
     <option value="tournament">DBZ World Tournament</option>
     <option value="starktower">Helicarrier / Stark Penthouse</option>
     <option value="asgard">Asgard</option>
     <option value="hogwarts">Hogwarts Great Hall</option>
+    <option value="konoha_overlook">Konoha · Hidden Leaf Village</option>
+    <option value="skyloft">Skyloft · Skyward Isle</option>
+    <option value="mariokart">Mario Kart · Wuhu Island Headland</option>
   </select>
 </div>
 
@@ -70,7 +74,7 @@
 <div id="fatalError"></div>
 
 <script>addEventListener("error",e=>{const n=document.getElementById("fatalError");n.style.display="block";n.textContent="Startup error: "+e.message});addEventListener("unhandledrejection",e=>{const n=document.getElementById("fatalError");n.style.display="block";n.textContent="Startup error: "+(e.reason?.stack||e.reason)});</script>
-<script type="module" src="./js/main.js?v=browser-smash-phase3-v45-20261027" onerror="const box=document.getElementById('fatalError');if(box){box.style.display='block';box.textContent='3D engine module failed to load: '+this.src}"></script>
+<script type="module" src="./js/main.js?v=browser-smash-phase3-v49-20261124" onerror="const box=document.getElementById('fatalError');if(box){box.style.display='block';box.textContent='3D engine module failed to load: '+this.src}"></script>
 <script type="module" src="./js/ui/bbb_interface.js?v=bb-ui-2"></script>
 </body>
 </html>

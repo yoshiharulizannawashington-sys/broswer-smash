@@ -1,4 +1,4 @@
-// Browser test for the six large reference worlds.
+// Browser test for the five large reference worlds.
 //
 // It loads the real game, selects every battle location through the real selection API,
 // and asserts on live scene/simulation state: the world geometry is present as one merged
@@ -91,11 +91,11 @@ try {
     return { cards, tabs };
   });
   const worldCards = catalog.cards.filter(card => card.world);
-  check('the selection screen lists six worlds', catalog.tabs.filter(tab => tab.id !== 'classic').length === 6,
+  check('the selection screen lists five worlds', catalog.tabs.filter(tab => tab.id !== 'classic').length === 5,
     catalog.tabs.map(tab => tab.id).join(','));
-  check('every world exposes at least five battle locations', ['dbz', 'asgard', 'deathstar', 'hogwarts', 'konoha', 'nyc'].every(id =>
+  check('every world exposes at least five battle locations', ['dbz', 'asgard', 'hogwarts', 'konoha', 'nyc'].every(id =>
     worldCards.filter(card => card.world === id).length >= 5), `${worldCards.length} world stages`);
-  check('battle locations are kept out of the classic arena filter', catalog.cards.filter(card => !card.world).length >= 6);
+  check('battle locations are kept out of the classic arena filter', catalog.cards.filter(card => !card.world).length >= 5);
 
   const worldInfo = key => page.evaluate(() => {
     const scene = window.__browserSmashScene;
@@ -259,11 +259,11 @@ try {
   // ---- Travelling between connected stages --------------------------------
   // A doorway is a deliberate transition: walking into it moves the match to the stage it
   // leads to, puts both fighters on that stage's spawns, and keeps one world group mounted.
-  await page.evaluate(() => window.__browserSmashSelect.chooseArena('deathstar_hangar'));
-  await page.waitForFunction(() => window.__browserSmashWorld?.location === 'deathstar_hangar', null, { timeout: 60_000 });
+  await page.evaluate(() => window.__browserSmashSelect.chooseArena('hogwarts_great_hall'));
+  await page.waitForFunction(() => window.__browserSmashWorld?.location === 'hogwarts_great_hall', null, { timeout: 60_000 });
   await page.evaluate(() => window.__browserSmashSpawnFighters());
   const doorway = await page.evaluate(() => window.__browserSmashExits()[0]);
-  check('the hangar exposes a connected doorway', Boolean(doorway) && doorway.to === 'deathstar_trench',
+  check('the Great Hall exposes a connected doorway', Boolean(doorway) && doorway.to === 'hogwarts_courtyard',
     JSON.stringify(doorway));
   await page.evaluate(exit => {
     const fighter = window.fighters[0];
@@ -281,13 +281,13 @@ try {
       fighters: window.fighters.map(fighter => ({ x: fighter.position.x, y: fighter.position.y, z: fighter.position.z, ground: fighter.groundLevel }))
     };
   });
-  check('walking into a doorway travels to the connected stage', travelled.world.location === 'deathstar_trench',
+  check('walking into a doorway travels to the connected stage', travelled.world.location === doorway.to,
     String(travelled.world.location));
-  check('travel keeps the match running on the new stage', travelled.match.arena === 'deathstar_trench', travelled.match.arena);
-  const trench = travelled.world.bounds;
+  check('travel keeps the match running on the new stage', travelled.match.arena === doorway.to, travelled.match.arena);
+  const nextBounds = travelled.world.bounds;
   check('travel places both fighters on the new stage spawns',
-    travelled.fighters.every(fighter => fighter.x >= trench.x0 && fighter.x <= trench.x1
-      && fighter.z >= trench.z0 && fighter.z <= trench.z1 && Math.abs(fighter.y - fighter.ground) < 0.8),
+    travelled.fighters.every(fighter => fighter.x >= nextBounds.x0 && fighter.x <= nextBounds.x1
+      && fighter.z >= nextBounds.z0 && fighter.z <= nextBounds.z1 && Math.abs(fighter.y - fighter.ground) < 0.8),
     JSON.stringify(travelled.fighters.map(fighter => [Math.round(fighter.x), Math.round(fighter.z)])));
   check('travel does not duplicate world geometry', travelled.groups === 1, `${travelled.groups} groups`);
   check('every doorway in the new stage is marked in the scene',

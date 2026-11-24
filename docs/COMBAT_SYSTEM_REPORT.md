@@ -31,7 +31,7 @@ look or a physical device) · **PARTIAL** · **NOT IMPLEMENTED** · **BLOCKED BY
 | Keyboard + gamepad input, buffering | `public/js/smash_input.js` | IMPLEMENTED AND TESTED (fake pad, not a physical controller) |
 | Projectiles, specials, rounds, HUD | `public/js/main.js` | IMPLEMENTED AND TESTED |
 
-The six worlds, 60 battle locations, free roam, doorway travel, spawns and the duel camera were
+The five worlds, 65 battle locations, free roam, doorway travel, spawns and the duel camera were
 not modified. `test:explore` (49) and `test:gameplay` (48) pass unchanged.
 
 ## 2. Combat state model
@@ -161,7 +161,7 @@ Tests cover up/down/forward, the hold, the escape, and the attacker's cooldown.
   unchanged and still pass `test:gameplay` and `test:explore`.
 - **Cover**: a melee or grab no longer reaches through a wall. The resolver samples the line
   between the two chests against the stage's solid volumes (`solidBetween`) and reports
-  `BLOCKED BY COVER`. Tested on the Death Star: blocked across a 0.6 m wall, hitting on the same
+  `BLOCKED BY COVER`. Tested on Hogwarts: blocked across a 0.6 m wall, hitting on the same
   side at the same 1.2 m gap.
 - Cover is a line test, so a swing around a corner still hits if the straight line is clear; it is
   not a full occlusion model.
@@ -255,7 +255,7 @@ npm run test:mechanics        → 74 assertions passed
 npm run test:combat           → 394 checks passed
 npm run test:gameplay         → 48 checks passed
 npm run test:explore          → 49 assertions passed
-npm run test:worlds           → 47,329 assertions across 60 battle locations
+npm run test:worlds           → 67,247 assertions across 65 battle locations
 ```
 
 Not run this pass: `test:worlds:browser`, `test:smoke`, `audit:roster`, `validate:assets`. No world geometry or rig code changed, but that is a reason they were skipped,
@@ -279,7 +279,7 @@ doing.
 9. **Goku/Iron Man rigs absent**; Iron Spider legs are decorative.
 10. **No automated ground→air juggle route test**; those pieces are tested separately.
 11. The 818-check world browser suite (`test:worlds:browser`) was not rerun; the node world
-    suite (47,329 assertions, 60 locations) was, and the six worlds' block counts are unchanged.
+    suite (67,247 assertions, 65 locations) was, and the five worlds' block counts are unchanged.
 
 ## 17. Next three highest-priority improvements
 
@@ -359,7 +359,7 @@ Rules shared by all of them:
 - **Interruption**: a clean hit before anything has connected cancels the ultimate and refunds the
   meter in full. After the first hit connects the move completes (documented, consistent rule).
 - **Walls**: the beam stops at the first solid volume; every other behaviour refuses to damage a
-  target behind cover (verified on the Death Star: a block between the fighters gives `landed:false`
+  target behind cover (verified on Hogwarts: a block between the fighters gives `landed:false`
   and zero damage).
 - **Cleanup**: KO, round end, rematch and character swap all clear running ultimates, their
   generated effects and the caster's lock.
@@ -415,7 +415,7 @@ Chromium libraries and a missing font crashes the renderer.
 | `npm run test:combat` | 394 checks passed |
 | `npm run test:gameplay` | 48 checks passed |
 | `npm run test:explore` | 49 assertions passed |
-| `npm run test:worlds` | 47,329 assertions across 60 battle locations |
+| `npm run test:worlds` | 67,247 assertions across 65 battle locations |
 | `node scripts/test-stage-feel.mjs` | 138 checks across 4 stages |
 | `node scripts/test-rig.mjs` | 31/31 |
 | `node scripts/test-iron-spider.mjs` | 33 checks |

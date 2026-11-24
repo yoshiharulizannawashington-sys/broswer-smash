@@ -33,19 +33,14 @@ export const SOLO_RIG_LANES = Object.freeze({
   }),
   goku: Object.freeze({
     id: 'rig-73-a07e48a1', name: 'Goku', joints: 73,
-    body: '/models/characters/bespoke/goku_body.glb',
+    body: '/models/characters/bespoke/goku_body_face_rigged.glb',
     clips: ['/models/characters/bespoke/goku_animated.glb'],
     expected: 46, weapon: null, weaponBone: /right.*hand|hand.*right/i
   }),
   naruto_uzumaki: Object.freeze({
-    id: 'rig-567-792f0473', name: 'Naruto', joints: 567,
-    body: '/models/characters/naruto_uzumaki/naruto_uzumaki.glb',
-    clips: [
-      '/models/characters/naruto_uzumaki/naruto_uzumaki.glb',
-      '/models/characters/naruto_uzumaki/naruto_reactions.glb',
-      '/models/characters/naruto_uzumaki/naruto_authored.glb',
-      '/models/characters/naruto_uzumaki/naruto_kunai.glb'
-    ],
+    id: 'rig-19-naruto-sage', name: 'Naruto', joints: 19,
+    body: '/models/characters/imported/naruto_sage/naruto_sage_animated.glb',
+    clips: ['/models/characters/imported/naruto_sage/naruto_sage_animated.glb'],
     expected: 49, weapon: 'kunai', weaponBone: /right.*hand|hand.*right/i
   })
 });

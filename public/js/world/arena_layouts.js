@@ -2,8 +2,7 @@
 //
 // The procedural and authored arenas in main.js are built at a much larger scale than the
 // old fight bounds (a fixed 34 x 16 metre box), so a fight staged in Asgard's plaza, the
-// Hogwarts nave or the Death Star briefing room was confined to a strip in the middle of
-// the room while the rest of the environment sat outside an invisible wall.
+// Hogwarts nave was confined to a strip in the middle of the room while the rest of the environment sat outside an invisible wall.
 //
 // A layout is plain data plus three small pure functions, which is why it can be unit
 // tested in node without a browser or a WebGL context:
@@ -40,20 +39,6 @@ const LEGACY_LAYOUTS = {
   },
   // Obsidian Volcano, Frostfall Citadel and Neon Megacity were fully procedural arenas with no
   // authored counterpart. They are archived in archive/part10-legacy/procedural-stages.md.
-  deathstar: {
-    label: 'Death Star',
-    kind: 'interior',
-    bounds: { x0: -55, x1: 57, z0: -49, z1: -14 },
-    ground: 0,
-    spawns: [{ x: -38, z: -22 }, { x: -38, z: -40 }],
-    blocks: [
-      c(-38, -31, 7.6, 0.55),
-      k(32, -43, 46, -35, 0.72),
-      k(33.2, -42.7, 44.8, -41.2, 4.2),
-      k(20.4, -46, 21, -38, 10),
-      k(-20.6, -46, -20, -38, 10)
-    ]
-  },
   finalvalley: {
     label: 'Final Valley',
     kind: 'open',
@@ -68,6 +53,9 @@ const LEGACY_LAYOUTS = {
     bounds: { x0: -17.2, x1: 17.2, z0: -27.2, z1: 3.2 },
     ground: 0.18,
     spawns: [{ x: -7, z: -12 }, { x: 7, z: -11.3 }],
+    // The authored ring is enclosed by stands and a gate; a 1.0-scale shot cropped them
+    // off and left a white slab. Pull back far enough to read the whole tournament court.
+    camera: { yaw: 0, tilt: .18, scale: 1.9, skyline: true },
     blocks: []
   },
   starktower: {
@@ -100,6 +88,54 @@ const LEGACY_LAYOUTS = {
         return { x0: x - w, z0: z - w, x1: x + w, z1: z + w, top: 6 + (i % 4) * 1.5 + 3.8 };
       }))
     ]
+  },
+  // Imported environment arenas assembled in Blender. Their playable plaza decks are baked into
+  // the GLB, so the layout only has to describe the walkable rectangle, spawns and camera.
+  skyloft: {
+    label: 'Skyloft · Skyward Isle',
+    kind: 'open',
+    hideFloor: true,
+    bounds: { x0: -21, x1: 21, z0: -15.5, z1: 15.5 },
+    ground: 0.14,
+    spawns: [{ x: -6.2, z: -2.0 }, { x: 6.2, z: 2.0 }],
+    blocks: [],
+    camera: { yaw: 0, tilt: 0.22, scale: 1.45, skyline: false }
+  },
+  mariokart: {
+    label: 'Mario Kart · Wuhu Island Headland',
+    kind: 'open',
+    hideFloor: true,
+    // Fight across Wuhu's natural west headland and the grass-and-rock isthmus into the Sunshine
+    // Airport atoll, not the reclaimed apron that used to cover this coast. The stage uses the
+    // combined Wuhu + Sunshine Airport GLB; main.js bakes the same footprint from both imported
+    // lands and the isthmus, so fighters follow the grass, rock and shoreline instead of a flat
+    // runway height.
+    // The 34×28 m battlefield spans Wuhu's west headland, the natural grass-and-rock isthmus and a
+    // new low atoll shelf beyond the airport's western rim. The shelf is built at mount from the
+    // same grass/rock materials as the isthmus, so the east half is solid atoll rather than the
+    // removed runway or the lagoon. The lower bound is -4.5 so the Wuhu side remains on the island
+    // shelf while the isthmus meets the airport ledge.
+    bounds: { x0: -45, x1: -11, z0: -38, z1: -10 },
+    ground: -4.5,
+    spawns: [{ x: -42, z: -22 }, { x: -26, z: -12 }],
+    blocks: [],
+    camera: { yaw: 0, tilt: 0.23, scale: 1.5, skyline: false }
+  },
+  konoha_overlook: {
+    label: 'Konoha · Hidden Leaf Village',
+    kind: 'open',
+    hideFloor: true,
+    // The imported village has its own streets, walls and cliff. This 22 x 10 m intersection is
+    // the flat open surface inside the gate; the authored overlook that used to sit in front of
+    // it is removed at mount and is not part of the stage.
+    bounds: { x0: -14, x1: 8, z0: -108, z1: -98 },
+    ground: -0.5,
+    // Keep both spawns on the open intersection itself. The old -9/-105 and 3/-101 pair
+    // sampled the pagoda roof and the courtyard wall, so the round opened with both fighters
+    // grounded on scenery instead of on the stage floor.
+    spawns: [{ x: -6, z: -104 }, { x: 1, z: -102 }],
+    blocks: [],
+    camera: { yaw: 0, tilt: 0.2, scale: 1.8, skyline: true }
   },
   hogwarts: {
     label: 'Hogwarts Great Hall',
@@ -143,7 +179,7 @@ export function layoutKeys() {
   return Object.keys(ARENA_LAYOUTS);
 }
 
-/** Walkable height at a point: the floor, or the highest surface the feet can reach. */
+/** Walkable height at a point: the floor, the highest reachable block, or imported terrain. */
 export function groundHeightAt(x, z, layout, feetY = 0, step = STEP_HEIGHT) {
   let height = layout?.ground ?? 0;
   for (const block of layout?.blocks || []) {
@@ -154,6 +190,23 @@ export function groundHeightAt(x, z, layout, feetY = 0, step = STEP_HEIGHT) {
     } else if (x >= block.x0 && x <= block.x1 && z >= block.z0 && z <= block.z1) {
       height = Math.max(height, top);
     }
+  }
+  // Imported islands bake their real surface into a layout height sampler after the GLB mounts.
+  // It is the top walkable surface, not a step-limited block: a fighter approaching rising grass
+  // must follow it rather than walk through it. Authored decks remain the fallback beneath it.
+  //
+  // A steep rock face or low boulder is also the top surface sampled by the heightfield, so without
+  // this gate groundHeightAt would lift the fighter onto it before resolveCollision saw the
+  // migrated solid block. Once the fighter is standing on the top (feet >= top - step), keep
+  // sampling it; below that, leave the base height and let the block push the fighter out.
+  const blockedBySolid = (layout?.blocks || []).some(block => (block.steep || block.lowBoulder)
+    && block.top != null && feetY < block.top - step
+    && (block.r != null
+      ? Math.hypot(x - block.x, z - block.z) <= block.r
+      : x >= block.x0 && x <= block.x1 && z >= block.z0 && z <= block.z1));
+  if (typeof layout?.heightAt === 'function' && !blockedBySolid) {
+    const terrain = layout.heightAt(x, z);
+    if (Number.isFinite(terrain)) height = Math.max(height, terrain);
   }
   return height;
 }

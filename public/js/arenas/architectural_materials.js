@@ -1,4 +1,4 @@
-// Architectural stone pass for the large authored maps (Hogwarts, Tournament, Death Star,
+// Architectural stone pass for the large authored maps (Hogwarts, Tournament,
 // Helicarrier/Stark, Final Valley). Those GLBs ship flat PBR factors with no images at all
 // (Hogwarts: 603 meshes, 0 textures), so walls, floors and plazas read as untextured geometry up close.
 //

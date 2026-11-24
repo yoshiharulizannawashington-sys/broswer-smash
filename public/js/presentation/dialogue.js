@@ -60,13 +60,13 @@ const BASE_LINES = Object.freeze({
     ability: ['A little misdirection goes a long way.']
   },
   lord_voldemort: {
-    voice: { pitch: .62, rate: .82 },
-    intro: ['You will kneel, or you will break.', 'There is no spell that saves you from me.'],
-    win: ['There is no power you could have offered me.', 'Let this be the last lesson you receive.'],
-    lose: ['Impossible. I will not be diminished.'],
-    form: ['Witness what I have become.'],
-    ultimate: ['Everything I am, unleashed!'],
-    ability: ['You cannot deflect what you cannot see.']
+    voice: { pitch: .78, rate: .96 },
+    intro: ['I have faced worse than this in detention.', 'Let us see which of us has the better spell.'],
+    win: ['That was earned. Every bit of it.', 'The better plan wins. That is all it ever was.'],
+    lose: ['I missed something. I will find it.'],
+    form: ['The patronus is with me.'],
+    ultimate: ['Expecto Patronum!'],
+    ability: ['Expelliarmus!']
   },
   aquaman: {
     voice: { pitch: .74, rate: .9 },
@@ -108,17 +108,25 @@ const FALLBACK = Object.freeze({
  * identity. Normalising here means every lookup is one code path and a fighter added to LINES works
  * from both spellings.
  */
+const DISPLAY_ALIASES = Object.freeze({
+  'Light Yagami': 'l_death_note_style',
+  'Harry Potter': 'lord_voldemort',
+  // The roster shows Arnold as T-800, but his voice and lines live under the full identity key.
+  'T-800': 'arnold_schwarzenegger'
+});
+
 export function characterKey(identity) {
   const raw = String(identity || '').trim();
   if (!raw) return '';
-  if (LINES[raw]) return raw;
+  const aliased = DISPLAY_ALIASES[raw] || raw;
+  if (LINES[aliased]) return aliased;
   const slug = raw
     .toLowerCase()
     .replace(/[()\[\]{}.'’,]/g, ' ')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '');
-  return LINES[slug] ? slug : raw;
+  return LINES[slug] ? slug : aliased;
 }
 
 export function voiceFor(identity) {

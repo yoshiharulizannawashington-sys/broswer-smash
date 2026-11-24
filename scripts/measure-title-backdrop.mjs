@@ -28,7 +28,7 @@ const server = createServer(async (req, res) => {
 await new Promise(d => server.listen(0, '127.0.0.1', d));
 const origin = 'http://127.0.0.1:' + server.address().port;
 
-const MAPS = ['asgard', 'hogwarts', 'deathstar', 'tournament', 'starktower'];
+const MAPS = ['asgard', 'hogwarts', 'tournament', 'starktower'];
 const W = 1366;
 const H = 768;
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });

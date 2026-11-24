@@ -77,7 +77,7 @@ await page.waitForFunction(() => Boolean(window.fighters[0].model.userData.victo
 await page.evaluate(() => { for (let i = 0; i < 75; i += 1) window.__browserSmashStep(1 / 60); });
 const posed = await state();
 await hideUi(); await page.screenshot({ path: `${out}/victory-pose.png` }); await showUi();
-check('victory: skill04 clip drives the body at full weight', /skill04/i.test(posed.clip || '') && posed.weight >= 0.99, `${posed.clip} w=${posed.weight}`);
+check('victory: the authored succ_cam success clip drives the body at full weight', /succ_cam/i.test(posed.clip || '') && posed.weight >= 0.99, `${posed.clip} w=${posed.weight}`);
 check('victory: gauntlet group is hidden', posed.weapon?.visible === false && posed.weapon?.rendered === false, JSON.stringify(posed.weapon));
 check('victory: no rendered equipment remains near the waist',
   posed.near.every(item => !/knuckle|cuff|guard|weapon|gamma/i.test(item.name)), JSON.stringify(posed.near));

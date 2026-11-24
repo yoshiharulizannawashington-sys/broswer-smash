@@ -36,6 +36,11 @@ export function blocksFromGroup(group, bounds, { limit = 48, pad = 55, minArea =
     const width = BOX.max.x - BOX.min.x;
     const depth = BOX.max.z - BOX.min.z;
     if (width * depth < minArea) return;
+    // A single mesh that spans several times the playable rectangle is terrain or a skyline
+    // backdrop, not a wall: its AABB contains the whole stage, so using it as a camera collider
+    // puts the lens "inside" solid rock everywhere and collapses the shot onto the fighters.
+    // Keep buildings and props; drop the island/village/airport hulls.
+    if (width > (bounds.x1 - bounds.x0) * 2.5 || depth > (bounds.z1 - bounds.z0) * 2.5) return;
     if (BOX.max.x < bounds.x0 - pad || BOX.min.x > bounds.x1 + pad) return;
     if (BOX.max.z < bounds.z0 - pad || BOX.min.z > bounds.z1 + pad) return;
     kept.push({

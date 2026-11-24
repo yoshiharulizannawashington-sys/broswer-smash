@@ -1,12 +1,15 @@
 // Phase 22.3G weapon attachment regression across the whole launch roster.
 //
 //   bash scripts/run-browser-test.sh scripts/measure-weapon-attachment.mjs
+//   bash scripts/run-browser-test.sh scripts/measure-weapon-attachment.mjs --fighters=Thor,Kaze
 //
 // `audit:roster` proves every selectable fighter mounts its own exported body, its weapon and its
 // surface detail. This measures the other half: where each prop actually sits relative to the hand
 // that holds it, for every fighter, in one page session. The 22.3C body-relative holder is only
-// correct if the prop origin sits at the hand bone (holder distance 0), the grip offset is the
-// authored one, and the prop points along the body's facing instead of a fixed compass heading.
+// correct if the holder rides the hand bone (holder distance 0), the grip offset is the authored
+// one, and the prop points along the body's facing instead of a fixed compass heading. When the
+// authored grip deliberately sits more than a palm's width from the prop origin, the hand must
+// still touch the prop rather than float beside it.
 //
 // Failures are real defects: a prop missing from an armed fighter, a prop not parented to the hand
 // bone, a prop detached from the palm, or a grip reading that differs from the other fighters
@@ -21,6 +24,17 @@ const root = process.cwd();
 const outDir = resolve(root, 'artifacts/phase22-3/acceptance');
 await mkdir(outDir, { recursive: true });
 const slugOf = name => String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+const argv = process.argv.slice(2);
+const flag = name => {
+  const hit = argv.find(arg => arg.startsWith('--' + name + '='));
+  return hit ? hit.slice(name.length + 3) : null;
+};
+// A focused run measures only the named fighters. It writes its own artifact so a two-fighter
+// check can never overwrite the full-roster acceptance file.
+const focus = (flag('fighters') || '').split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
+const focusKeys = new Set(focus.map(slugOf));
+const tag = flag('tag') || (focus.length ? 'focus-' + focus.map(slugOf).join('-') : null);
+const outFile = tag ? `attachment-${tag}.json` : 'attachment.json';
 
 // What each fighter's weapon asset says it is, read from the shipped prefab rather than a list
 // duplicated here: `extras.kind` and `extras.hand` on every `weapon_<key>_<hand>` root.
@@ -55,14 +69,16 @@ const server = createServer(async (req, res) => {
     }
     const filePath = resolve(root, relative);
     if (filePath !== root && !filePath.startsWith(root + sep)) { res.writeHead(403); res.end('Forbidden'); return; }
+    const bytes = await readFile(filePath);
     res.writeHead(200, { 'Content-Type': mime[extname(filePath).toLowerCase()] || 'application/octet-stream' });
-    res.end(await readFile(filePath));
-  } catch { res.writeHead(404); res.end('Not found'); }
+    res.end(bytes);
+  } catch { if (!res.headersSent) res.writeHead(404); res.end('Not found'); }
 });
 await new Promise(done => server.listen(0, '127.0.0.1', done));
 const origin = 'http://127.0.0.1:' + server.address().port;
 
-const report = { phase: '22.3G', kind: 'weapon-attachment', rows: [], failures: [], pageErrors: [], emitters: [], status: 'complete' };
+const report = { phase: '22.3G', kind: 'weapon-attachment', focus: null, rows: [], failures: [],
+  pageErrors: [], emitters: [], raisedGrips: [], status: 'complete' };
 const browser = await chromium.launch({
   headless: true,
   args: ['--no-sandbox', '--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle',
@@ -85,8 +101,19 @@ try {
     && window.__browserSmashAssets?.weapons?.status === 'loaded' && window.fighters?.length === 2,
     null, { timeout: 180_000, polling: 250 });
 
-  const roster = await page.evaluate(() => (window.characterRosters?.launch || []).map(([name]) => name));
-  assert.ok(roster.length >= 32, 'launch roster missing from the page: ' + roster.length);
+  const launchRoster = await page.evaluate(() => (window.characterRosters?.launch || []).map(([name]) => name));
+  const roster = focusKeys.size
+    ? launchRoster.filter(name => focusKeys.has(slugOf(name)))
+    : launchRoster;
+  if (!focusKeys.size) {
+    assert.ok(launchRoster.length >= 32, 'launch roster missing from the page: ' + launchRoster.length);
+    report.focus = { requested: [], matched: launchRoster };
+  } else {
+    const matchedKeys = new Set(roster.map(slugOf));
+    const missing = focus.filter(value => !matchedKeys.has(slugOf(value)));
+    assert.deepEqual(missing, [], 'roster fighters not found: ' + missing.join(', '));
+    report.focus = { requested: focus, matched: roster };
+  }
 
   for (const name of roster) {
     const measured = await page.evaluate(async fighterName => {
@@ -113,15 +140,21 @@ try {
         await new Promise(done => setTimeout(done, 50));
       }
       if (settledAt) await new Promise(done => setTimeout(done, 250));
-      // weaponKind was lost to a per-frame branch in the item system, so a reading taken in the same
-      // tick as the mount cannot see the defect. Require the match loop to advance first.
-      const frameStart = window.__browserSmashAssets?.app?.frames || 0;
-      const frameDeadline = Date.now() + 4000;
-      while (Date.now() < frameDeadline
-        && (window.__browserSmashAssets?.app?.frames || 0) - frameStart < 3) {
-        await new Promise(done => setTimeout(done, 50));
+      // The deliberate carry/stow pose rotates the prop for silhouette and body clearance. Disable
+      // it unconditionally: reading weaponCarry.mode to decide is racy, and a missed read measures
+      // the posed prop. Then advance one fixed step synchronously. Unlike a render-frame wait, this
+      // runs the mixer and sync pass even on the software renderer, so the authored holder is
+      // restored before the reading.
+      if (typeof window.__browserSmashSetWeaponCarry !== 'function') {
+        throw new Error('the audit cannot disable the weapon carry pose');
       }
-      const framesWaited = (window.__browserSmashAssets?.app?.frames || 0) - frameStart;
+      if (typeof window.__browserSmashStep !== 'function') {
+        throw new Error('the audit cannot advance a fixed step to restore the authored weapon pose');
+      }
+      window.__browserSmashSetWeaponCarry(false);
+      window.__browserSmashStep(1 / 60);
+      // A late body swap would otherwise leave the reading on the previous model.
+      model = fighter.model;
       const world = object => {
         object.updateWorldMatrix(true, false);
         const e = object.matrixWorld.elements;
@@ -141,14 +174,28 @@ try {
         const e = weapon.matrixWorld.elements;
         const axis = [e[8], e[9], e[10]];
         const length = Math.hypot(...axis) || 1;
+        const propKind = weapon.userData?.kind || null;
+        let shieldParts = 0;
+        weapon.traverse(node => { if (/^Shield/i.test(node.name || '')) shieldParts += 1; });
+        const gripDistance = gap(grip, palm);
+        // A grip more than a palm's width from the prop origin is deliberate (e.g. Stormbreaker's
+        // raised haft grip). Check that the hand still touches the prop's bounds instead of
+        // accepting the origin distance or maintaining a per-weapon exception list.
+        const T = window.__browserSmashThree;
+        const handToProp = palm && shieldParts === 0 && gripDistance !== null && gripDistance > 0.35 && T?.Box3
+          ? +(new T.Box3().setFromObject(weapon)
+            .distanceToPoint(new T.Vector3(palm[0], palm[1], palm[2]))).toFixed(3)
+          : null;
         return {
+          propKind,
+          handToProp,
           side, present: true, label: weapon.name,
           parent: weapon.parent?.name || null, parentIsBone: !!weapon.parent?.isBone,
           hasHandJoint: Boolean(hand), fallbackBone: fallbackBone?.name || null,
           // A shield is carried by its centre: its origin sits behind the palm on purpose, so the
           // hand-sized grip rule cannot apply to it. Detect it from the prop, not from the
           // fighter's weaponKind, which describes the right-hand weapon only.
-          shieldParts: (() => { let count = 0; weapon.traverse(node => { if (/^Shield/i.test(node.name || '')) count += 1; }); return count; })(),
+          shieldParts,
           // The mount the game chose: a hand when the body exports one, otherwise the documented
           // forearm/arm fallback (equipCharacterWeapons: rightHand || rightFore || rightArm).
           mountClass: weapon.parent?.userData?.attachIsHand === true ? 'hand'
@@ -156,13 +203,15 @@ try {
           attachBone: weapon.parent?.userData?.attachBone || null,
           attachIsHand: weapon.parent?.userData?.attachIsHand === true,
           underModel: (() => { let node = weapon.parent; while (node) { if (node === model) return true; node = node.parent; } return false; })(),
-          gripDistance: gap(grip, palm), holderDistance: gap(holder, palm),
+          gripDistance, holderDistance: gap(holder, palm),
           axisDotForward: +((axis[0] * forward[0] + axis[2] * forward[2]) / length).toFixed(3),
           offset: weapon.position.toArray().map(v => +v.toFixed(3)),
           scale: +weapon.scale.x.toFixed(3)
         };
       };
-      return {
+      const right = describe(model.userData.equippedWeaponRight, 'right');
+      const left = describe(model.userData.equippedWeaponLeft, 'left');
+      const result = {
         identity: fighter.identity,
         kind: model?.userData?.weaponKind || null,
         weaponLabel: model?.userData?.weaponLabel || null,
@@ -171,13 +220,13 @@ try {
         // The game's own "hands are the weapon" flag (models.js equipCharacterWeapons): these
         // fighters carry palm emitters, so their prefab entry is an emitter, not a held weapon.
         unarmedByDesign: model?.userData?.unarmed === true || Boolean(model?.userData?.sculptedBody),
-        framesWaited,
         body: model?.userData?.characterAssetUrl ? 'imported' : 'procedural',
         bodyYawDegrees: +(yaw * 180 / Math.PI).toFixed(1),
-        right: describe(model.userData.equippedWeaponRight, 'right'),
-        left: describe(model.userData.equippedWeaponLeft, 'left'),
-        shieldPartCount: (() => { let count = 0; model.userData.equippedWeaponLeft?.traverse(n => { if (/^Shield/i.test(n.name || '')) count += 1; }); return count; })()
+        right, left, shieldPartCount: left.shieldParts || 0
       };
+      // Restore the deliberate carry pose after the reading and before the next fighter.
+      window.__browserSmashSetWeaponCarry(true);
+      return result;
     }, name);
 
     // Classification: the fighter has to report what its weapon asset declares. A missing kind is
@@ -187,7 +236,9 @@ try {
     // An unarmed-by-design fighter keeps reporting 'unarmed' even though the prefab has an emitter
     // entry for its palm; the emitter is recorded rather than mistaken for a missing weapon.
     const expectedRight = unarmedByDesign ? 'unarmed' : (declared.right || 'sword');
-    const expectedOffhand = declared.left || null;
+    // An unarmed-by-design fighter's prefab emitters are recorded in `emitters`, not equipped as a
+    // left holdable. Only an armed fighter is expected to expose the declared offhand kind.
+    const expectedOffhand = unarmedByDesign ? null : (declared.left || null);
     if (unarmedByDesign && declared.right) {
       report.emitters.push({ name, declaredKind: declared.right, weaponKind: measured.kind });
     }
@@ -201,6 +252,11 @@ try {
     }
 
     const sides = [measured.right, measured.left].filter(side => side?.present);
+    // A gauntlet/emitter is worn on the palm; its authored +Z is the emitter face, not a blade
+    // direction along the bearer's facing. The facing check applies to directional held props.
+    const emitterKinds = new Set(['lightning', 'gauntlet', 'energy_gauntlet', 'webshooters',
+      'alchemy_glove', 'repulsor', 'psychic_focus', 'ki_orb']);
+    const directionalProp = !emitterKinds.has(measured.kind);
     if (measured.kind !== 'unarmed' && sides.length === 0) {
       report.failures.push({ name, error: 'armed fighter has no prop attached', ...measured });
     }
@@ -220,10 +276,15 @@ try {
         }
         // The shield is a centre grip: its origin sits behind the palm on purpose (0.504 m on
         // Wonder Woman, frozen since 22.3F), so only the sword-like grips are hand-sized.
-        if ((side.shieldParts || 0) === 0 && (side.gripDistance === null || side.gripDistance > 0.35)) {
-          report.failures.push({ name, error: `${side.side} grip sits ${side.gripDistance} m from the palm`, side });
+        if ((side.shieldParts || 0) === 0) {
+          if (side.gripDistance === null) {
+            report.failures.push({ name, error: `${side.side} grip distance is unmeasurable`, side });
+          } else if (side.gripDistance > 0.35 && (side.handToProp === null || side.handToProp > 0.10)) {
+            report.failures.push({ name, raisedGrip: true, side,
+              error: `${side.side} raised grip hand sits ${side.handToProp} m from the prop` });
+          }
         }
-        if (Math.abs(side.axisDotForward) < 0.98) {
+        if (directionalProp && Math.abs(side.axisDotForward) < 0.98) {
           report.failures.push({ name, error: `${side.side} prop does not point along the body facing (dot ${side.axisDotForward})`, side });
         }
       }
@@ -234,9 +295,13 @@ try {
   process.stdout.write('\n');
 
   report.classifications = report.rows.map(row => ({ name: row.identity, weaponKind: row.kind,
-    weaponLabel: row.weaponLabel, offhandKind: row.offhandKind, framesWaited: row.framesWaited }));
+    weaponLabel: row.weaponLabel, offhandKind: row.offhandKind }));
   report.unarmedByDesign = report.rows.filter(row => row.kind === 'unarmed').map(row => row.identity);
   report.withOffhand = report.classifications.filter(row => row.offhandKind);
+  report.raisedGrips = report.rows.flatMap(row => [row.right, row.left]
+    .filter(side => side?.present && side.handToProp !== null)
+    .map(side => ({ name: row.identity, kind: side.propKind, side: side.side,
+      handToProp: side.handToProp, originToPalm: side.gripDistance })));
 
   // Grouped by weapon kind so a single odd reading stands out against its peers instead of being
   // averaged away across the roster.
@@ -244,6 +309,10 @@ try {
   for (const row of report.rows) {
     for (const side of [row.right, row.left]) {
       if (!side?.present) continue;
+      // A shield is a centre-grip prop, not the sword grip this spread check compares. Counting it
+      // under the right-hand weapon kind made Wonder Woman/Link's shields look like 0.5 m sword
+      // grips and falsely failed the shared-grip invariant.
+      if ((side.shieldParts || 0) > 0) continue;
       const key = `${row.kind}:${side.side}`;
       groups[key] = groups[key] || [];
       groups[key].push({ name: row.identity, gripDistance: side.gripDistance,
@@ -292,6 +361,7 @@ try {
     unarmed: report.rows.filter(row => row.kind === 'unarmed').map(row => row.identity),
     withLeftProp: report.rows.filter(row => row.left?.present).length,
     withRightProp: report.rows.filter(row => row.right?.present).length,
+    raisedGrips: report.raisedGrips.length,
     pageErrors: report.pageErrors.length,
     failures: report.failures.length
   };
@@ -305,9 +375,10 @@ try {
   await browser.close();
   await new Promise(done => server.close(done));
 }
-await writeFile(resolve(outDir, 'attachment.json'), JSON.stringify(report, null, 2));
+await writeFile(resolve(outDir, outFile), JSON.stringify(report, null, 2));
 console.log(JSON.stringify({ status: report.status, error: report.error || null,
-  totals: report.totals, baseline: report.baseline?.frozen,
+  focus: report.focus, raisedGrips: report.raisedGrips, totals: report.totals,
+  baseline: report.baseline?.frozen,
   groupCounts: Object.fromEntries(Object.entries(report.groups || {}).map(([k, v]) => [k, v.length])),
   failures: (report.failures || []).slice(0, 6) }, null, 2));
 if (report.status === 'failed') process.exitCode = 1;

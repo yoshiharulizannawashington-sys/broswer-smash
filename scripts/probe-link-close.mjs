@@ -1,0 +1,33 @@
+import { createServer } from 'node:http';
+import { readFile, mkdir } from 'node:fs/promises';
+import { resolve, normalize, sep, extname } from 'node:path';
+import { chromium } from 'playwright';
+const out='artifacts/link-upgrade/close'; await mkdir(out,{recursive:true});
+const root=process.cwd(); const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.glb':'model/gltf-binary','.png':'image/png','.jpg':'image/jpeg','.hdr':'application/octet-stream','.wasm':'application/wasm'};
+const server=createServer(async(req,res)=>{try{let rel=normalize(decodeURIComponent(new URL(req.url||'/','http://x').pathname)).replace(/^[/\\]+/,'')||'index.html';if(!(rel==='public'||rel.startsWith('public'+sep)))rel='public'+sep+rel;res.writeHead(200,{'Content-Type':mime[extname(rel).toLowerCase()]||'application/octet-stream'});res.end(await readFile(resolve(root,rel)))}catch{if(!res.headersSent)res.writeHead(404);res.end('nf')}});
+await new Promise(d=>server.listen(0,'127.0.0.1',d)); const origin='http://127.0.0.1:'+server.address().port;
+const browser=await chromium.launch({headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+try{
+ const page=await browser.newPage({viewport:{width:1280,height:720}}); page.setDefaultTimeout(90000);
+ page.on('pageerror',e=>console.log('PAGEERROR',String(e.message||e).slice(0,300)));
+ await page.addInitScript(()=>{localStorage.setItem('browserSmashP1','Link');localStorage.setItem('browserSmashCPU','Mario')});
+ await page.goto(origin+'/',{waitUntil:'domcontentloaded'});
+ await page.waitForFunction(()=>document.querySelector('#bbTitle')&&window.fighters?.length===2,null,{timeout:80000,polling:250});
+ await page.evaluate(()=>document.querySelector('[data-nav="versus"]')?.click());
+ await page.waitForSelector('#selectScreen',{state:'visible',timeout:15000});
+ await page.evaluate(()=>window.__browserSmashSelect?.select('p1','Link'));
+ await page.waitForTimeout(1200);
+ await page.screenshot({path:out+'/select.png'});
+ await page.evaluate(()=>document.querySelector('#selectScreen')?.classList.add('hidden'));
+ await page.evaluate(()=>{window.__browserSmashTrainingDummy=true;window.__browserSmashFreezeAI=true;document.querySelector('#play')?.click()});
+ await page.waitForFunction(()=>document.querySelector('#menu')?.classList.contains('hidden'),null,{timeout:25000,polling:200});
+ await page.waitForTimeout(2000);
+ await page.evaluate(()=>{const [p1,p2]=window.fighters;p1.position.set(0,0,0);p2.position.set(4,0,0);p1.facing=1;p1.facingZ=0;window.smashCamera.spectate({fighter:p1,framing:'full',distance:4.2,yaw:90,pitch:8});});
+ await page.waitForTimeout(500);
+ await page.evaluate(()=>{for(let i=0;i<8;i++)window.__browserSmashStep(1/60)});
+ await page.waitForTimeout(500);
+ await page.screenshot({path:out+'/close.png'});
+ await page.evaluate(()=>{window.smashCamera.spectate({fighter:window.fighters[0],framing:'full',distance:3.2,yaw:0,pitch:5})});
+ await page.waitForTimeout(500); await page.screenshot({path:out+'/front.png'});
+ console.log('done');
+}finally{await browser.close();server.close()}

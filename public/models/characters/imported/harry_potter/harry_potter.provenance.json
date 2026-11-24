@@ -9,21 +9,18 @@
   "assetKind": "imported-licensed",
   "rosterSlot": "lord_voldemort",
   "displayName": "Harry Potter",
-  "status": "IMPORTED, RIGGED, ZERO CLIPS — deliberately NOT enabled in manifest.json. The skeleton is usable but the model ships no animation, so activating it now would produce a static replacement skin.",
+  "status": "PROMOTED into the stable lord_voldemort slot as Harry Potter. 68-joint rig, 25 retargeted clips, four degenerate source triangles removed. Runtime acceptance tracked separately.",
   "verified": {
-    "height": 1.877,
-    "feetY": -0.001,
+    "height": 1.8767,
+    "feetY": -0.0008,
     "triangles": 16320,
     "skinned": true,
-    "clips": 0,
-    "meshNotes": "498 open boundary edges on the welded character (budget 80) and 4 zero-area triangles on Object_15.",
-    "inspection": "node scripts/inspect-character-glb.mjs public/models/characters/imported/harry_potter/harry_potter.glb",
-    "result": "Rig present and feet grounded at the origin; no animation clips. Boundary-edge and zero-area defects need a cleanup pass before export."
+    "clips": 25,
+    "bones": 68,
+    "sha256": "4ab98be4419462ee8120ba061478a3700b661eca7f267a4bb5e2d8edf32be833",
+    "file": "public/models/characters/imported/harry_potter/harry_potter_animated.glb",
+    "retargetReport": "artifacts/harry/prepared/retarget.log",
+    "cleanupReport": "artifacts/harry/prepared/finalize.log"
   },
-  "requiredBeforeActivation": [
-    "Map the imported skeleton to the roster's canonical bone roles (or retarget the authored clips onto it).",
-    "Author wand-draw, wand-aim, cast, Protego, movement, reactions, knockdown/get-up, victory/defeat and the ultimate.",
-    "Attach a real wand mesh to the right hand bone with measured grip offset, and animate it through casting.",
-    "Clean the open boundary edges / zero-area triangles and verify per-clip deformation in the browser."
-  ]
+  "requiredBeforeActivation": []
 }

@@ -231,17 +231,43 @@ export const IMPORTED_ATTACK_CLIP_SETS = Object.freeze({
       dive: 'Goku_AirKick', antiAir: 'Goku_Launcher'
     })
   }),
+  // Miles's body carries the 57 retargeted Iron Spider clips appended after his original 26.
+  // Route the live strike table at the Iron Spider performances; this is a selection change only,
+  // so the original clips remain in the GLB and can still be addressed by name.
   spider_man: Object.freeze({
-    url: '/models/characters/bespoke/spider_man_bespoke.glb',
-    authoredBy: 'assets/blender/roster_bespoke_animations.py',
+    url: '/models/characters/imported/miles_morales/miles_morales_animated.glb',
+    authoredBy: 'Miles Morales body + 57 retargeted Iron Spider clips',
     slots: Object.freeze({
-      light: 'SpiderMan_Jab', light1: 'SpiderMan_Jab', light2: 'SpiderMan_Cross',
-      light3: 'SpiderMan_Kick', light4: 'SpiderMan_Kick', light5: 'SpiderMan_Kick',
-      finisher: 'SpiderMan_Kick',
-      heavy: 'SpiderMan_Heavy', heavyLauncher: 'SpiderMan_Heavy', heavySlam: 'SpiderMan_Heavy',
-      heavyFinisher: 'SpiderMan_Heavy',
-      air: 'SpiderMan_Air', airFinisher: 'SpiderMan_Air', counter: 'SpiderMan_Jab',
-      special: 'SpiderMan_Special', dive: 'SpiderMan_Air', antiAir: 'SpiderMan_Heavy'
+      light: 'IronSpider__Armature|hero_spiderman01_S05@atk-01',
+      light1: 'IronSpider__Armature|hero_spiderman01_S05@atk-01',
+      light2: 'IronSpider__Armature|hero_spiderman01_S05@atk-02',
+      light3: 'IronSpider__Armature|hero_spiderman01_S05@skill01-01',
+      light4: 'IronSpider__Armature|hero_spiderman01_S05@skill01-02',
+      light5: 'IronSpider__Armature|hero_spiderman01_S05@skill02-01',
+      finisher: 'IronSpider__Armature|hero_spiderman01_S05@skill02-02',
+      heavy: 'IronSpider__Armature|hero_spiderman01_S05@skill02-03',
+      heavyLauncher: 'IronSpider__Armature|hero_spiderman01_S05@skill03-01',
+      heavySlam: 'IronSpider__Armature|hero_spiderman01_S05@skill03-02',
+      heavyFinisher: 'IronSpider__Armature|hero_spiderman01_S05@skill04-01',
+      air: 'IronSpider__Armature|hero_spiderman01_S05@skill04-02',
+      airFinisher: 'IronSpider__Armature|hero_spiderman01_S05@skill05',
+      counter: 'IronSpider__Armature|hero_spiderman01_S05@skill07-04',
+      special: 'IronSpider__Armature|hero_spiderman01_S05@skill07-02',
+      ultimate: 'IronSpider__Armature|hero_spiderman01_S05@skill07-02',
+      grab: 'IronSpider__Armature|hero_spiderman01_S05@skill05',
+      throw: 'IronSpider__Armature|hero_spiderman01_S05@skill04-02',
+      dive: 'IronSpider__Armature|hero_spiderman01_S05@skill03-02',
+      antiAir: 'IronSpider__Armature|hero_spiderman01_S05@skill03-01'
+    })
+  }),
+  // The Flash's supplied pack has one real punch cycle. It is a committed, full-body strike, so
+  // it is the heavy/finisher rather than being relabelled onto the light chain; the authored
+  // speedster light chain keeps its faster, distinct beats.
+  the_flash_barry_allen: Object.freeze({
+    url: '/models/characters/the_flash_barry_allen/the_flash_barry_allen.glb',
+    authoredBy: 'The Flash (Barry Allen) supplied Mixamo punch clip',
+    slots: Object.freeze({
+      heavy: 'punch', heavyFinisher: 'punch'
     })
   }),
   // Hulk's imported body ships its own 19 authored clips on its 65-joint Bip001 rig. They are used
@@ -262,10 +288,45 @@ export const IMPORTED_ATTACK_CLIP_SETS = Object.freeze({
       // launcher pose. skill03 is unused by the strike table and gives Thunderclap its own clip.
       counter: 'Armature|hero_hulk01_S09@atk01', special: 'Armature|hero_hulk01_S09@skill03',
       ultimate: 'Armature|hero_hulk01_S09@skill04',
-      grab: 'Armature|hero_hulk01_S09@collection', throw: 'Armature|hero_hulk01_S09@skill05',
+      // `collection` is a one-frame static pose in the supplied set. It is not a grab and
+      // must not be selected for one; skill05 is the moving hold/throw clip.
+      grab: 'Armature|hero_hulk01_S09@skill05', throw: 'Armature|hero_hulk01_S09@skill05',
       dive: 'Armature|hero_hulk01_S09@skill02', antiAir: 'Armature|hero_hulk01_S09@skill02'
     })
-  })
+  }),
+  saitama: Object.freeze({
+    url: '/models/characters/bespoke/saitama_animated.glb',
+    authoredBy: 'scripts/author-saitama-clips.mjs',
+    slots: Object.freeze({
+      light: 'Saitama_jab', light1: 'Saitama_jab', light2: 'Saitama_jab',
+      light3: 'Saitama_heavy_punch', light4: 'Saitama_heavy_punch', light5: 'Saitama_heavy_punch',
+      finisher: 'Saitama_heavy_punch',
+      heavy: 'Saitama_heavy_punch',
+      heavyLauncher: 'Saitama_launcher', heavySlam: 'Saitama_launcher',
+      heavyFinisher: 'Saitama_heavy_punch',
+      air: 'Saitama_air_attack', airFinisher: 'Saitama_air_attack',
+      counter: 'Saitama_parry',
+      grab: 'Saitama_throw', throw: 'Saitama_throw',
+      dive: 'Saitama_air_attack', antiAir: 'Saitama_launcher'
+    })
+  }),
+  iron_spider: Object.freeze({
+    url: '/models/characters/iron_spider/iron_spider_source_animated.glb',
+    authoredBy: 'Kabiidev Iron Spider MFF clip set (32 original) + roster supplement',
+    slots: Object.freeze({
+      light: 'Armature|hero_spiderman01_S05@atk-01', light1: 'Armature|hero_spiderman01_S05@atk-01',
+      light2: 'Armature|hero_spiderman01_S05@atk-02', light3: 'Armature|hero_spiderman01_S05@skill01-01',
+      light4: 'Armature|hero_spiderman01_S05@skill01-02', light5: 'Armature|hero_spiderman01_S05@skill02-01',
+      finisher: 'Armature|hero_spiderman01_S05@skill02-02',
+      heavy: 'Armature|hero_spiderman01_S05@skill02-03', heavyLauncher: 'Armature|hero_spiderman01_S05@skill03-01',
+      heavySlam: 'Armature|hero_spiderman01_S05@skill03-02', heavyFinisher: 'Armature|hero_spiderman01_S05@skill04-01',
+      air: 'Armature|hero_spiderman01_S05@skill04-02', airFinisher: 'Armature|hero_spiderman01_S05@skill05',
+      counter: 'Armature|hero_spiderman01_S05@skill07-04', special: 'Armature|hero_spiderman01_S05@skill07-02',
+      ultimate: 'Armature|hero_spiderman01_S05@skill07-02', grab: 'Armature|hero_spiderman01_S05@skill05',
+      throw: 'Armature|hero_spiderman01_S05@skill04-02', dive: 'Armature|hero_spiderman01_S05@skill03-02',
+      antiAir: 'Armature|hero_spiderman01_S05@skill03-01'
+    })
+  }),
 });
 
 /** The imported clip set for a fighter, or null when its strikes are not imported clips. */
@@ -299,13 +360,13 @@ export const IMPORTED_REACTION_CLIP_SETS = Object.freeze({
       defeat: 'Infantry_defeat'
     })
   }),
-  // Naruto's reactions were authored on the same 567-bone Rigify rig as his body, so a landing or
-  // a knockdown can be his own keyframes instead of the nearest generic clip the mount happened to
-  // find. Slots are the runtime's own state keys; the binder assigns each one to the action its
-  // state machine already reads.
+  // Naruto's whole shinobi set is baked onto the 19-bone Sage rig, so a landing or a knockdown can
+  // be his own keyframes instead of the nearest generic clip the mount happened to find. Slots are
+  // the runtime's own state keys; the binder assigns each one to the action its state machine
+  // already reads.
   naruto_uzumaki: Object.freeze({
-    url: '/models/characters/naruto_uzumaki/naruto_reactions.glb',
-    authoredBy: 'assets/blender/naruto_reactions.py',
+    url: '/models/characters/imported/naruto_sage/naruto_sage_animated.glb',
+    authoredBy: 'Naruto Sage 19-bone rig + 49-clip shinobi retarget',
     slots: Object.freeze({
       idle: 'Naruto_idle',
       jump: 'Naruto_jump',
@@ -329,22 +390,59 @@ export const IMPORTED_REACTION_CLIP_SETS = Object.freeze({
   goku: Object.freeze({
     url: '/models/characters/bespoke/goku_animated.glb',
     authoredBy: 'scripts/author-goku-clips.mjs',
+    // These clips key every joint, every finger and the whole body, so the legacy mask and generic
+    // hand/arm fallbacks must not overwrite them. Declaring it here keeps the runtime identity-free.
+    ownsBody: true, ownsHands: true, ownsArms: true,
     slots: Object.freeze({
-      idle: 'Goku_Idle', jump: 'Goku_Jump', land: 'Goku_Land',
+      idle: 'Goku_Idle', jump: 'Goku_Jump', double_jump: 'Goku_DoubleJump',
+      fall: 'Goku_Fall', land: 'Goku_Land',
       hit_light: 'Goku_HitLight', hit_heavy: 'Goku_HitHeavy',
       knockdown: 'Goku_Knockdown', get_up: 'Goku_GetUp',
       victory: 'Goku_Victory', defeat: 'Goku_Defeat',
       walk: 'Goku_Walk', run: 'Goku_Run', sprint: 'Goku_Run',
       block: 'Goku_Block', dodge: 'Goku_Dodge',
-      fly: 'Goku_Hover', hover: 'Goku_Hover',
+      fly: 'Goku_Hover', hover: 'Goku_Hover', fly_forward: 'Goku_FlyForward',
       fly_takeoff: 'Goku_FlyTakeoff', fly_back: 'Goku_FlyBack',
       fly_turn: 'Goku_FlyTurn', fly_land: 'Goku_FlyLand', turn: 'Goku_Turn'
     })
   }),
+  // Saitama's supplied body carries 25 clips retargeted from the roster's 19-bone skeleton; each
+  // drives only 17 of his 158 joints. His clip-only set is authored on the actual skeleton by the
+  // same positional-IK method as Goku's, with a prefix so the mounted body's older clips cannot win
+  // the reaction binder's same-name fast path.
+  saitama: Object.freeze({
+    url: '/models/characters/bespoke/saitama_animated.glb',
+    authoredBy: 'scripts/author-saitama-clips.mjs',
+    ownsBody: true, ownsHands: true, ownsArms: true,
+    slots: Object.freeze({
+      idle: 'Saitama_idle', walk: 'Saitama_walk', run: 'Saitama_run', sprint: 'Saitama_sprint',
+      jump: 'Saitama_jump', land: 'Saitama_land',
+      block: 'Saitama_block', dodge: 'Saitama_dodge',
+      hit_light: 'Saitama_hit_light', hit_heavy: 'Saitama_hit_heavy',
+      knockdown: 'Saitama_knockdown', get_up: 'Saitama_get_up',
+      fly: 'Saitama_fly', hover: 'Saitama_hover',
+      strafe: 'Saitama_strafe', parry: 'Saitama_parry', charge: 'Saitama_charge',
+      beam: 'Saitama_beam',
+      victory: 'Saitama_victory', defeat: 'Saitama_defeat'
+    })
+  }),
+  // Locomotion stays on Miles's original authored clips. The reaction and defensive states use the
+  // Iron Spider performances appended to the same GLB, so damage, knockdown, recovery, guard,
+  // dodge and match-end poses all play the donor animation through the existing state branches.
   spider_man: Object.freeze({
-    url: '/models/characters/bespoke/spider_man_bespoke.glb',
-    authoredBy: 'assets/blender/roster_bespoke_animations.py',
-    slots: Object.freeze({ hit_light: 'SpiderMan_HitLight', hit_heavy: 'SpiderMan_HitHeavy' })
+    url: '/models/characters/imported/miles_morales/miles_morales_animated.glb',
+    authoredBy: 'Miles Morales body + 57 retargeted Iron Spider clips',
+    slots: Object.freeze({
+      idle: 'FearlessFlight_Male_idle',
+      walk: 'walk', run: 'run', sprint: 'sprint', jump: 'jump', land: 'land',
+      hit_light: 'IronSpider__Armature|hero_spiderman01_S05@hit',
+      hit_heavy: 'IronSpider__Armature|hero_spiderman01_S05@stun',
+      knockdown: 'IronSpider__knockdown', get_up: 'IronSpider__get_up',
+      block: 'IronSpider__block', dodge: 'IronSpider__dodge',
+      victory: 'IronSpider__Armature|hero_spiderman01_S05@succ_cam',
+      defeat: 'IronSpider__Armature|hero_spiderman01_S05@die',
+      fly: 'fly', hover: 'hover', parry: 'IronSpider__parry', charge: 'charge', strafe: 'strafe'
+    })
   }),
   // The body's own clips, keyed to the runtime's state actions. Clips that this asset does not
   // contain (a true run/jump/guard) fall back to the nearest authored clip it does have, so the
@@ -354,14 +452,67 @@ export const IMPORTED_REACTION_CLIP_SETS = Object.freeze({
     authoredBy: 'Marvel Future Fight hero_hulk01_S09 clip set (supplied asset)',
     slots: Object.freeze({
       idle: 'Armature|hero_hulk01_S09@idle', walk: 'Armature|hero_hulk01_S09@walk',
+      // The source dash is the only Hulk locomotion clip that reads as a moving gait. The source
+      // `succ_cam` is the pack's own success animation (roar, chest out, settle), so victory uses it
+      // instead of a generic library pose. The library still supplies jump/double-jump/fall/land/
+      // knockdown/get-up because the pack has no honest clip for those states; the source death is
+      // used for defeat rather than the generic fall.
       run: 'Armature|hero_hulk01_S09@dash', sprint: 'Armature|hero_hulk01_S09@dash',
-      jump: 'Armature|hero_hulk01_S09@dash', land: 'Armature|hero_hulk01_S09@walk',
+      land: 'Armature|hero_hulk01_S09@walk',
       block: 'Armature|hero_hulk01_S09@wait', dodge: 'Armature|hero_hulk01_S09@dash',
       hit_light: 'Armature|hero_hulk01_S09@hit', hit_heavy: 'Armature|hero_hulk01_S09@stun',
       knockdown: 'Armature|hero_hulk01_S09@stun', get_up: 'Armature|hero_hulk01_S09@idle',
-      victory: 'Armature|hero_hulk01_S09@skill04', defeat: 'Armature|hero_hulk01_S09@die'
+      victory: 'Armature|hero_hulk01_S09@succ_cam', defeat: 'Armature|hero_hulk01_S09@die'
     })
-  })
+  }),
+  // Aquaman's own MFF set contains a real combat idle, leap, guard, light hit, knockdown,
+  // death and flying victory. Only walk/run are supplied by the semantic library because the
+  // source pack has no grounded locomotion clip.
+  aquaman: Object.freeze({
+    url: '/models/characters/aquaman/aquaman.glb',
+    authoredBy: 'Aquaman supplied MFF clip set',
+    slots: Object.freeze({
+      // CombatIdle is the authored fighting stance, not the standing idle: its left hand is held
+      // still, so binding it as idle would make the A0 idle-deformation check fail honestly.
+      fighting_idle: 'CombatIdle',
+      jump: 'LeapAir', land: 'LeapLand',
+      // DashLoop is the only supplied grounded travelling cycle; it is a real sprint lane. The
+      // pack has no walk/run cycle, so those two remain semantic library motion.
+      sprint: 'DashLoop',
+      block: 'CombatBlockLeft', dodge: 'DashLoop',
+      hit_light: 'HitReactLight', hit_heavy: 'HitReactKnockDown',
+      knockdown: 'HitReactKnockDown', victory: 'VictoryFlying01', defeat: 'GroundDeathB'
+    })
+  }),
+  // Flash's supplied pack has moving stand/walk/run and a moving jumpDown, but no moving
+  // jump-up, guard, hit, knockdown or victory clips. The two one-key clips (`jumpUp` and
+  // `mixamo.com`) are deliberately not named here, so they can never become a state action.
+  the_flash_barry_allen: Object.freeze({
+    url: '/models/characters/the_flash_barry_allen/the_flash_barry_allen.glb',
+    authoredBy: 'The Flash (Barry Allen) supplied Mixamo clip set',
+    slots: Object.freeze({
+      idle: 'stand', walk: 'walk', run: 'run', sprint: 'run', jump: 'jumpDown', land: 'jumpDown'
+    })
+  }),
+  iron_spider: Object.freeze({
+    url: '/models/characters/iron_spider/iron_spider_source_animated.glb',
+    authoredBy: 'Kabiidev 32-clip source set + 25-clip roster supplement',
+    slots: Object.freeze({
+      idle: 'Armature|hero_spiderman01_S05@idle',
+      walk: 'Armature|hero_spiderman01_S05@walk',
+      run: 'run', sprint: 'sprint',
+      jump: 'jump', land: 'land',
+      block: 'Armature|hero_spiderman01_S05@wait', dodge: 'Armature|hero_spiderman01_S05@dash',
+      hit_light: 'Armature|hero_spiderman01_S05@hit',
+      hit_heavy: 'Armature|hero_spiderman01_S05@stun',
+      knockdown: 'knockdown', get_up: 'get_up',
+      // The suit ships its own success animation, so victory is source motion rather than the
+      // roster's generic victory supplement. Death is the authored `die` clip.
+      victory: 'Armature|hero_spiderman01_S05@succ_cam',
+      defeat: 'Armature|hero_spiderman01_S05@die',
+      fly: 'fly', hover: 'hover'
+    })
+  }),
 });
 
 /** The imported reaction clip set for a fighter, or null when it has none. */
@@ -393,8 +544,8 @@ export const IMPORTED_AUTHORED_CLIP_SETS = Object.freeze({
     })
   }),
   naruto_uzumaki: Object.freeze({
-    url: '/models/characters/naruto_uzumaki/naruto_authored.glb',
-    authoredBy: 'assets/blender/naruto_authored_bake.py',
+    url: '/models/characters/imported/naruto_sage/naruto_sage_animated.glb',
+    authoredBy: 'Naruto Sage 19-bone rig + 49-clip shinobi retarget',
     strikes: Object.freeze({
       light1: 'authored_light1', light2: 'authored_light2', light3: 'authored_light3',
       light4: 'authored_light4', light5: 'authored_light5',
@@ -440,8 +591,8 @@ export const IMPORTED_ABILITY_CLIP_SETS = Object.freeze({
     })
   }),
   naruto_uzumaki: Object.freeze({
-    url: '/models/characters/naruto_uzumaki/naruto_kunai.glb',
-    authoredBy: 'assets/blender/naruto_kunai_animation.py',
+    url: '/models/characters/imported/naruto_sage/naruto_sage_animated.glb',
+    authoredBy: 'Naruto Sage 19-bone rig + 49-clip shinobi retarget',
     slots: Object.freeze({ kunai: 'Naruto_kunai' })
   })
 });

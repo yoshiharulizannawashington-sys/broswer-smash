@@ -111,7 +111,10 @@ export function createCinematics({ camera = null, dialogue = null, root = null, 
         }
       }
     ];
-    state = { active: true, elapsed: 0, startedAt: now(), duration: sequence, wrap, beats, fired: new Set(), lines: stats.lastLines, skipped: false };
+    // Do not start the clock until the first presentation frame. The frame that mounts this
+    // overlay can itself take seconds on a software renderer; starting at `now()` here made the
+    // intro lose that entire first frame (and its opening dialogue) before it was ever visible.
+    state = { active: true, elapsed: 0, startedAt: null, duration: sequence, wrap, beats, fired: new Set(), lines: stats.lastLines, skipped: false };
     return sequence;
   }
 
@@ -136,8 +139,13 @@ export function createCinematics({ camera = null, dialogue = null, root = null, 
   function update(dt) {
     if (!state) return;
     // Elapsed real time, not accumulated frame deltas: a cinematic must last five seconds on a
-    // 144 Hz machine and on a software renderer running at two frames a second.
-    state.elapsed = Math.max(state.elapsed + Math.max(0, Number(dt) || 0), now() - state.startedAt);
+    // 144 Hz machine and on a software renderer running at two frames a second. The first update
+    // only marks the clock's origin, so a slow mount frame is not charged to the sequence.
+    if (state.startedAt === null) {
+      state.startedAt = now();
+    } else {
+      state.elapsed = Math.max(state.elapsed + Math.max(0, Number(dt) || 0), now() - state.startedAt);
+    }
     state.beats.forEach((beat, index) => {
       if (state.fired.has(index) || state.elapsed < beat.at) return;
       state.fired.add(index);

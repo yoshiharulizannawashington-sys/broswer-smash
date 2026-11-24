@@ -32,19 +32,75 @@ function sideOf(name) {
 
 function trunkKey(name) {
   const n = clean(name);
-  if (/waist|hips|pelvis/.test(n)) return 'pelvis';
-  if (/spine1|spine$/.test(n)) return 'spine';
+  // Blender/Sketchfab spine chains are exported as `spine_01`, `Spine_02` or `spine01`. The
+  // separator and the numeric index defeated both the `spine$` and the `spine1` patterns, so an
+  // imported body's whole torso stayed on its bind pose while only the limbs animated.
+  const compact = n.replace(/[._\-\s]+\d+$/, '').replace(/[._\-\s]/g, '');
+  // A side-suffixed `pelvisL`/`pelvisR` is a buttock bone, not the body root.
+  if (/(waist|hips|pelvis)/.test(compact) && !/[lr]$/.test(compact)) return 'pelvis';
+  // The spine index is the number immediately after the word, not the whole trailing digit run.
+  // Sketchfab/UE exports append their own bone id (`spine_01_142_12`), so reading every trailing
+  // digit as the index made every segment parse as a high index: all five Miles spine bones
+  // classified as `torso`, the lowest took the only torso slot, and the source `Spine` track had
+  // no destination (`missing: ["spine"]` on all 25 retargeted clips). Parse the semantic index.
+  const spineIndex = /^spine[._\-\s]*(\d+)/.exec(n);
+  if (/^spine/.test(n)) return Number(spineIndex?.[1] || 0) >= 2 ? 'torso' : 'spine';
   // Mixamo spells the upper spine `Spine1`/`Spine2`; both are torso joints. Without this, a 19-bone
   // source clip's Chest track had no destination and the whole upper body stayed in its rest pose.
-  if (/spine[23]|chest|torso|ribcage/.test(n)) return 'torso';
-  if (/neck/.test(n)) return 'neck';
-  if (/head/.test(n)) return 'head';
+  if (/spine[23]|chest|torso|ribcage/.test(compact)) return 'torso';
+  if (/neck/.test(compact)) return 'neck';
+  if (/head/.test(compact)) return 'head';
   return null;
+}
+
+/**
+ * Rigify exports carry a parallel DEF- deform chain beside static ORG-/MCH- helpers. The helpers
+ * are often earlier in the node list but keep a two-key bind pose, so they must not shadow the
+ * animated DEF chain. These explicit names also put DEF-spine (the pelvis in this rig) in the
+ * pelvis slot instead of the generic spine slot.
+ */
+function rigifySourceKey(name) {
+  const n = clean(name);
+  if (/^def-spine$/.test(n)) return 'pelvis';
+  if (/^def-spine[._]?001$/.test(n)) return 'spine';
+  if (/^def-spine[._]?003$/.test(n)) return 'torso';
+  if (/^def-spine[._]?004$/.test(n)) return 'neck';
+  if (/^def-spine[._]?005$/.test(n)) return 'head';
+  const limb = /^def-(shoulder|upper_arm|forearm|hand|thigh|shin|foot)[._-]?([lr])$/.exec(n);
+  if (limb) {
+    const side = limb[2] === 'l' ? 'left' : 'right';
+    const slot = {
+      shoulder: 'Clavicle', upper_arm: 'Arm', forearm: 'Fore', hand: 'Hand',
+      thigh: 'Leg', shin: 'Shin', foot: 'Foot'
+    }[limb[1]];
+    return side + slot;
+  }
+  return null;
+}
+
+function sourceBoneRank(name) {
+  const n = clean(name);
+  if (/^def-/.test(n)) return 0;
+  if (/^(?:org|mch|vis)-/.test(n)) return 2;
+  return 1;
+}
+
+/**
+ * MFF/Unreal Bip001 exports spell the trunk `Bip001_Spine_012` and `Bip001_Spine1_014`.
+ * The trailing number on the first is the exporter's bone id, not a spine index, so treating
+ * every number as the index made both bones classify as `torso`; the lower spine then had no
+ * destination and the retarget dropped 2 of the 19 canonical joints. Only a digit immediately
+ * after `Spine` is the semantic index (the MFF upper spine is `Spine1`).
+ */
+function mffSpineKey(name) {
+  const match = /^bip001[\s._-]+spine(\d*)(?:[\s._-]|$)/.exec(clean(name));
+  if (!match) return null;
+  return Number(match[1] || 0) >= 1 ? 'torso' : 'spine';
 }
 
 /** Canonical slot for a source bone. */
 export function sourceBoneKey(name) {
-  return trunkKey(name) || classifyBone(name);
+  return mffSpineKey(name) || rigifySourceKey(name) || trunkKey(name) || classifyBone(name);
 }
 
 /** Canonical slot for a destination bone. Light.k uses WAIST/SPINE/SHOULDER/ELBOW/... names. */
@@ -53,6 +109,9 @@ export function destinationBoneKey(name) {
   if (/end|roll|twist|helper|reserve|null/.test(n)) return null;
   const trunk = trunkKey(name);
   if (trunk) return trunk;
+  // Dragon Ball FighterZ's `G_stomach` is the mid-spine joint; with `G_chest` taking the torso
+  // slot it is the only destination for the source spine. Leave the waist on the pelvis chain.
+  if (/stomach|abdomen/.test(n)) return 'spine';
   const side = sideOf(name);
   // Mixamo prefixes the side (`mixamorigLeftArm_09`), so sideOf cannot see a separate token.
   // classifyBone strips that prefix itself; it must run before the unsided early return or the
@@ -73,9 +132,17 @@ export function destinationBoneKey(name) {
 }
 
 function boneList(root) {
-  const out = [];
-  root.traverse(node => { if (node !== root && (node.isBone || node.isObject3D) && node.name) out.push(node); });
-  return out;
+  // A rig with a real skeleton is driven only by its bones. Mixing in every named Object3D also
+  // collected exporter wrappers (`GLTF_SceneRootNode`, `Armature`), and the root-most-bone rule
+  // below could then promote a 90-degree scene-rotation wrapper to `pelvis`.
+  const bones = [];
+  const others = [];
+  root.traverse(node => {
+    if (node === root || !node.name) return;
+    if (node.isBone) bones.push(node);
+    else if (node.isObject3D) others.push(node);
+  });
+  return bones.length ? bones : others;
 }
 
 function restWorld(bone) {
@@ -91,12 +158,29 @@ export function buildBoneMap(sourceRoot, targetRoot) {
   const sourceByKey = new Map();
   for (const bone of boneList(sourceRoot)) {
     const key = sourceBoneKey(bone.name);
-    if (key && !sourceByKey.has(key)) sourceByKey.set(key, bone);
+    if (!key) continue;
+    const current = sourceByKey.get(key);
+    if (!current || sourceBoneRank(bone.name) < sourceBoneRank(current.name)) sourceByKey.set(key, bone);
   }
   const targetByKey = new Map();
   for (const bone of boneList(targetRoot)) {
     const key = destinationBoneKey(bone.name);
     if (key && !targetByKey.has(key)) targetByKey.set(key, bone);
+  }
+  // Some rigs name the root joint `spine` (or `root`/`Bip001`) and split the real pelvis into
+  // `pelvisL`/`pelvisR` buttock bones, so no bone classified as `pelvis` and the only whole-body
+  // joint stayed on its bind pose. The root-most deform bone is the pelvis by construction: it is
+  // the one whose parent is the skeleton's structural node rather than another bone.
+  const structuralRoot = /^(?:gltf_created_\d+_)?(?:root|rootjoint|armature|skeleton|scene|reference|transform)/i;
+  const targetBones = boneList(targetRoot);
+  const skeletonRoot = targetBones.find(bone => structuralRoot.test(String(bone.name)) && !bone.parent?.isBone)
+    || targetBones.find(bone => structuralRoot.test(String(bone.name)));
+  const firstDeform = skeletonRoot ? targetBones.find(bone => bone.parent === skeletonRoot) : null;
+  if (firstDeform && !targetByKey.has('pelvis') && targetByKey.get('pelvis') !== firstDeform) {
+    for (const [key, bone] of [...targetByKey]) {
+      if (key === 'pelvis' || bone === firstDeform) targetByKey.delete(key);
+    }
+    targetByKey.set('pelvis', firstDeform);
   }
   const mappings = [];
   const missingTargets = [];

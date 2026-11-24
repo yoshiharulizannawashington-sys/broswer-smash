@@ -34,14 +34,6 @@ export const TITLE_SHOTS = Object.freeze({
     ndcY: 0.76,
     why: 'the Great Hall side walls, arches and enchanted ceiling'
   }),
-  // Inside the throne chamber, facing the circular viewport.
-  deathstar: Object.freeze({
-    position: [39, 4.5, -16],
-    anchor: [39, 8.5, -50.6],
-    fov: 50,
-    ndcY: 0.76,
-    why: 'the throne chamber and its circular viewport'
-  }),
   // The island mountains behind the ring, which is what makes this map a place rather than a deck.
   tournament: Object.freeze({
     position: [0, 8, 26],

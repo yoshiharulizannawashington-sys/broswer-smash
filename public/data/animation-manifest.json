@@ -202,6 +202,55 @@
       ]
     },
     {
+      "id": "iron_fly_start",
+      "category": "flight",
+      "loop": false,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
+      "id": "iron_fly_loop",
+      "category": "flight",
+      "loop": true,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
+      "id": "iron_fly_boost",
+      "category": "flight",
+      "loop": true,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
+      "id": "iron_fly_turn",
+      "category": "flight",
+      "loop": true,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
+      "id": "iron_fly_climb",
+      "category": "flight",
+      "loop": true,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
+      "id": "iron_fly_dive",
+      "category": "flight",
+      "loop": true,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
+      "id": "iron_fly_land",
+      "category": "flight",
+      "loop": false,
+      "fallback": "procedural",
+      "mixamo": []
+    },
+    {
       "id": "fighting_idle",
       "category": "combat",
       "loop": true,
@@ -299,6 +348,16 @@
       "mixamo": [
         "Two Hand Cast",
         "Charged Spell"
+      ]
+    },
+    {
+      "id": "charge",
+      "category": "combat",
+      "loop": false,
+      "fallback": "procedural",
+      "mixamo": [
+        "Charged Spell",
+        "Two Hand Cast"
       ]
     },
     {

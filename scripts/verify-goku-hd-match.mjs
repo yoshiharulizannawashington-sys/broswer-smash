@@ -16,6 +16,7 @@ import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, normalize, sep, extname } from 'node:path';
 import { chromium } from 'playwright';
+import { HARDWARE_GPU, assertHardwareGpu, browserLaunchOptions, captureGpu, isSoftwareRenderer } from './lib/hardware-gpu.mjs';
 
 const root = process.cwd();
 const out = 'artifacts/goku-hd';
@@ -41,7 +42,7 @@ const check = (name, ok, detail = '') => {
   console.log(`CHECK ${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ' · ' + detail : ''}`);
 };
 
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch(browserLaunchOptions());
 const errors = [];
 const shots = [];
 try {
@@ -51,6 +52,10 @@ try {
 
   await page.goto(origin + '/', { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('#bbTitle') && window.fighters?.length === 2, null, { timeout: 120000, polling: 250 });
+  const gpu = await captureGpu(page);
+  const softwareRenderer = isSoftwareRenderer(gpu);
+  console.log('GPU ' + JSON.stringify({ ...gpu, softwareRenderer }));
+  if (HARDWARE_GPU) assertHardwareGpu(gpu, 'Goku hardware acceptance');
   await page.click('#bbTitle [data-nav="versus"]');
   await page.waitForFunction(() => document.querySelector('#selectScreen [data-fighter="Goku"]'), null, { timeout: 30000, polling: 200 });
 
@@ -423,7 +428,8 @@ try {
   check('a real match produced a natural KO and a round result', Boolean(match.ko) && Boolean(match.winner || match.wins), JSON.stringify({ winner: match.winner, ko: match.ko, wins: match.wins, banner: match.banner }));
 
   await writeFile(`${out}/report.json`, JSON.stringify({
-    origin, preview, mount, pixels, jab, cross, chainSlots, chain, heavy, launcher, aerial,
+    origin, hardwareMode: HARDWARE_GPU, gpu, softwareRenderer,
+    preview, mount, pixels, jab, cross, chainSlots, chain, heavy, launcher, aerial,
     castBefore, charge, release, end, forms, match, shots, errors, checks
   }, null, 2));
   console.log('CLIPS ' + JSON.stringify({

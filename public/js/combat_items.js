@@ -42,7 +42,7 @@ export function createCombatItems(THREE, scene, onPickup = () => {}) {
   function seed(mapKey = 'valley') {
     items.forEach(i => scene.remove(i.root));
     items.length = 0;
-    const offset = mapKey === 'finalvalley' ? -27 : mapKey === 'hogwarts' ? -25 : mapKey === 'deathstar' ? -21 : mapKey === 'asgard' ? -27 : mapKey === 'starktower' ? -23 : mapKey === 'tournament' ? -12 : mapKey === 'volcano' || mapKey === 'ice' || mapKey === 'neon' ? -20 : 0;
+    const offset = mapKey === 'finalvalley' ? -27 : mapKey === 'hogwarts' ? -25 : mapKey === 'asgard' ? -27 : mapKey === 'starktower' ? -23 : mapKey === 'tournament' ? -12 : mapKey === 'volcano' || mapKey === 'ice' || mapKey === 'neon' ? -20 : 0;
     spots.forEach((p, i) => makeItem(definitions[i % definitions.length], p[0], p[1] + offset));
   }
   function update(dt, fighters, active, mapKey) {

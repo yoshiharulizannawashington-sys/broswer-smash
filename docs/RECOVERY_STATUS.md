@@ -214,7 +214,7 @@ light 0.38, Iron Man special 0.52.
   touched.
 
 **Worlds (six, 59 battle locations)**
-- Asgard (6), Hogwarts (9), Death Star (11), World Tournament (11), Hidden Leaf Village (12),
+- Asgard (6), Hogwarts (25), World Tournament (11), Hidden Leaf Village (13), New York (10),
   New York / Stark Tower (10).
 - One registry drives geometry, collision, spawns, map pickers, stage cards and lighting.
 - Doorway travel between stages of a world; one world group mounted at a time.
@@ -223,7 +223,7 @@ light 0.38, Iron Man special 0.52.
   worlds and asserts the mouse only turns the camera in explore mode.
 
 **Environments and assets**
-- Five authored arena GLBs (asgard, deathstar, helicarrier, hogwarts, tournament) plus
+- Four authored arena GLBs (asgard, helicarrier, hogwarts, tournament) plus
   `final_valley.glb`; all load, and a missing GLB falls back to the procedural build.
 - Photographic CC0 surface maps (11 Poly Haven families: albedo/normal/roughness; ids, authors and
   licence in `public/assets/textures/manifest.json`), projected from world position and shared per

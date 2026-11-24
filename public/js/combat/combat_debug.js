@@ -13,7 +13,8 @@ const COLORS = {
   hurt: 0x5ad1ff,
   melee: 0xff5a7a,
   grab: 0xffd166,
-  projectile: 0x9bffb0
+  projectile: 0x9bffb0,
+  legTip: 0xffa94d
 };
 
 export function createCombatDebug(scene, { poolSize = 24 } = {}) {
@@ -27,7 +28,8 @@ export function createCombatDebug(scene, { poolSize = 24 } = {}) {
     hurt: new THREE.MeshBasicMaterial({ color: COLORS.hurt, wireframe: true, depthTest: false, transparent: true, opacity: .85 }),
     melee: new THREE.MeshBasicMaterial({ color: COLORS.melee, wireframe: true, depthTest: false, transparent: true, opacity: .9 }),
     grab: new THREE.MeshBasicMaterial({ color: COLORS.grab, wireframe: true, depthTest: false, transparent: true, opacity: .9 }),
-    projectile: new THREE.MeshBasicMaterial({ color: COLORS.projectile, wireframe: true, depthTest: false, transparent: true, opacity: .9 })
+    projectile: new THREE.MeshBasicMaterial({ color: COLORS.projectile, wireframe: true, depthTest: false, transparent: true, opacity: .9 }),
+    legTip: new THREE.MeshBasicMaterial({ color: COLORS.legTip, wireframe: true, depthTest: false, transparent: true, opacity: .9 })
   };
 
   const pool = [];
@@ -112,6 +114,7 @@ export function createCombatDebug(scene, { poolSize = 24 } = {}) {
     }
     used = 0;
     let hitboxCount = 0;
+    let tipVolumeCount = 0;
     for (const fighter of fighters) {
       if (!fighter || fighter.model?.visible === false) continue;
       const chest = fighter.position.clone().add(new THREE.Vector3(0, 1, 0));
@@ -122,9 +125,13 @@ export function createCombatDebug(scene, { poolSize = 24 } = {}) {
           : hit.projectile ? materials.projectile : materials.melee;
         take(hit.radius ?? 1, hit.pos, material);
       }
+      for (const tip of fighter.legTipVolumes || []) {
+        tipVolumeCount++;
+        take(tip.radius ?? .55, tip.pos, materials.legTip);
+      }
     }
     for (let i = used; i < pool.length; i++) pool[i].visible = false;
-    return { objects: used, hitboxes: hitboxCount };
+    return { objects: used, hitboxes: hitboxCount, legTipVolumes: tipVolumeCount };
   }
 
   function setEnabled(value) {

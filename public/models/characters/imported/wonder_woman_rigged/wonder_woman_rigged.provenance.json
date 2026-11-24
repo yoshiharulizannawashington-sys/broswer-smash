@@ -1,0 +1,58 @@
+{
+ "id": "wonder_woman_rigged",
+ "sourceModel": "Wonder Woman (Dc Comics) T-Pose 3D Model",
+ "sourceUid": "80163d32bf8e4f1ba1ccf4746edaf82b",
+ "creator": "Henrik Kowalski",
+ "license": "CC Attribution",
+ "sourceFile": "artifacts/asset-fetch/wonder_woman/wonder_woman.glb",
+ "notes": "Auto-rigged in Blender 4.2.23 by scripts/autorig_batch.py from the supplied unrigged body. 19 canonical bones, 522876 vertices, 0 unweighted, 4 max influences. Staged only: not on the launch roster. 25-clip roster animation set retargeted onto the exact 19-bone rig.",
+ "rig": {
+  "bones": 19,
+  "canonicalSlots": 19,
+  "height": 1.8,
+  "feetY": 0,
+  "vertices": 522876,
+  "unweighted": 0,
+  "maxInfluences": 4,
+  "armLength": 0.3577,
+  "legLength": 0.4156,
+  "joints": {
+   "pelvis": 0.0097,
+   "torso": 0.0506,
+   "head": 0.0305,
+   "leftArm": 0.0038,
+   "leftFore": 0.0063,
+   "rightArm": 0.0048,
+   "rightFore": 0.0034,
+   "leftLeg": 0.0619,
+   "leftShin": 0.0465,
+   "rightLeg": 0.06,
+   "rightShin": 0.0482,
+   "spine": 0.0525,
+   "leftClavicle": 0.0768,
+   "rightClavicle": 0.0768,
+   "neck": 0.077,
+   "leftHand": 0.0179,
+   "rightHand": 0.0176,
+   "leftFoot": 0.0313,
+   "rightFoot": 0.0329
+  },
+  "symmetry": {
+   "leftArm": 0,
+   "leftFore": 0,
+   "leftHand": 0,
+   "leftLeg": 0,
+   "leftShin": 0,
+   "leftFoot": 0
+  }
+ },
+ "validation": "artifacts/rig-batch/validation.json",
+ "stagedAt": "2026-11-10T18:47:44.208Z",
+ "animation": {
+  "clips": 25,
+  "donor": "public/models/characters/roster/thor.glb",
+  "retarget": "scripts/rig-clips-to-body.mjs retarget",
+  "approach": "bind-pose retarget at 30 fps; grounded clips lifted once at the Hips, root motion omitted",
+  "report": "artifacts/rig-batch/animated/wonder_woman-retarget.json"
+ }
+}

@@ -27,7 +27,7 @@ const server = createServer(async (req, res) => {
 await new Promise(d => server.listen(0, '127.0.0.1', d));
 const origin = 'http://127.0.0.1:' + server.address().port;
 
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ headless: true, executablePath: process.env.BROWSER_BIN || undefined, args: ['--no-sandbox', '--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({ viewport: { width: 1100, height: 1100 } });
 page.setDefaultTimeout(180000);
 page.on('pageerror', e => console.log('PAGEERROR', e.message));
@@ -54,14 +54,35 @@ const assetReport = await page.evaluate(() => {
 console.log('ASSETS', JSON.stringify(assetReport, null, 1));
 
 async function shoot(fighterName, tag) {
-  await page.click(`#selectScreen .bs-card[data-fighter="${fighterName}"]`);
-  await page.click('#selectScreen .bs-card[data-fighter="Hulk (Bruce Banner)"]');
-  await page.click('#selectScreen [data-nav="next"]');
-  await page.click('#selectScreen .bs-arena[data-arena="tournament"]');
+  // The close-up pass is driven from a fresh page, after the title/attract screen; open the
+  // real select screen before clicking its cards or the hidden menu never receives the click.
+  // Use the same public select API as the live setup flow. Clicking a card is not reliable here:
+  // the setup screen builds both P1 and CPU card sets and only one side is visible at a time.
+  await page.evaluate(({ name }) => {
+    const select = window.__browserSmashSelect;
+    select.show();
+    select.select('p1', name);
+    select.select('p2', 'Hulk (Bruce Banner)');
+    select.chooseArena('tournament');
+  }, { name: fighterName });
   await page.evaluate(() => document.querySelector('#play').click());
   await step(0.4);
   // Wait for the imported prefab (not the procedural body) so the shot shows what ships.
-  await page.waitForFunction(() => { const m = window.fighters?.[0]?.model; return Boolean(m?.userData?.sculptedBody) || Boolean(m?.userData?.characterAssetUrl) || m?.userData?.rigKind === 'prefab'; }, null, { timeout: 60000, polling: 100 }).catch(() => console.log('no upgraded body for', fighterName));
+  await page.waitForFunction(() => { const m = window.fighters?.[0]?.model; return Boolean(m?.userData?.sculptedBody) || Boolean(m?.userData?.characterAssetUrl); }, null, { timeout: 60000, polling: 100 }).catch(() => console.log('no upgraded body for', fighterName));
+  // Let the match's intro camera settle before pinning the audit camera; otherwise the intro can
+  // reclaim the camera a frame later and the shot follows the CPU instead of the audited fighter.
+  await page.waitForTimeout(1200);
+  // An imported body reaches characterAssetUrl before its idle action has necessarily ticked; a
+  // capture at that instant freezes the bind pose and misreports an A-pose as the fighter's idle.
+  // Wait for the body mixer, then advance a full step so the idle has visibly left frame zero.
+  await page.waitForFunction(() => Boolean(window.fighters?.[0]?.model?.userData?.humanMixer),
+    null, { timeout: 20000, polling: 100 }).catch(() => console.log('no human mixer for', fighterName));
+  // A live CPU can land a hit during this settling window and leave a hit-reaction action on the
+  // mixer, which is not the fighter's idle. Freeze the opponent for the pose inspection only; the
+  // attack and ultimate shots below still drive the real combat state.
+  await page.evaluate(() => { window.__browserSmashFreezeAI = true; window.__browserSmashTrainingDummy = true; });
+  await step(0.8);
+  await page.waitForTimeout(200);
   // Freeze the gameplay camera and frame the fighter from the front, slightly above chest height.
   const info = await page.evaluate(() => {
     const THREE = window.__browserSmashThree;
@@ -94,17 +115,20 @@ async function shoot(fighterName, tag) {
         if (node.style && !node.querySelector('canvas')) node.style.visibility = 'hidden';
       }
     });
-    let meshes = 0, materials = new Set(), tris = 0;
+    let meshes = 0, materials = new Set(), materialColors = [], tris = 0;
     f.model.traverse(n => {
       if (!n.isMesh) return;
       meshes++;
       const mats = Array.isArray(n.material) ? n.material : [n.material];
-      for (const m of mats) materials.add(m?.name || m?.uuid);
+      for (const m of mats) { materials.add(m?.name || m?.uuid); if (m?.color) materialColors.push(`${m.name || m.uuid}:${m.color.getHexString()}${m.map ? ':map' : ''}`); }
       const geo = n.geometry;
       if (geo?.index) tris += geo.index.count / 3;
       else if (geo?.attributes?.position) tris += geo.attributes.position.count / 3;
     });
-    return { identity: f.identity, rigKind: f.model.userData.rigKind, sculpted: f.model.userData.sculptedBody || null, weapon: f.model.userData.weaponKind || null, meshes, materials: materials.size, tris: Math.round(tris), frame: window.__auditFrame };
+    const u = f.model.userData;
+    const running = (u.humanMixer?._actions || []).filter(a => a.isRunning?.()).slice(0, 4)
+      .map(a => ({ clip: a.getClip?.()?.name || null, time: +(a.time || 0).toFixed(2), weight: +(a.getEffectiveWeight?.() || 0).toFixed(2) }));
+    return { identity: f.identity, rigKind: u.rigKind, sculpted: u.sculptedBody || null, weapon: u.weaponKind || null, idleClip: u.idleAction?.getClip?.()?.name || null, running, meshes, materials: materials.size, materialColors: [...new Set(materialColors)], materialRepairs: window.__browserSmashAssets?.lastCharacterDetail?.materialRepairs, detailKey: window.__browserSmashAssets?.lastCharacterDetail?.key, tris: Math.round(tris), frame: window.__auditFrame };
   });
   console.log(tag, JSON.stringify(info));
   await step(0.05);

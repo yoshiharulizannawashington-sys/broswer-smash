@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wuhu arena top-down capture</title>
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #87c9df; }
+  #gl, #overlay { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #overlay { pointer-events: none; }
+  #label {
+    position: absolute; left: 22px; top: 20px; color: #f8fbff;
+    font: 600 15px/1.35 ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: .02em; text-shadow: 0 1px 8px #062b39, 0 0 2px #062b39;
+  }
+  #label span { display: block; font-size: 12px; font-weight: 400; opacity: .8; letter-spacing: .04em; }
+</style>
+<script type="importmap">{"imports":{"three":"/node_modules/three/build/three.module.js","three/addons/":"/node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="overlay"></canvas>
+<div id="label">WUHU · TOP-DOWN<span>loading terrain…</span></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const params = new URLSearchParams(location.search);
+const mode = params.get('mode') === 'before' ? 'before' : 'after';
+const detail = params.get('detail') === 'bridge';
+const cutaway = params.get('cutaway') === 'airport';
+const SIZE = 1000;
+const VIEW_SIZE = Math.max(6, Math.min(60, Number(params.get('size')) || 34));
+const requestedCenter = (params.get('center') || '').split(',').map(Number);
+const CENTER = requestedCenter.length === 2 && requestedCenter.every(Number.isFinite)
+  ? { x: requestedCenter[0], z: requestedCenter[1] }
+  : { x: -32, z: -22 };
+const OLD_BOUNDS = { x0: -45, x1: -23, z0: -26, z1: -8 };
+const NEW_BOUNDS = { x0: -45, x1: -19, z0: -36, z1: -10 };
+const BRIDGE = { x0: -22.2, x1: -19, z: -35.2 };
+let bridgeBox = null;
+
+const canvas = document.querySelector('#gl');
+const overlay = document.querySelector('#overlay');
+const label = document.querySelector('#label');
+overlay.width = SIZE;
+overlay.height = SIZE;
+const context = overlay.getContext('2d');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87c9df);
+const camera = new THREE.OrthographicCamera(-VIEW_SIZE / 2, VIEW_SIZE / 2, VIEW_SIZE / 2, -VIEW_SIZE / 2, 0.1, 300);
+camera.position.set(CENTER.x, 80, CENTER.z);
+camera.up.set(0, 0, -1);
+camera.lookAt(CENTER.x, 0, CENTER.z);
+camera.updateProjectionMatrix();
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(1);
+renderer.setSize(SIZE, SIZE, false);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.08;
+
+scene.add(new THREE.HemisphereLight(0xeaf7ff, 0x54604a, 2.1));
+const sun = new THREE.DirectionalLight(0xfff1d4, 2.6);
+sun.position.set(-35, 70, -25);
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0xb9ddff, .85);
+fill.position.set(35, 35, 20);
+scene.add(fill);
+
+function project(x, z) {
+  const vector = new THREE.Vector3(x, 0.8, z).project(camera);
+  const scaleX = SIZE / overlay.clientWidth;
+  const scaleY = SIZE / overlay.clientHeight;
+  return { x: (vector.x * .5 + .5) * SIZE * scaleX, y: (-vector.y * .5 + .5) * SIZE * scaleY };
+}
+
+function drawWorldRect(bounds, color, { dash = false, width = 4 } = {}) {
+  const a = project(bounds.x0, bounds.z0);
+  const b = project(bounds.x1, bounds.z0);
+  const c = project(bounds.x1, bounds.z1);
+  const d = project(bounds.x0, bounds.z1);
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = width;
+  context.setLineDash(dash ? [12, 9] : []);
+  context.beginPath();
+  context.moveTo(a.x, a.y);
+  context.lineTo(b.x, b.y);
+  context.lineTo(c.x, c.y);
+  context.lineTo(d.x, d.y);
+  context.closePath();
+  context.stroke();
+  context.restore();
+}
+
+function drawLabel(text, x, z, color) {
+  const point = project(x, z);
+  context.save();
+  context.font = '600 15px ui-sans-serif, system-ui, sans-serif';
+  context.textAlign = 'center';
+  context.lineWidth = 5;
+  context.strokeStyle = 'rgba(3, 23, 32, .82)';
+  context.strokeText(text, point.x, point.y);
+  context.fillStyle = color;
+  context.fillText(text, point.x, point.y);
+  context.restore();
+}
+
+function drawScale() {
+  const meters = detail ? 5 : 10;
+  const width = (meters / VIEW_SIZE) * SIZE;
+  const x = SIZE - 28 - width;
+  const y = SIZE - 34;
+  context.save();
+  context.strokeStyle = '#f8fbff';
+  context.lineWidth = 4;
+  context.beginPath();
+  context.moveTo(x, y);
+  context.lineTo(x + width, y);
+  context.lineTo(x + width, y - 10);
+  context.moveTo(x, y);
+  context.lineTo(x, y - 10);
+  context.stroke();
+  context.font = '600 14px ui-sans-serif, system-ui, sans-serif';
+  context.fillStyle = '#f8fbff';
+  context.textAlign = 'center';
+  context.fillText(`${meters} m`, x + width / 2, y - 18);
+  context.restore();
+}
+
+function drawOverlay() {
+  context.clearRect(0, 0, SIZE, SIZE);
+  if (detail) {
+    if (bridgeBox) {
+      drawWorldRect({
+        x0: bridgeBox.min.x, x1: bridgeBox.max.x,
+        z0: bridgeBox.min.z, z1: bridgeBox.max.z
+      }, '#ff5d8f', { width: 4 });
+      drawLabel('LAND BRIDGE', CENTER.x, CENTER.z - VIEW_SIZE * .38, '#ff9ab7');
+    }
+    const rimX = -19.4;
+    const a = project(rimX, CENTER.z - VIEW_SIZE * .42);
+    const b = project(rimX, CENTER.z + VIEW_SIZE * .42);
+    context.save();
+    context.strokeStyle = '#52f0cc';
+    context.lineWidth = 3;
+    context.setLineDash([10, 8]);
+    context.beginPath();
+    context.moveTo(a.x, a.y);
+    context.lineTo(b.x, b.y);
+    context.stroke();
+    context.restore();
+    drawLabel('AIRPORT RIM', -18.7, CENTER.z + VIEW_SIZE * .37, '#52f0cc');
+    drawScale();
+    return;
+  }
+  if (mode === 'before') {
+    drawWorldRect(OLD_BOUNDS, '#ffbd59', { width: 5 });
+    drawLabel('BEFORE · 22 × 18 m', CENTER.x, -27.8, '#ffbd59');
+  } else {
+    drawWorldRect(OLD_BOUNDS, '#ffbd59', { dash: true, width: 3 });
+    drawWorldRect(NEW_BOUNDS, '#52f0cc', { width: 5 });
+    drawLabel('AFTER · 26 × 26 m', CENTER.x, -13.1, '#52f0cc');
+    const a = project(BRIDGE.x0, BRIDGE.z);
+    const b = project(BRIDGE.x1, BRIDGE.z);
+    context.save();
+    context.strokeStyle = '#ff5d8f';
+    context.lineWidth = 7;
+    context.lineCap = 'round';
+    context.beginPath();
+    context.moveTo(a.x, a.y);
+    context.lineTo(b.x, b.y);
+    context.stroke();
+    context.restore();
+    drawLabel('land bridge', CENTER.x + 1.5, BRIDGE.z + 1.6, '#ff9ab7');
+  }
+  drawScale();
+}
+
+const loader = new GLTFLoader();
+window.__wuhuTopdown = { ready: false, error: null, mode };
+loader.load('/assets/arenas/mariokart.glb', gltf => {
+  const root = gltf.scene;
+  root.traverse(node => {
+    if (node.isMesh && node.material) {
+      for (const material of [].concat(node.material)) {
+        material.side = THREE.FrontSide;
+        material.needsUpdate = true;
+      }
+    }
+  });
+  const bridge = root.getObjectByName('mariokart_land_bridge');
+  if (bridge) bridge.visible = mode !== 'before';
+  if (cutaway) {
+    const airport = root.getObjectByName('sunshine_airport');
+    // The airport island surface is the single mesh that sits over the bridge in plan view.
+    // Keep its eastern rim, but clip away the part west of x=-19.4 so the bridge is visible.
+    const airportGround = root.getObjectByName('Object_0001_32');
+    if (airportGround?.isMesh) {
+      renderer.localClippingEnabled = true;
+      const plane = new THREE.Plane(new THREE.Vector3(1, 0, 0), 19.4);
+      airportGround.material = [].concat(airportGround.material || []).map(material => {
+        const clipped = material.clone();
+        clipped.clippingPlanes = [plane];
+        clipped.clipShadows = true;
+        clipped.needsUpdate = true;
+        return clipped;
+      });
+    }
+    if (airport) airport.traverse(child => {
+      if (!child.isMesh || child === airportGround) return;
+      const box = new THREE.Box3().setFromObject(child);
+      if (box.max.y - box.min.y > 2) child.visible = false;
+    });
+    for (const child of root.children) {
+      if (/^mariokart_(apron|runway|taxiway)/i.test(child.name || '')) child.visible = false;
+    }
+  }
+  bridgeBox = bridge ? new THREE.Box3().setFromObject(bridge) : null;
+  scene.add(root);
+  const box = new THREE.Box3().setFromObject(root);
+  window.__wuhuTopdown = {
+    ready: true, error: null, mode,
+    bridgePresent: Boolean(bridge), bridgeVisible: Boolean(bridge?.visible),
+    camera: { center: CENTER, viewSize: VIEW_SIZE, up: [0, 0, -1] },
+    detail,
+    cutaway,
+    bridgeBox: bridgeBox ? { min: bridgeBox.min.toArray(), max: bridgeBox.max.toArray() } : null,
+    bounds: { old: OLD_BOUNDS, current: NEW_BOUNDS },
+    sceneBounds: { min: box.min.toArray().map(v => +v.toFixed(3)), max: box.max.toArray().map(v => +v.toFixed(3)) }
+  };
+  label.innerHTML = detail
+    ? `WUHU · BRIDGE / RIM<span>ORTHOGRAPHIC · ${VIEW_SIZE} m frame · ${cutaway ? 'airport cutaway' : 'airport rim dashed'}</span>`
+    : `WUHU · TOP-DOWN<span>${mode.toUpperCase()} · orthographic · ${VIEW_SIZE} m frame</span>`;
+  document.body.dataset.ready = 'true';
+}, undefined, error => {
+  window.__wuhuTopdown = { ready: false, error: String(error?.message || error), mode };
+  label.textContent = 'LOAD ERROR';
+});
+
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera);
+  drawOverlay();
+});
+</script>
+</body>
+</html>

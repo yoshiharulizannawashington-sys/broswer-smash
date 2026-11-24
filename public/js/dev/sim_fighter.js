@@ -14,6 +14,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import Fighter3D from '../fighter3D.js';
 import { upgradeFighterModel, animateHumanFighter } from '../human_fighter.js';
 import { syncEquippedWeapons } from '../models.js';
+import { applyWeaponCarryPoses, applyWeaponStowPose } from '../anim/weapon_carry.js';
 
 const NEUTRAL = Object.freeze({
   left: false, right: false, up: false, down: false, run: false, sprint: false,
@@ -129,7 +130,9 @@ function step(inputs = {}, dt = 1 / 60) {
   animateHumanFighter(fighter, dt);
   // The game loop runs this for every match fighter each step; a dev fighter is not in
   // window.fighters, so the harness has to do it or the mounted weapon stays where it was equipped.
+  applyWeaponCarryPoses(fighter, dt);
   syncEquippedWeapons(fighter.model);
+  applyWeaponStowPose(fighter);
   fighter.model.updateMatrixWorld(true);
   const after = boneSample(fighter.model);
   sim.steps++;
@@ -259,7 +262,9 @@ function stepOpponent(inputs = {}, dt = 1 / 60) {
   const held = { ...NEUTRAL, ...inputs };
   entry.fighter.simulate(dt, { ...held, getInputs: () => held, update: () => {} });
   animateHumanFighter(entry.fighter, dt);
+  applyWeaponCarryPoses(entry.fighter, dt);
   syncEquippedWeapons(entry.fighter.model);
+  applyWeaponStowPose(entry.fighter);
   entry.fighter.model.updateMatrixWorld(true);
   const box = meshMetrics(entry.fighter.model);
   return {

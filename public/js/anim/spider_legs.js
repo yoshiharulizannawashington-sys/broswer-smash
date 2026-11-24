@@ -5,11 +5,11 @@
 // the same space as the procedural/prefab fighter (origin at the feet, Y up, character facing
 // +Z), hinged on a harness behind the shoulders.
 //
-// The legs are presentation: the sweep's damage volume is still the propagating shockwave arc
-// resolved in main.js. What the legs add to the simulation is their tip positions - the sweep
-// accepts a leg-tip contact as a hit as well, so a target standing in the arc of a leg that is
-// physically touching them is hit even outside the facing cone - and per-state poses that make
-// the attack, guard, hitstun and flight states readable.
+// The legs are presentation: the sweep's area damage is the propagating shockwave arc resolved
+// in main.js. What the legs add to the simulation is their tip positions - flying an arc sample
+// through a leg contact counts as a hit even outside the facing cone - and per-state poses that
+// make the attack, guard, hitstun and flight states readable. The native Object_122 arm supplies
+// its own four terminal-bone volumes through anim/native_spider_legs.js; this rig is the fallback.
 import * as THREE from 'three';
 
 /** Segment lengths in metres, ordered coxa -> femur -> tibia. */

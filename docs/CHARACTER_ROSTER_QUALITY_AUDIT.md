@@ -51,8 +51,13 @@ measured, not intended. 34 fighters audited.
 | 16 | All Might | brawler | `roster/all_might.glb` | 19 · 17 · 12266 · 823 | 12.75 / 14 / 11.8 / 0.85 · stride ×1.02 | DETROIT SMASH | Heroic Jab → Detroit Cross → Rising Smash · United States Smash / Texas Breaker · Airborne Hero Drop | ONE FOR ALL · FULL COWL (46 · 9s · 6/s) | UNITED STATES OF SMASH (rush, 3 hits, 10 dmg) | ground |
 | 17 | Edward Elric | mage | `roster/edward_elric.glb` | 19 · 17 · 11440 · 783 | 12.5 / 16.5 / 10.8 / 1.05 · stride ×1.00 | ALCHEMY SPIKE | Automail Jab → Alchemy Cross → Rising Stone Fist · Stone Pillar Uppercut / Automail Hammer · Transmutation Finish | PHILOSOPHER'S FOCUS (46 · 9s · 5.6/s) | EQUIVALENT EXCHANGE: IRON COLOSSUS (storm, 2 hits, 16 dmg) | ground |
 | 18 | Levi Ackerman | ninja | `roster/levi_ackerman.glb` | 19 · 17 · 13956 · 879 | 14 / 21 / 11.6 / 1.3 · stride ×1.12 | THUNDER SPEAR | Blade Jab → Cross Cut → Spinning Slash · Twin Blade Breaker / Whirlwind Cleave · Falling Slice | HUMANITY'S STRONGEST (44 · 8.5s · 6/s) | WINGS OF DESTRUCTION (rush, 5 hits, 9 dmg) | ground |
-| 19 | Mario | warrior | `roster/mario.glb` | 19 · 17 · 11768 · 796 | 12.75 / 18 / 12.2 / 1.25 · stride ×1.02 | FIREBALL | Super Jab → Mario Combo → Rising Headbutt · Super Cape Strike / Hammer Flip · Ground Pound | FIRE MARIO (42 · 9s · 5/s) | SUPERSTAR FINALE (rush, 3 hits, 9 dmg) | ground |
-| 20 | Luigi | ninja | `roster/luigi.glb` | 19 · 17 · 11768 · 796 | 13 / 17 / 12.8 / 1.12 · stride ×1.04 | POLTERGUST BURST | Nervous Jab → Green Cross → Upward Boot · Luigi Cyclone / Super Jump Slam · Ghostbuster Swing | HAUNTED HERO (42 · 9s · 5.2/s) | MANSION MELTDOWN (zone, 1 hit, 8 dmg) | ground |
+| 19 | Mario | warrior | `imported/mario_happi/mario_happi_animated.glb` (authored metrics below) | 19 · 17 · 11768 · 796 | 12.75 / 18 / 12.2 / 1.25 · stride ×1.02 | FIREBALL | Super Jab → Mario Combo → Rising Headbutt · Super Cape Strike / Hammer Flip · Ground Pound | FIRE MARIO (42 · 9s · 5/s) | SUPERSTAR FINALE (rush, 3 hits, 9 dmg) | ground |
+| 20 | Luigi | ninja | `imported/dr_luigi/dr_luigi_animated.glb` (authored metrics below) | 19 · 17 · 11768 · 796 | 13 / 17 / 12.8 / 1.12 · stride ×1.04 | POLTERGUST BURST | Nervous Jab → Green Cross → Upward Boot · Luigi Cyclone / Super Jump Slam · Ghostbuster Swing | HAUNTED HERO (42 · 9s · 5.2/s) | MANSION MELTDOWN (zone, 1 hit, 8 dmg) | ground |
+
+> **2026-11-13 body swap:** the Mario and Luigi metrics in this table are the authored-body
+> baseline used by the combat/moveset audit. Both slots now mount the supplied Dola bodies
+> (Mario auto-rigged to 19 bones, Luigi 91 bones) with 25 retargeted clips; runtime selection,
+> preview and a landed-hit match pass 7/7 for each. The authored GLBs remain rollback targets.
 | 21 | Kratos | brawler | `roster/kratos.glb` | 19 · 17 · 8666 · 699 | 12.25 / 12.5 / 10.6 / 0.7 · stride ×0.98 | LEVIATHAN AXE RUSH | Spartan Jab → Axe Cross → Shield Bash · Leviathan Cleave / Spartan Shoulder · Executioner's Finish | SPARTAN RAGE (44 · 9s · 6/s) | WRATH OF THE FALLEN GOD (rush, 3 hits, 11 dmg) | ground |
 | 22 | Link | ninja | `roster/link.glb` | 19 · 17 · 13552 · 861 | 12.75 / 17 / 11 / 1.05 · stride ×1.02 | HERO ARROW | Hero's Slash → Shield Jab → Rising Sword · Charged Spin Attack / Great Blade Breaker · Spinning Finish | TRIFORCE RESONANCE (44 · 9.5s · 4.8/s) | HERO OF HYRULE (storm, 3 hits, 8 dmg) | ground |
 | 23 | Master Chief | cyborg | `roster/master_chief.glb` | 19 · 17 · 10508 · 756 | 12 / 12 / 10.4 / 0.78 · stride ×0.96 | PLASMA GRENADE | Spartan Jab → Rifle Butt → Knee Strike · Spartan Charge / Shieldbreaker Bash · Ground Pound | MJOLNIR OVERDRIVE (44 · 9s · 5.4/s) | ORBITAL HAMMERFALL (storm, 2 hits, 24 dmg) | ground |
@@ -281,7 +286,7 @@ or the render pipeline was changed - `public/js/smash_render_pipeline.js` is unt
 | `npm run test:iron-spider` | 39 checks (through wrapper) (exit 0) |
 | `npm run audit:roster` | 34/34 on their exported body (exit 0) |
 | `npm run probe:bodies` | 40 checks on the live fighter (exit 0) |
-| `npm run test:worlds:browser` | 831 checks across 60 battle locations (exit 0) |
+| `npm run test:worlds:browser` | 831 checks across 65 battle locations (exit 0) |
 | `npm run test:geometry` | Blender kernel: loft defect detected, repaired kernel solid, every part a closed outward volume (exit 0) |
 | `npm run test:feel` | killed by the 290 s command cap with no summary; re-run detached, see artifacts/feel-detached.log - NOT a pass (exit 124) |
 

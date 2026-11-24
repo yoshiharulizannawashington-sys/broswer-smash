@@ -48,7 +48,7 @@ await page.evaluate(() => document.querySelector('#play')?.click());
 await page.waitForFunction(() => document.querySelector('#menu')?.classList.contains('hidden'), null, { timeout: 30000, polling: 200 });
 await page.waitForTimeout(1200);
 
-const ARENAS = ['asgard', 'hogwarts', 'deathstar', 'tournament', 'starktower'];
+const ARENAS = ['asgard', 'hogwarts', 'tournament', 'starktower'];
 const results = [];
 
 for (const key of ARENAS) {
@@ -117,26 +117,7 @@ for (const key of ARENAS) {
   }
 
   // One long walk, sampled over time, so a mid-room stop can be read rather than guessed at.
-  let trace = null;
-  if (key === 'deathstar') {
-    await page.evaluate(() => {
-      const f = window.fighters[0];
-      const spawn = window.__browserSmashLayout().spawns[0];
-      f.position.set(spawn.x, (spawn.y ?? 0) + 0.02, spawn.z);
-      f.velocity.set(0, 0, 0); f.hitstun = 0; f.guardBreak = 0; f.flightMode = false;
-    });
-    await page.keyboard.down('d');
-    trace = await page.evaluate(() => {
-      const f = window.fighters[0];
-      const rows = [];
-      for (let i = 0; i < 960; i += 1) {
-        window.__browserSmashStep(1 / 60);
-        if (i % 40 === 0) rows.push({ frame: i, x: +f.position.x.toFixed(1), z: +f.position.z.toFixed(1), y: +f.position.y.toFixed(1), grounded: Boolean(f.isGrounded), solidAhead: window.__browserSmashSolidAt(f.position.x + 0.8, f.position.y + 0.9, f.position.z) });
-      }
-      return rows;
-    });
-    await page.keyboard.up('d');
-  }
+  const trace = null;
 
   // Solid coverage: how much of the playable rectangle has collision at chest height.
   const coverage = await page.evaluate(() => {

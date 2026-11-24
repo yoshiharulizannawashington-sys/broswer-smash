@@ -171,7 +171,9 @@ if (weaponLibrary) {
 
 // ---------------------------------------------------------------- scene assets
 console.log('\nScene assets');
-checkGlb('final_valley.glb', 'assets/final_valley.glb', { minMeshes: 100 });
+// Final Valley is the supplied Valley of the End model: 16 authored meshes (the old procedural
+// final_valley.glb had 100+), so the mesh budget is the model's real part count.
+checkGlb('valley_of_the_end.glb', 'assets/arenas/valley_of_the_end.glb', { minMeshes: 12 });
 
 // The arena loader keeps its own mapping in public/js/arenas/cinematic_arenas.js. Read it
 // from source so the validator cannot drift from what the game actually requests.
@@ -186,11 +188,14 @@ if (!existsSync(arenaModulePath)) {
   } else {
     // Each entry is `mapKey: { file: 'x.glb', marker: 'arena_y' }`. The marker is the node the
     // Blender export writes as the arena root; it is not always named after the map key.
-    const entries = [...block[1].matchAll(/([a-z]+)\s*:\s*\{\s*file\s*:\s*'([^']+)'\s*,\s*marker\s*:\s*'([^']+)'/g)]
-      .map(m => ({ key: m[1], file: m[2], marker: m[3] }));
+    const entries = [...block[1].matchAll(/([a-z]+)\s*:\s*\{\s*file\s*:\s*'([^']+)'\s*,\s*marker\s*:\s*'([^']+)'(?:\s*,\s*minMeshes\s*:\s*(\d+))?/g)]
+      .map(m => ({ key: m[1], file: m[2], marker: m[3], minMeshes: m[4] ? Number(m[4]) : 80 }));
     if (entries.length === 0) fail('arena loader', 'could not parse any { file, marker } entry from MODEL_PATHS');
-    for (const { key, file, marker } of entries) {
-      checkGlb(`arena ${key}`, `assets/arenas/${file}`, { minMeshes: 80, requireNodePrefix: marker });
+    for (const { key, file, marker, minMeshes } of entries) {
+      // Joined multi-creator arenas legitimately have fewer nodes than the hand-authored
+      // 300-900-mesh scenes; each MODEL_PATHS entry declares its own floor instead of
+      // weakening the default check for every arena.
+      checkGlb(`arena ${key}`, `assets/arenas/${file}`, { minMeshes, requireNodePrefix: marker });
     }
   }
 }

@@ -8,6 +8,7 @@ export const ORIGIN_POLICIES = Object.freeze({
   RIGHT_HAND: 'rightHand',
   LEFT_HAND: 'leftHand',
   WEAPON: 'weapon',
+  BOW: 'bow',
   CHEST: 'chest'
 });
 
@@ -23,6 +24,14 @@ export const ORIGIN_OVERRIDES = Object.freeze({
 
 export const DEFAULT_ORIGIN_POLICY = ORIGIN_POLICIES.RIGHT_HAND;
 
+/** Uniform body scale used for fallback origins; the default keeps old fixtures valid. */
+export function bodyScaleOf(owner) {
+  const scale = Number(owner?.heightScale);
+  if (Number.isFinite(scale) && scale > 0) return Math.max(.62, Math.min(1.35, scale));
+  const height = Number(owner?.height);
+  return Number.isFinite(height) && height > 0 ? Math.max(.62, Math.min(1.35, height / 2.05)) : 1;
+}
+
 export function identityKeyOf(owner) {
   return String(owner?.identityKey || owner?.identity || '')
     .toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
@@ -30,6 +39,9 @@ export function identityKeyOf(owner) {
 
 /** The policy a shot should use, before resolving an actual object. */
 export function originPolicyFor(owner, options = {}) {
+  // An explicit policy belongs to the shot, not the identity: Link's HERO ARROW leaves the
+  // nocked arrow at the bow, while a weapon-sourced sword projectile still leaves the sword.
+  if (options.originPolicy) return options.originPolicy;
   if (options.source === 'weapon') return ORIGIN_POLICIES.WEAPON;
   // Kit abilities fire from the hand unless the ability declares itself weapon-borne. Without this
   // rule a kit cast inherited the identity's signature override: Thor's pick-up move resolved
@@ -54,6 +66,9 @@ export function candidatesFor(userData = {}, policy) {
   if (policy === ORIGIN_POLICIES.WEAPON) {
     return [userData.equippedWeaponRight, userData.rightHand, userData.rightFore, userData.rightArm];
   }
+  if (policy === ORIGIN_POLICIES.BOW) {
+    return [userData.linkArrow, userData.linkBow, userData.leftHand, userData.leftFore, userData.leftArm];
+  }
   if (policy === ORIGIN_POLICIES.LEFT_HAND) return [userData.leftHand, userData.leftFore, userData.leftArm];
   if (policy === ORIGIN_POLICIES.RIGHT_HAND) return [userData.rightHand, userData.rightFore, userData.rightArm];
   return [];
@@ -72,13 +87,14 @@ export function resolveProjectileOrigin({ owner, options = {}, direction = null 
     if (point) return { policy, objectName: candidate.name || null, point, usedFallback: false };
   }
   const base = owner?.position || { x: 0, y: 0, z: 0 };
+  const scale = bodyScaleOf(owner);
   return {
     policy,
     objectName: null,
     point: {
-      x: (base.x || 0) + (direction?.x || 0) * 1.05,
-      y: (base.y || 0) + 1.5,
-      z: (base.z || 0) + (direction?.z || 0) * 1.05
+      x: (base.x || 0) + (direction?.x || 0) * 1.05 * scale,
+      y: (base.y || 0) + 1.5 * scale,
+      z: (base.z || 0) + (direction?.z || 0) * 1.05 * scale
     },
     usedFallback: true
   };
@@ -87,5 +103,5 @@ export function resolveProjectileOrigin({ owner, options = {}, direction = null 
 /** Distance from a point to the fighter's own body axis, to detect a shot starting inside it. */
 export function distanceFromBodyAxis(point, owner) {
   const base = owner?.position || { x: 0, y: 0, z: 0 };
-  return Math.hypot(point.x - base.x, point.y - (base.y + 1.1), point.z - base.z);
+  return Math.hypot(point.x - base.x, point.y - (base.y + 1.1 * bodyScaleOf(owner)), point.z - base.z);
 }

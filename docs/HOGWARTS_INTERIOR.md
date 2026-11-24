@@ -70,7 +70,7 @@ discarded things, and the Astronomy Tower's plinths, telescopes and star-painted
 | --- | --- |
 | Towers generated inside the ranges (one stood in the dungeon room) | Flanking towers moved to x ±72/78, outside the curtain wall; the south-range tower on the dungeon passage removed |
 | Dungeons sealed; stair ended in a wall | Ten-step dead-end stair replaced with a corridor, curtain-wall gate and cloister gate |
-| **Fighters could not descend a floor**: `fighter3D.js` clamped `position.y` to `this.groundLevel`, a value cached from the previous frame, so walking off a ledge or landing below snapped the fighter back up | The floor is now computed from the layout at the current position (`groundHeightAt`), falling back to the cached value. This also fixes the Death Star catwalks |
+| **Fighters could not descend a floor**: `fighter3D.js` clamped `position.y` to `this.groundLevel`, a value cached from the previous frame, so walking off a ledge or landing below snapped the fighter back up | The floor is now computed from the layout at the current position (`groundHeightAt`), falling back to the cached value. This also fixes elevated catwalks on the large worlds |
 | Astronomy ceiling was a 16 m translucent sphere hanging through the walls and below the floor | Replaced with a star-painted ceiling panel inside the room |
 | Chandeliers were near room-sized and read as gold plates with white balloons | Ring radius halved, candles shrunk, six arms |
 | Suits of armour were bare cylinders | Tabard and plume added |

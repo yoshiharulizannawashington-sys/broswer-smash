@@ -70,6 +70,10 @@ export function equipmentStateFor(fighter) {
   // authored victory pose raises that arm across the face, so the staged shot stows it. The flag is
   // set by the presentation only and cleared in reset(), so a live match never loses its weapon.
   if (userData.presentationHandsFree) return EQUIPMENT_STATES.HIDDEN;
+  // Link's bow draw needs both hands and replaces the sword/shield silhouette. The bow and arrow
+  // are third props outside holdablesOf, so this only stows the two carried weapons; the aim
+  // state owns their visibility through the release window.
+  if (userData.linkAim?.holding) return EQUIPMENT_STATES.HIDDEN;
   // The kit-ability window counts too. `authoredAbilityTime` is the new authored cast window
   // (Rasengan, Shadow Clone); without it a two-handed technique ran with the blade still gripped,
   // and the sword crossed the face - the exact defect this module exists to prevent.

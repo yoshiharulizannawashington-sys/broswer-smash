@@ -9,6 +9,7 @@
 // the same canonical space by the loader, which is why a downloaded clip can drive a prefab
 // fighter and vice versa.
 import * as THREE from 'three';
+import { calibrateRig } from './rig_calibration.js';
 
 // The eleven joints every rig must have for the clip library to drive a body at all.
 export const CORE_BONES = Object.freeze([
@@ -47,7 +48,12 @@ export function classifyBone(rawName) {
   const raw = String(rawName || '')
     .toLowerCase()
     .replace(/^mixamorig:?/, '')
-    .replace(/[._:\-\s]/g, '');
+    .replace(/[._:\-\s]/g, '')
+    // Sketchfab/Blender pose rigs append a numeric bone id after the side (`upper_arm.L_116`,
+    // `thigh.R_150`). GLTFLoader keeps the id, so without this the side letter was no longer at
+    // the end of the name and every arm and leg failed classification even though the rig was
+    // fully skinned.
+    .replace(/\d+$/, '');
   if (!raw) return null;
   // Blender/Maya suffix rigs carry the side as a trailing separator + L/R (upper_arm.L).
   const suffixSide = /[._\-]\s*([lr])$/i.exec(String(rawName || ''))?.[1]?.toLowerCase();
@@ -79,7 +85,9 @@ export function classifyBone(rawName) {
   // Fingers are not separately driven: the hand joint carries them as children.
   if (/finger|thumb|index|middle|ring|pinky/.test(raw)) return null;
   if (/hand|wrist|palm/.test(raw)) return s + 'Hand';
-  if (/forearm|lowerarm|elbow/.test(raw)) return s + 'Fore';
+  // Dragon Ball FighterZ rigs split the arm into `uparm`/`lowarm`; without the explicit lowarm
+  // case the later broad `arm` test classified the forearm as a second upper arm.
+  if (/forearm|lowerarm|lowarm|elbow/.test(raw)) return s + 'Fore';
   // A shoulder/clavicle is its own joint: rotating it rolls the arm from the chest instead of
   // hinging the whole arm at the socket.
   if (/clavicle|shoulder/.test(raw)) return s + 'Clavicle';
@@ -94,10 +102,11 @@ function classifyCore(rawName) {
   const raw = String(rawName || '')
     .toLowerCase()
     .replace(/^mixamorig:?/, '')
-    .replace(/[._:\-\s]/g, '');
+    .replace(/[._:\-\s]/g, '')
+    .replace(/\d+$/, '');
   if (!raw) return null;
   if (/neck/.test(raw)) return 'neck';
-  if (/head/.test(raw)) return 'head';
+  if (/head|face|skull/.test(raw)) return 'head';
   if (/hips|pelvis/.test(raw)) return 'pelvis';
   // The first spine bone becomes the chest (the core contract needs a torso); a later spine bone
   // fills the extension slot, which is what gives an imported rig a multi-segment spine.
@@ -197,10 +206,27 @@ export function resolveRig(root) {
     rest.set(canonical, captureRest(node));
   }
   const mixamo = /^mixamorig/i.test(String(joints.leftArm?.name || ''));
+  // Not every imported rig is Mixamo. Naruto's Sage and Wonder Woman's rig arrive in the same
+  // horizontal T-pose but with Rigify/Mixamo-neutral names, so the prefab-specific correction
+  // below never ran: their idle clips only breathed from the T and the fighters stood with both
+  // arms straight out. Measure the bind arms in world space and treat a horizontal upper arm as
+  // the same authoring defect, whatever the skeleton is called.
+  const tPoseArms = (() => {
+    const L = joints.leftArm, R = joints.rightArm, LF = joints.leftFore, RF = joints.rightFore;
+    if (!L || !R || !LF || !RF) return false;
+    root.updateMatrixWorld(true);
+    const horizontal = (upper, fore) => {
+      const a = upper.getWorldPosition(new THREE.Vector3());
+      const b = fore.getWorldPosition(new THREE.Vector3());
+      const length = a.distanceTo(b);
+      return length > 1e-4 && Math.abs(b.y - a.y) <= Math.max(0.08, length * 0.35);
+    };
+    return horizontal(L, LF) && horizontal(R, RF);
+  })();
   // Re-resolving a live rig must not capture the pose currently being animated as its bind pose.
   // Keep the original bind rotations alongside the bind parent orientations so every later compile
   // agrees with the clips that were built first.
-  if (mixamo && root.userData?.mixamoBindRest) {
+  if ((mixamo || root.userData?.mixamoRestCorrected) && root.userData?.mixamoBindRest) {
     for (const [canonical, values] of Object.entries(root.userData.mixamoBindRest)) {
       if (joints[canonical] && Array.isArray(values)) rest.set(canonical, new THREE.Quaternion(...values));
     }
@@ -209,29 +235,39 @@ export function resolveRig(root) {
   // a relaxed, arms-at-the-sides stance. Without this correction every clip plays on top of the
   // T-pose, so idle looks like a bind pose and a jab reads as both arms held overhead. Rotate the
   // upper arms down once, in the model's own frame, and cache the corrected rest pose so repeated
-  // resolves and resetRig() agree with the clips compiled from it.
-  if (mixamo && !root.userData?.mixamoRestCorrected) {
+  // resolves and resetRig() agree with the clips compiled from it. The same correction is applied
+  // to any other rig measured above as a horizontal T-pose; a sign test picks the direction that
+  // actually lowers each elbow, because the local arm axis differs between exporters.
+  if ((mixamo || tPoseArms) && !root.userData?.mixamoRestCorrected) {
     try {
       root.updateMatrixWorld(true);
       const rootInverse = new THREE.Quaternion();
       root.getWorldQuaternion(rootInverse).invert();
       const down = new THREE.Quaternion();
-      for (const [canonical, sign] of [['leftArm', -1], ['rightArm', 1]]) {
+      for (const [canonical, foreName, suggestedSign] of [['leftArm', 'leftFore', -1], ['rightArm', 'rightFore', 1]]) {
         const node = joints[canonical];
-        if (!node?.parent) continue;
+        const fore = joints[foreName];
+        if (!node?.parent || !fore) continue;
         const parentWorld = new THREE.Quaternion();
         const boneWorld = new THREE.Quaternion();
         node.parent.getWorldQuaternion(parentWorld).premultiply(rootInverse);
         node.getWorldQuaternion(boneWorld).premultiply(rootInverse);
-        down.setFromAxisAngle(new THREE.Vector3(0, 0, 1), sign * 1.36);
-        const corrected = parentWorld.invert().multiply(down).multiply(boneWorld);
-        node.quaternion.copy(corrected);
-        rest.set(canonical, corrected.clone());
+        const apply = (sign) => {
+          down.setFromAxisAngle(new THREE.Vector3(0, 0, 1), sign * 1.36);
+          const corrected = parentWorld.clone().invert().multiply(down).multiply(boneWorld);
+          node.quaternion.copy(corrected);
+          node.updateWorldMatrix(true, true);
+          return { corrected, elbowY: fore.getWorldPosition(new THREE.Vector3()).y };
+        };
+        const beforeY = fore.getWorldPosition(new THREE.Vector3()).y;
+        let chosen = apply(suggestedSign);
+        if (chosen.elbowY > beforeY + 1e-4) chosen = apply(-suggestedSign);
+        rest.set(canonical, chosen.corrected.clone());
       }
-      root.userData.mixamoRestCorrected = { arms: 1.36 };
+      root.userData.mixamoRestCorrected = { arms: 1.36, tPose: tPoseArms, measured: true };
       root.updateMatrixWorld(true);
     } catch (error) {
-      console.warn('Mixamo arm rest correction unavailable:', error?.message || error);
+      console.warn('Arm rest correction unavailable:', error?.message || error);
     }
   }
   // The authored Euler values are rotations in the body frame, not rotations around each Mixamo
@@ -240,7 +276,7 @@ export function resolveRig(root) {
   // a per-joint bind-parent orientation once and conjugate each body-frame delta into that parent
   // frame; the physical rotation is then the one the clip author intended, on any bind orientation.
   let bindParentWorld = null;
-  if (mixamo) {
+  if (mixamo || tPoseArms || root.userData?.mixamoRestCorrected) {
     const stored = root.userData?.mixamoBindParentWorld;
     if (stored) {
       bindParentWorld = new Map(Object.entries(stored).map(([key, values]) => [key, new THREE.Quaternion(...values)]));
@@ -282,7 +318,7 @@ export function resolveRig(root) {
     if (!userData[canonical]) userData[canonical] = node;
   }
   const missing = CANONICAL_BONES.filter(b => !joints[b]);
-  return {
+  const resolved = {
     kind: usePrefab ? 'prefab' : 'bone',
     root,
     joints,
@@ -298,6 +334,11 @@ export function resolveRig(root) {
     extensions: EXTENSION_BONES.filter(b => joints[b]),
     boundCount: bound.length
   };
+  // Measure proportions at bind/resolve time. Every proportional pose layer reads this one profile,
+  // so the rig is measured once rather than re-measured (and potentially sampled mid-pose) by each
+  // consumer. The measurement uses rigid world-space bone lengths and is safe after a clip write.
+  resolved.calibration = calibrateRig(root, resolved);
+  return resolved;
 }
 
 /** Restore every joint to its bind pose (used when an animation is suspended). */

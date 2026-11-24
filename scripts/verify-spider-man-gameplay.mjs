@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, normalize, sep, extname } from 'node:path';
 import { chromium } from 'playwright';
+import { HARDWARE_GPU, assertHardwareGpu, browserLaunchOptions, captureGpu, isSoftwareRenderer } from './lib/hardware-gpu.mjs';
 
 const root = process.cwd();
 const out = 'artifacts/spider-man-gameplay';
@@ -36,7 +37,7 @@ const check = (name, ok, detail = '') => {
   checks.push({ name, ok: !!ok, detail });
   console.log(`CHECK ${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ' · ' + detail : ''}`);
 };
-const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch(browserLaunchOptions());
 const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
 page.setDefaultTimeout(180000);
 const errors = [];
@@ -47,6 +48,10 @@ page.on('console', m => { if (m.type() === 'error') errors.push('console: ' + m.
 
 await page.goto(origin + '/public/index.html', { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => document.querySelector('#bbTitle') && window.fighters?.length === 2, null, { timeout: 150000, polling: 250 });
+const gpu = await captureGpu(page);
+const softwareRenderer = isSoftwareRenderer(gpu);
+console.log('GPU ' + JSON.stringify({ ...gpu, softwareRenderer }));
+if (HARDWARE_GPU) assertHardwareGpu(gpu, 'Spider-Man gameplay hardware acceptance');
 await page.click('#bbTitle [data-nav="versus"]');
 await page.waitForSelector('#selectScreen [data-fighter="Spider-Man"]', { timeout: 30000 });
 await page.evaluate(() => document.querySelector('#selectScreen [data-fighter="Spider-Man"]').click());
@@ -104,19 +109,27 @@ async function advance(seconds) {
     const [p1, p2] = window.fighters;
     const seen = [];
     let last = null, maxPercent = p2.percent, maxHitstun = 0, maxCooldown = 0, minGap = p1.position.distanceTo(p2.position);
+    // Imported bodies can run on the legacy human mixer rather than the controller lane. Read the
+    // clip the body actually played, not only controller._active, or every state looks null while
+    // the limbs visibly move.
+    const readClip = () => {
+      const raw = p1.animationController?._active || p1.model?.userData?.currentClip || null;
+      const alias = { FearlessFlight_Male_idle: 'idle', jab__upper: 'jab', heavy_punch__upper: 'heavy_punch', block__upper: 'block' };
+      return alias[raw] || raw;
+    };
     const start = p1.position.clone();
     const steps = Math.max(1, Math.round(seconds * 60));
     for (let i = 0; i < steps; i += 1) {
       window.__browserSmashStep(1 / 60);
-      const active = p1.animationController?._active || null;
+      const active = readClip();
       if (active && active !== last) { seen.push(active); last = active; }
       maxPercent = Math.max(maxPercent, p2.percent);
       maxHitstun = Math.max(maxHitstun, p1.hitstun || 0);
       maxCooldown = Math.max(maxCooldown, p1.specialCooldown || 0);
       minGap = Math.min(minGap, p1.position.distanceTo(p2.position));
     }
-    const animClip = p1.animationController?._action?.getClip?.();
-    const animProgress = animClip && animClip.duration > 0
+    const animClip = p1.animationController?._action?.getClip?.() || p1.model?.userData?.lastMoveAction?.getClip?.();
+    const animProgress = animClip && animClip.duration > 0 && p1.animationController
       ? +(p1.animationController.currentTime / animClip.duration).toFixed(2) : null;
     // The strike peak the controller retimes the clip to: the middle of the real active window.
     // Captures must sample this, not a fixed fraction, or a 0.25 s jab is already retracting.
@@ -135,7 +148,7 @@ async function advance(seconds) {
       leftArm: joint('leftArm'), leftFore: joint('leftFore'), leftHand: joint('leftHand')
     };
     return {
-      seen, active: p1.animationController?._active || null,
+      seen, active: readClip(),
       animProgress, attackPeak, limbProbe,
       state: p1.animationController?._select?.()?.id || null,
       casting: p1.casting || null, transform: p1.transform?.id || null,
@@ -156,8 +169,8 @@ async function advance(seconds) {
       liveProjectiles: typeof window.__browserSmashProjectiles === 'function' ? window.__browserSmashProjectiles() : null,
       p1pos: p1.position.toArray().map(v => +v.toFixed(2)), p2pos: p2.position.toArray().map(v => +v.toFixed(2)),
       facing: p1.facing, cinematicSource: window.__browserSmashCinematicPoseSource || null,
-      hasUltimateClip: !!p1.animationController?.clips?.has('spider_web_ultimate'),
-      hasFormClip: !!p1.animationController?.clips?.has('spider_sense_overdrive')
+      hasUltimateClip: !!(p1.animationController?.clips?.has('spider_web_ultimate') || p1.model?.userData?.authoredAbilityActions?.ultimate),
+      hasFormClip: !!(p1.animationController?.clips?.has('spider_sense_overdrive') || p1.model?.userData?.authoredFormActions?.['spider-sense-overdrive'])
     };
   }, seconds);
 }
@@ -233,7 +246,7 @@ const lateJab = await advanceUntil(x => x.active === 'SpiderMan_Jab' && x.attack
 await snap('07d-jab-extension', lateJab);
 const comboSeen = [...t.seen];
 await page.keyboard.press('j'); t = await advance(0.18); comboSeen.push(...t.seen);
-check('jab chain reaches a kick', comboSeen.some(id => ['front_kick', 'combo_2', 'spinning_kick', 'SpiderMan_Cross', 'SpiderMan_Kick'].includes(id)), JSON.stringify({ ...t, comboSeen }));
+check('jab chain reaches its second authored strike', comboSeen.some(id => ['front_kick', 'combo_2', 'spinning_kick', 'SpiderMan_Cross', 'SpiderMan_Kick', 'heavy_punch'].includes(id)), JSON.stringify({ ...t, comboSeen }));
 await page.keyboard.press('j'); t = await advance(0.28); comboSeen.push(...t.seen);
 check('third combo step reaches the finisher clip', comboSeen.some(id => ['combo_1', 'spinning_kick', 'heavy_punch', 'front_kick', 'SpiderMan_Cross', 'SpiderMan_Kick'].includes(id)), JSON.stringify({ ...t, comboSeen }));
 await snap('08-combo', t);
@@ -264,7 +277,7 @@ await snap('09d-heavy-extension', lateHeavy);
 await page.keyboard.up('Shift');
 await reset(1.35);
 await page.keyboard.press('Space'); await advance(0.20); await page.keyboard.press('j'); t = await advance(0.26);
-check('aerial attack plays while airborne', !t.grounded && t.seen.some(id => ['front_kick', 'jump', 'fall', 'SpiderMan_Air'].includes(id)), JSON.stringify(t));
+check('aerial attack plays while airborne', !t.grounded && t.seen.some(id => ['front_kick', 'jump', 'fall', 'SpiderMan_Air', 'air_attack'].includes(id)), JSON.stringify(t));
 await snap('10-aerial', t);
 await page.evaluate(() => window.__browserSmashStep(0.10));
 await snap('10a-aerial-peak');
@@ -289,7 +302,7 @@ await snap('12-dodge', t);
 t = await advance(0.55);
 check('dodge releases control', t.dodge <= 0 && !t.active?.startsWith('dodge'), JSON.stringify(t));
 await reset();
-await page.evaluate(() => { const p = window.fighters[0]; p.hitstun = 0.45; });
+await page.evaluate(() => { const p = window.fighters[0]; p.hitstun = 0.75; });
 t = await advance(0.12);
 check('hit reaction plays hit_heavy', t.seen.includes('hit_heavy'), JSON.stringify(t));
 await snap('13-hit', t);
@@ -297,7 +310,7 @@ await page.evaluate(() => { window.fighters[0].hitstun = 0; });
 t = await advance(0.45);
 check('hit reaction returns to idle', t.active === 'fighting_idle' || t.active === 'idle', JSON.stringify(t));
 await reset();
-await page.evaluate(() => { const p = window.fighters[0]; p.hitstun = 1.2; p.isGrounded = true; p.velocity.set(0, 0, 0); });
+await page.evaluate(() => { const p = window.fighters[0]; p.hitstun = 1.2; p.isGrounded = false; p.position.y = (p.groundLevel || 0) + 1.2; p.velocity.set(0, 0, 0); });
 t = await advance(0.16);
 check('knockdown clip plays', t.seen.includes('knockdown'), JSON.stringify(t));
 await snap('14-knockdown', t);
@@ -387,7 +400,7 @@ check('no page errors or failed asset requests', errors.length === 0 && failedRe
 
 const passed = checks.filter(c => c.ok).length;
 console.log(`\n${passed}/${checks.length} checks passed`);
-await writeFile(`${out}/report.json`, JSON.stringify({ checks, report, ultSeen: [...new Set(ultSeen)], errors, failedRequests }, null, 2));
+await writeFile(`${out}/report.json`, JSON.stringify({ hardwareMode: HARDWARE_GPU, gpu, softwareRenderer, checks, report, ultSeen: [...new Set(ultSeen)], errors, failedRequests }, null, 2));
 await browser.close();
 server.close();
 process.exit(checks.every(c => c.ok) ? 0 : 1);

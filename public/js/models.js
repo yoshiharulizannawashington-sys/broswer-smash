@@ -595,6 +595,44 @@ function loadWeaponLibrary(){
   }
   return weaponLibraryState.promise;
 }
+// Link's supplied Smash body carries a Master Sword and Hylian Shield on its back, but the game's
+// equipment mounts must own what he holds. These props were extracted from that same source model
+// and normalised to +Y up / +Z out of the face, with metre-scale geometry and the grip at the
+// prop origin. The Bow of Light and its arrow come from the separately attributed source.
+const linkEquipmentState={promise:null,prefabs:null};
+function loadLinkEquipment(){
+  if(!linkEquipmentState.promise){
+    const names=['weapon_link_right','weapon_link_left','weapon_link_bow','weapon_link_arrow'];
+    linkEquipmentState.promise=Promise.all(names.map(name=>{
+      const url=new URL(`../models/characters/equipment/${name}.glb`,import.meta.url);
+      url.searchParams.set('v','link-smash-20261113');
+      return new GLTFLoader().loadAsync(url.href).then(gltf=>({name,gltf,url:url.href}));
+    })).then(entries=>{
+      const prefabs=new Map();
+      for(const {name,gltf,url} of entries){
+        const root=gltf.scene;
+        root.name=name;
+        root.userData={
+          ...(root.userData||{}),name,character_key:'link',nativeProp:true,
+          kind:name==='weapon_link_right'?'sword':name==='weapon_link_left'?'shield':name==='weapon_link_bow'?'bow':'arrow',
+          display_name:name==='weapon_link_right'?'Link · Master Sword':name==='weapon_link_left'?'Link · Hylian Shield':name==='weapon_link_bow'?'Link · Bow of Light':'Link · Arrow',
+          // The extracted props keep the source's back-mounted roll: turn the sword's flat face and
+          // the shield's painted face toward the fighter's forward axis.
+          propRotation:name==='weapon_link_right'?[0,Math.PI/2,0]:name==='weapon_link_left'?[0,Math.PI,0]:[0,0,0],
+          source:url
+        };
+        prefabs.set(name,root);
+      }
+      runtimeAssetState.linkEquipment={status:'loaded',count:prefabs.size};
+      return prefabs;
+    }).catch(error=>{
+      runtimeAssetState.linkEquipment={status:'error',message:String(error?.message||error)};
+      console.warn('Link equipment GLBs unavailable; using the shared primitive library.',error);
+      return null;
+    });
+  }
+  return linkEquipmentState.promise;
+}
 function makeProceduralWeapon(key, side='right') {
   const group=new THREE.Group();
   const accentColor=key.includes('iron_man')||key.includes('master_chief')?0x38eaff:key.includes('thor')||key.includes('kratos')?0xffc35a:key.includes('naruto')||key.includes('sasuke')?0x56a9ff:0xb9d9ed;
@@ -603,7 +641,7 @@ function makeProceduralWeapon(key, side='right') {
   const grip=new THREE.MeshStandardMaterial({color:0x171d28,metalness:.18,roughness:.76});
   const add=(geometry,material,x,y,z,rx=0,ry=0,rz=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
   const staff=['doctor_strange','green_lantern','aang','lord_voldemort','edward_elric'].some(n=>key.includes(n));
-  const blaster=['iron_man','master_chief','solid_snake','han_solo','the_flash'].some(n=>key.includes(n));
+  const blaster=['iron_man','master_chief','solid_snake','han_solo','the_flash','arnold'].some(n=>key.includes(n));
   const hammer=['thor','kratos','hulk','all_might'].some(n=>key.includes(n));
   const katana=['naruto','sasuke','levi','link','geralt','sephiroth','sesshomaru','captain_jack','indiana_jones'].some(n=>key.includes(n));
   add(new THREE.CylinderGeometry(.045,.055,.55,10),grip,0,-.19,0,0,0,Math.PI*.04);
@@ -614,11 +652,34 @@ function makeProceduralWeapon(key, side='right') {
     add(new THREE.BoxGeometry(.22,.045,.14),edge,0,.22,-.02);
     add(new THREE.BoxGeometry(.05,.05,.18),metal,0,.08,.34);
     group.userData.kind='blaster';
+  }else if(key.includes('wolverine')){
+    // Three adamantium blades run forward out of the knuckles. The shipped claw prefab is authored
+    // upright for a different hand frame, so in play its blades read as shoulder spikes and the
+    // brace as a crate on each hip. A small, explicitly forward claw assembly preserves the
+    // signature and leaves the existing claw hitboxes and ability timing untouched.
+    const sideSign=side==='left'?-1:1;
+    add(new THREE.BoxGeometry(.20,.075,.13),metal,0,.015,.015);
+    add(new THREE.BoxGeometry(.16,.03,.15),edge,0,.062,.015);
+    for(let i=-1;i<=1;i++){
+      add(new THREE.BoxGeometry(.032,.036,.46),edge,i*.062*sideSign,.018,.27);
+      add(new THREE.BoxGeometry(.026,.024,.10),edge,i*.062*sideSign,.018,.52);
+    }
+    group.userData.kind='claws';
   }else if(hammer){
     add(new THREE.BoxGeometry(.43,.34,.34),metal,0,.34,0);
     add(new THREE.BoxGeometry(.12,.4,.39),edge,0,.34,0);
     add(new THREE.BoxGeometry(.48,.06,.37),edge,0,.53,0);
     group.userData.kind=key.includes('thor')?'stormbreaker':'hammer';
+  }else if(key==='l_death_note_style'){
+    add(new THREE.BoxGeometry(.17,.032,.24),metal,0,.06,-.02);
+    add(new THREE.BoxGeometry(.15,.026,.22),edge,0,.09,-.02);
+    add(new THREE.BoxGeometry(.018,.032,.24),grip,-.085,.06,-.02);
+    group.userData.kind='book';
+  }else if(key==='lord_voldemort'){
+    add(new THREE.CylinderGeometry(.018,.023,.32,8),grip,0,.12,0,0,0,Math.PI*.02);
+    add(new THREE.CylinderGeometry(.014,.02,.14,8),metal,0,.35,0);
+    add(new THREE.TorusGeometry(.034,.006,6,16),edge,0,.42,0,0,0,Math.PI/2);
+    group.userData.kind='wand';
   }else if(staff){
     add(new THREE.CylinderGeometry(.055,.075,.82,10),metal,0,.32,0);
     add(new THREE.OctahedronGeometry(.16,1),edge,0,.79,0);
@@ -638,7 +699,10 @@ function makeProceduralWeapon(key, side='right') {
   return group;
 }
 function weaponSize(kind){
-  if(kind==='stormbreaker')return 1.05;
+  // The MCU Stormbreaker prefab is authored at 2.08 m tall. At 1.05 it measured 2.18 m in the
+  // live match and towered over Thor's 1.88 m body with the head floating above his head. Scale
+  // the prop to roughly 1.15 m overall; the grip and hand offset remain unchanged.
+  if(kind==='stormbreaker')return .55;
   if(kind==='giant_sword'||kind==='war_fan')return 1.02;
   if(['rifle','plasma_rifle','shotgun'].includes(kind))return .66;
   if(['pistol','blaster'].includes(kind))return .72;
@@ -700,7 +764,13 @@ function weaponMount(bone,model){
 const PROP_GRIPS={
   // With a body-frame holder the authored face normal (local +Z) already points along the bearer's
   // forward axis, so the shield needs only its centre-grip offset.
-  shield:{y:-.50,z:-.15}
+  shield:{y:-.50,z:-.15},
+  // Stormbreaker's origin is the bottom of its handle, so the default palm grip put the whole
+  // 1 m head above Thor's hand and across his face once the idle lowered that hand to his hip.
+  // Grip further up the shaft: the head now hangs at waist height and the handle passes below
+  // the palm, which is how the prop is actually carried. The offset is in the prop's authored
+  // units (scaled with the prop), so it follows the same convention as the shield.
+  stormbreaker:{y:-1.02}
 };
 function weaponSpin(kind){return PROP_GRIPS[kind]?.spin||null;}
 function weaponGrip(mount,side,kind,size){
@@ -710,18 +780,43 @@ function weaponGrip(mount,side,kind,size){
   return hand?{y:-.045,z:side==='left'?.040:.055}:{y:-.39,z:side==='left'?.045:.065};
 }
 /**
- * Weapon orientation is the fighter's horizontal facing, not the arm's.
+ * Weapon orientation follows the body's tilt, not the hand's local swing.
  *
  * Position belongs to the hand bone: the prop rides the palm wherever the arm goes. Orientation is
  * a separate concern. Cancelling the bone's rotation outright (the original holder) kept props
  * upright but locked them to a fixed compass direction, so a shield pointed the same way after a
- * 180-degree turn. Using the bone's own rotation instead made every prop tumble with each swing.
- * This writes the holder's world rotation as pure body yaw, which leaves the authored grip
- * offsets, and the prop's own upright axis, untouched.
+ * 180-degree turn. Using the hand's own rotation instead made every prop tumble with each swing.
+ * This writes the holder's rotation as the torso's animation-space delta from its equip pose, so
+ * the authored grip offsets and the prop's upright axis stay intact while a throw, knockdown or
+ * other whole-body tilt carries the sword and shield with the body. The hand still owns position.
  */
+const _weaponModelQuat=new THREE.Quaternion();
+const _weaponTorsoQuat=new THREE.Quaternion();
+const _weaponTorsoLocal=new THREE.Quaternion();
+const _weaponTorsoTilt=new THREE.Quaternion();
+const _weaponTiltIdentity=new THREE.Quaternion();
 export function syncEquippedWeapons(model){
   if(!model?.userData)return;
   model.updateWorldMatrix(true,false);
+  const torso=model.userData.torso||model.userData.pelvis;
+  let bodyTilt=null;
+  if(torso){
+    model.getWorldQuaternion(_weaponModelQuat);
+    torso.getWorldQuaternion(_weaponTorsoQuat);
+    _weaponTorsoLocal.copy(_weaponModelQuat).invert().multiply(_weaponTorsoQuat);
+    let rest=model.userData.weaponTorsoRest;
+    if(!rest){
+      rest={q:_weaponTorsoLocal.clone(),inv:_weaponTorsoLocal.clone().invert()};
+      model.userData.weaponTorsoRest=rest;
+    }
+    bodyTilt=_weaponTorsoTilt.copy(_weaponTorsoLocal).multiply(rest.inv).normalize();
+    // A held prop should not breathe or twist with the torso's idle sway. Keep the authored
+    // facing for small deltas, then blend into the full torso tilt once the body is genuinely
+    // leaning, knocked down or inverted. The deadband is angular, so it is independent of rig.
+    const tiltAngle=2*Math.acos(Math.min(1,Math.abs(bodyTilt.w)));
+    const tiltWeight=THREE.MathUtils.smoothstep(tiltAngle,.35,.90);
+    if(tiltWeight<1)bodyTilt.slerp(_weaponTiltIdentity,1-tiltWeight);
+  }
   for(const side of ['Right','Left']){
     const weapon=model.userData['equippedWeapon'+side];
     const holder=weapon?.parent;
@@ -729,6 +824,8 @@ export function syncEquippedWeapons(model){
     if(!holder||!bone)continue;
     bone.updateWorldMatrix(true,false);
     holder.position.copy(model.worldToLocal(new THREE.Vector3().setFromMatrixPosition(bone.matrixWorld)));
+    if(bodyTilt)holder.quaternion.copy(bodyTilt);
+    else holder.quaternion.identity();
   }
 }
 export async function equipCharacterWeapons(fighter){
@@ -745,6 +842,15 @@ export async function equipCharacterWeapons(fighter){
     model.userData.weaponLabel='WEB SHOOTERS';
     return false;
   }
+  // Vegeta's signature attacks are ki blasts from the palm. The library's energy-gauntlet prop
+  // is authored at body scale and reads as a crate strapped to the forearm on this body, so the
+  // hands stay empty; the Galick Gun VFX already supplies the emitter.
+  if(characterWeaponKey(fighter?.identityKey||fighter?.identity||fighter?.name)==='vegeta'){
+    model.userData.unarmed=true;
+    model.userData.weaponKind='unarmed';
+    model.userData.weaponLabel='KI STRIKE';
+    return false;
+  }
   // Hands are the weapon: a sky-authored fighter with an energy beam does not carry a sword,
   // and the palm repulsor / ki emitter is already modelled on the body.
   if(model.userData.unarmed===true||model.userData.sculptedBody){
@@ -759,9 +865,10 @@ export async function equipCharacterWeapons(fighter){
   clearEquippedWeapon(leftMount,model.userData.equippedWeaponLeft);
   const key=characterWeaponKey(fighter.identity||fighter.name);
   const prefabs=await loadWeaponLibrary().catch(error=>{console.warn('Weapon GLB unavailable; using procedural signature gear.',error);return new Map();});
+  const linkEquipment=key==='link'?await loadLinkEquipment():null;
   // A character may have been switched while the asset was loading.
   if(fighter.model!==model)return false;
-  const rightTemplate=prefabs.get('weapon_'+key+'_right');
+  const rightTemplate=key.includes('wolverine')?null:(linkEquipment?.get('weapon_link_right')||prefabs.get('weapon_'+key+'_right'));
   {
     const template=rightTemplate||makeProceduralWeapon(key,'right');
     const weapon=template.clone(true);
@@ -769,26 +876,41 @@ export async function equipCharacterWeapons(fighter){
     model.userData.weaponKind=kind;
     model.userData.weaponLabel=template.userData.display_name||key;
     weapon.name='Equipped '+(template.userData.display_name||key);
-    const rightSize=weaponSize(kind);
-    const grip=weaponGrip(rightMount,'right',kind,rightSize);
+    const native=template.userData.nativeProp===true;
+    const rightSize=native?1:weaponSize(kind);
+    const grip=native?{x:0,y:0,z:0}:weaponGrip(rightMount,'right',kind,rightSize);
     weapon.position.set(grip.x||0,grip.y,grip.z);
-    const rightSpin=weaponSpin(kind);
+    const nativeRotation=native?template.userData.propRotation:null;
+    const rightSpin=nativeRotation||(!native?weaponSpin(kind):null);
     if(rightSpin)weapon.rotation.set(rightSpin[0],rightSpin[1],rightSpin[2]);
-    weapon.scale.setScalar(rightSize);
+    weapon.scale.setScalar(rightSize*(key==='l_death_note_style'?.34:key==='lord_voldemort'?.24:1));
     enhanceSurfaceMaterials(weapon,{weapon:true});
     weapon.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
     rightMount.add(weapon);
     model.userData.equippedWeaponRight=weapon;
+    if(key==='l_death_note_style'){
+      model.userData.weaponLabel='Light · Death Note';
+      weapon.name='Equipped Light · Death Note';
+      weapon.userData.display_name='Light · Death Note';
+    }else if(key==='lord_voldemort'){
+      model.userData.weaponLabel='Harry · Wand';
+      weapon.name='Equipped Harry · Wand';
+      weapon.userData.display_name='Harry · Wand';
+    }
   }
-  const leftTemplate=prefabs.get('weapon_'+key+'_left');
+  const leftTemplate=key.includes('wolverine')
+    ?makeProceduralWeapon(key,'left')
+    :(linkEquipment?.get('weapon_link_left')||prefabs.get('weapon_'+key+'_left'));
   if(leftTemplate&&leftMount){
     const weapon=leftTemplate.clone(true);
     const kind=leftTemplate.userData.kind||'sword';
-    weapon.name='Equipped offhand '+key;
-    const leftSize=weaponSize(kind);
-    const grip=weaponGrip(leftMount,'left',kind,leftSize);
+    weapon.name=key==='link'?'Equipped Link · Hylian Shield':'Equipped offhand '+key;
+    const native=leftTemplate.userData.nativeProp===true;
+    const leftSize=native?1:weaponSize(kind);
+    const grip=native?{x:0,y:0,z:0}:weaponGrip(leftMount,'left',kind,leftSize);
     weapon.position.set(grip.x||0,grip.y,grip.z);
-    const leftSpin=weaponSpin(kind);
+    const nativeRotation=native?leftTemplate.userData.propRotation:null;
+    const leftSpin=nativeRotation||(!native?weaponSpin(kind):null);
     if(leftSpin)weapon.rotation.set(leftSpin[0],leftSpin[1],leftSpin[2]);
     weapon.scale.setScalar(leftSize);
     enhanceSurfaceMaterials(weapon,{weapon:true});
@@ -801,6 +923,39 @@ export async function equipCharacterWeapons(fighter){
     // never has to guess from a mesh name.
     model.userData.offhandKind=kind;
     model.userData.offhandLabel=leftTemplate.userData.display_name||key;
+  }
+  // The bow is a third, situational prop, not a second signature weapon. It rides the left hand
+  // beside the shield and is hidden until the aim state raises it; the nocked arrow is parented to
+  // the bow so draw and release move together. Nothing is added to the shared weapon library.
+  // Re-equipping an imported body must not stack a second bow/arrow: clearEquippedWeapon only
+  // knows the signature hand mounts, so the situational bow pair is removed explicitly here.
+  for(const child of [...(leftMount.children||[])]){
+    if(child.name==='Equipped Link · Bow of Light')child.removeFromParent();
+  }
+  const bowTemplate=linkEquipment?.get('weapon_link_bow');
+  const arrowTemplate=linkEquipment?.get('weapon_link_arrow');
+  if(bowTemplate&&leftMount){
+    const bow=bowTemplate.clone(true);
+    bow.name='Equipped Link · Bow of Light';
+    bow.position.set(0,0,0);
+    bow.scale.setScalar(1);
+    bow.visible=false;
+    bow.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+    leftMount.add(bow);
+    model.userData.linkBow=bow;
+    if(arrowTemplate){
+      const arrow=arrowTemplate.clone(true);
+      arrow.name='Equipped Link · Nocked Arrow';
+      // The prop frame is +Y up the shaft. Aim points down the fighter's forward +Z axis.
+      arrow.rotation.x=Math.PI/2;
+      arrow.position.set(0,0,0);
+      arrow.scale.setScalar(1);
+      arrow.visible=false;
+      arrow.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+      bow.add(arrow);
+      model.userData.linkArrow=arrow;
+    }
+    model.userData.linkAim={active:false,draw:0,aim:0};
   }
   syncEquippedWeapons(model);
   return true;

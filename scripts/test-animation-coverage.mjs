@@ -185,7 +185,7 @@ slotCheck('thor', 'heavy', 1, 'authored_heavy');
 slotCheck('naruto_uzumaki', 'heavy', 1, 'authored_heavy');
 slotCheck('goku', 'heavy', 1, 'Goku_Heavy');
 slotCheck('superman', 'heavy', 1, 'Superman_Heavy');
-slotCheck('spider_man', 'heavy', 1, 'SpiderMan_Heavy');
+slotCheck('spider_man', 'heavy', 1, 'heavy_punch');
 slotCheck('nobody', 'heavy', 1, 'heavy_punch');
 slotCheck('nobody', 'melee', 1, 'jab');
 slotCheck('nobody', 'melee', 2, 'combo_1');

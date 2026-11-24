@@ -62,6 +62,26 @@ const inFrame = v => Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1;
     `${context.cam.framing.angle.toFixed(2)}`);
 }
 
+// ---- Skyline landmark framing -------------------------------------------
+{
+  const context = rig();
+  const a = fighter(0, 1.8, 0), b = fighter(2, 1.8, 0);
+  context.cam.setStageTilt(.2, 1.5);
+  context.cam.setStageSkyline(true);
+  settle(context, a, b);
+  check('a skyline stage opens the duel shot toward the horizon',
+    context.cam.framing.angle <= .22, `${context.cam.framing.angle.toFixed(2)}`);
+  const pa = project(context, a), pb = project(context, b);
+  check('the skyline shot still keeps both fighters in frame', inFrame(pa) && inFrame(pb),
+    `A ${pa.x.toFixed(2)},${pa.y.toFixed(2)} · B ${pb.x.toFixed(2)},${pb.y.toFixed(2)}`);
+  const normal = rig();
+  normal.cam.setStageTilt(.2, 1.5);
+  settle(normal, a, b);
+  check('the normal duel camera stays steep', normal.cam.framing.angle >= .5,
+    `${normal.cam.framing.angle.toFixed(2)}`);
+  check('the skyline opening is opt-in', context.cam.stageSkyline === true && normal.cam.stageSkyline === false);
+}
+
 // ---- Distance framing ----------------------------------------------------
 {
   const close = rig(); settle(close, fighter(0, 1.8, 0), fighter(1.5, 1.8, 0));

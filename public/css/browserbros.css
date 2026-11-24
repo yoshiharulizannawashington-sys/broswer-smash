@@ -269,7 +269,7 @@ button.primary:hover {
   gap:6px;
   padding:4px 9px;
   min-width:96px;
-  max-width:min(180px,44vw);
+  max-width:min(216px,46vw);
   background:#040a16f2;
   border:1px solid #3d5a92;
   border-radius:2px;
@@ -288,7 +288,7 @@ button.primary:hover {
   font-weight:900;
   letter-spacing:.1em;
   color:#eaf2ff;
-  max-width:124px;
+  max-width:142px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap

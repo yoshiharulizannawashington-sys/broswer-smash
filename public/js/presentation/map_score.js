@@ -2,7 +2,7 @@
 //
 // The game's existing music loop is one eight-note arpeggio shared by every arena. This module gives
 // each map its own motif (root, scale, tempo, timbre, bass figure) and layers it by state, so the
-// Valley, Asgard, Hogwarts and the Death Star do not sound the same. Everything is generated with
+// Valley, Asgard, Hogwarts and New York do not sound the same. Everything is generated with
 // oscillators and envelopes - there are no sampled or copyrighted recordings here, and the motifs
 // are original note sequences written for this game.
 //
@@ -12,7 +12,6 @@ const MAPS = Object.freeze({
   valley: { root: 196.0, scale: [0, 3, 5, 7, 10], tempo: 104, lead: 'triangle', bass: 'sine', pad: true, swing: .08 },
   asgard: { root: 146.83, scale: [0, 4, 7, 9, 11], tempo: 86, lead: 'sawtooth', bass: 'triangle', pad: true, brass: true },
   hogwarts: { root: 174.61, scale: [0, 2, 3, 7, 8], tempo: 76, lead: 'sine', bass: 'triangle', pad: true, bells: true },
-  deathstar: { root: 110.0, scale: [0, 1, 5, 6, 8], tempo: 68, lead: 'square', bass: 'sawtooth', pad: false, pulse: true },
   tournament: { root: 220.0, scale: [0, 2, 4, 7, 9], tempo: 132, lead: 'square', bass: 'triangle', pad: false },
   helicarrier: { root: 164.81, scale: [0, 3, 7, 10, 12], tempo: 96, lead: 'triangle', bass: 'sine', pad: true },
   volcano: { root: 130.81, scale: [0, 1, 3, 6, 8], tempo: 90, lead: 'sawtooth', bass: 'sawtooth', pad: false, pulse: true },
@@ -33,7 +32,6 @@ const FAMILY_RULES = Object.freeze([
   [/^nyc_|stark/i, 'stark'],
   [/^konoha_/, 'konoha'],
   [/^hogwarts/, 'hogwarts'],
-  [/^deathstar/, 'deathstar'],
   [/^asgard/, 'asgard'],
   [/^finalvalley$/, 'finalvalley'],
   [/^valley$/, 'valley'],
@@ -58,7 +56,6 @@ const MOTIFS = Object.freeze({
   valley: [0, 2, 4, 2, 3, 1, 0, 2],
   asgard: [0, 3, 4, 3, 2, 3, 1, 0],
   hogwarts: [0, 1, 2, 4, 3, 2, 1, 0],
-  deathstar: [0, 0, 2, 1, 0, -1, 1, 0],
   tournament: [0, 2, 1, 3, 2, 4, 3, 1],
   helicarrier: [0, 2, 3, 2, 4, 3, 2, 1],
   volcano: [0, 1, 4, 3, 1, 0, -1, 1],

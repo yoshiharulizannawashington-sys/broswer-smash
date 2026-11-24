@@ -15,7 +15,7 @@ Browser Smash is an existing Three.js/Vite 3D fighting game. This repository is 
 
 **Next:** generalize the character asset pipeline and polish camera framing, rendering, physics, combat feedback, and performance.
 
-**Later:** use the world and asset pipeline for larger detailed environments such as New York City with Avengers Tower, Hogwarts Castle, the Death Star, and the Valley of the End. Keep the default camera pulled back and cinematic. Do not let future map construction delay the first playable character milestone.
+**Later:** use the world and asset pipeline for larger detailed environments such as New York City with Avengers Tower, Hogwarts Castle, Konoha, and the Valley of the End. Keep the default camera pulled back and cinematic. Do not let future map construction delay the first playable character milestone.
 
 ## Current asset inventory
 
@@ -25,7 +25,6 @@ The repository already includes substantial Blender source files and browser-rea
 - `public/assets/character_weapons.glb` — existing weapon library.
 - `public/assets/final_valley.glb` — Final Valley scene asset.
 - `public/assets/arenas/asgard.glb`
-- `public/assets/arenas/deathstar.glb`
 - `public/assets/arenas/helicarrier.glb`
 - `public/assets/arenas/hogwarts.glb`
 - `public/assets/arenas/tournament.glb`
@@ -94,6 +93,10 @@ functions alone. See `docs/ANIMATION_ASSETS.md` for the full workflow.
 - `public/js/anim/animation_controller.js` runs one mixer per fighter with crossfades, priorities
   and one-shot locks, and retimes each attack clip so its strike peak lands exactly on the
   gameplay active window `(start + end) / 2`. Damage and hitboxes stay in `fighter3D.js`.
+- `public/js/anim/animation_overlays.js` runs after the upper/lower mask lanes and adds head/neck
+  (and any authored brow/mouth/eye, jaw or morph) facial motion plus local weapon sway, brace and
+  recoil. It snaps back to the authored grip and never moves the hand bone; the current imported
+  Goku face is textured, so its live facial channel is head/neck only.
 - `public/js/anim/animation_loader.js` loads installed GLB packs, retargets their clips into
   canonical bone space, strips root motion so physics keeps control of position, and reports what
   matched. Nothing is reported as external unless a real file on disk supplied it.
@@ -182,7 +185,6 @@ solid volumes and walkable platform heights instead of the old shared 34 × 16 m
 | Obsidian Volcano | 140 × 108 m | caldera cone |
 | Frostfall Citadel | 140 × 106 m | citadel |
 | Neon Megacity | 132 × 108 m | tower block row |
-| Death Star | 112 × 35 m | conference table, throne dais (walkable), consoles |
 | Final Valley | 116 × 88 m | authored obstacle list |
 | DBZ Tournament | 34 × 30 m | raised ring floor at 0.18 m |
 | Helicarrier / Stark Penthouse | 87 × 46 m | penthouse walls, sofa, bar, elevator shaft |
@@ -259,6 +261,7 @@ The game exposes a few read-only hooks for automated play-testing:
   counts the loaders require, checks each arena's marker node and mesh count against the
   loader's own `MODEL_PATHS`, and reports enabled manifest entries that point at missing
   files. Optional assets that are not installed yet are warnings, not failures.
+- `npm run audit:source-motion -- <model.glb|model.gltf|directory>` — reads raw animation accessors and fails named-but-empty, one-key/constant and non-joint-only clips; use `--allow-static` only for documented source poses.
 - `npm run build` — production build into `dist/`.
 - `npm run test:combat` — node tests for damage, knockback, hit stun, combo chaining, round/match
   flow, arena bounds, spawn placement and box/circle collision (394 checks, no browser needed).
@@ -403,8 +406,8 @@ fighter, so a mounted-but-broken rig fails the audit instead of passing on a nod
 
 ## Worlds, stages and travel
 
-The six reference worlds now hold 60 battle locations (Dragon Ball Z 11, Asgard 6, Death Star 11,
-Hogwarts 9, Konoha 13, New York 10). Each world is one built environment; the locations inside it are
+The five reference worlds now hold 65 battle locations (Dragon Ball Z 11, Asgard 6,
+Hogwarts 25, Konoha 13, New York 10). Each world is one built environment; the locations inside it are
 rectangles over that same geometry, so switching stages within a world does not rebuild the map.
 
 Stages are joined by marked doorways: a lit ring and light column at the edge of a stage that
@@ -436,13 +439,8 @@ If a walk leaves the world entirely (off the island edge, out of a hull, off a c
 explorer is put back on the seat they started from at `roamFloor` (lowest stage ground minus
 40 m) rather than falling forever. `npm run test:explore` drives the real game: it walks out of
 a stage in both directions, stands on a doorway ring without travelling, checks the world fence
-in all six worlds, recovers from a fall, and asserts that a mouse drag turns the camera in
+in all five worlds, recovers from a fall, and asserts that a mouse drag turns the camera in
 explore mode but not in a match.
-
-Death Star stages: Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control,
-Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hull. The hangar
-spine, the east/west spur and the Trench Run-to-city corridor are built as geometry, so the rooms
-are visibly joined even though each remains its own battle stage.
 
 Asgard stages: Royal Palace Court, Throne Hall, Marketplace Plaza, Rainbow Bridge, Bifrost Realm
 and the Outer Floating Isle. The Throne Hall is a real interior behind the palace: a 40 x 64 m
@@ -519,7 +517,7 @@ keeps the camera out of the stage's solid volumes on the large maps.
 ## Authored arenas
 
 `public/assets/arenas/*.glb` hold the authored Blender versions of the Asgard, Stark
-Tower/helicarrier, Death Star, Hogwarts and Tournament maps. `public/js/arenas/cinematic_arenas.js`
+Tower/helicarrier, Hogwarts and Tournament maps. `public/js/arenas/cinematic_arenas.js`
 streams the selected one lazily and caches it. When it loads it replaces the procedural set
 dressing for that map; if the file is missing or fails its structure check the procedural
 arena stays up, so a match never depends on the download. Set
@@ -536,16 +534,15 @@ Check each downloaded asset's license and relevant rights before distributing th
 
 ## Large worlds
 
-Four reference worlds are built as playable environments, not pictures. Each is one large
-map with several named battle locations (37 in total); a location is a rectangle inside the
+Five reference worlds are built as playable environments, not pictures. Each is one large
+map with several named battle locations (65 in total); a location is a rectangle inside the
 same geometry, so switching stages inside a world does not rebuild anything.
 
 | World | Battle locations |
 |---|---|
 | Dragon Ball Z — World Tournament Island | Grand Prize Stage, Main Entrance, West City Streets, West City Backstreets, Capsule Corporation, Capsule Research Lab, Martial Arts Dojo, Rocky Training Grounds, Training Grounds, Ring Out Cliffs, King Kai's Planet |
 | Asgard — Home of the Æsir | Royal Palace Court, Throne Hall, Marketplace Plaza, Rainbow Bridge, Bifrost Realm, Outer Floating Isle |
-| Death Star — Imperial Battle Station | Command Deck, Main Hangar, Corridor Junction, Reactor Core, Superlaser Control, Escape Pod Bay, Trench Run, Engineering, Droid Factory, Imperial City, Outer Hull |
-| Hogwarts — Castle and Grounds | Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest, Black Lake Boathouse, Hogsmeade Village, The Dungeons, Hagrid's Hut |
+| Hogwarts — Castle and Grounds | Great Hall, Castle Courtyard, Viaduct Bridge, Quidditch Pitch, Forbidden Forest, Black Lake Boathouse, Hogsmeade Village, The Dungeons, Hagrid's Hut, plus the castle interior rooms |
 | Hidden Leaf Village — Land of Fire | Hokage Rock, Hokage Administration, Main Street, Ichiraku Ramen, Ninja Academy, Konoha Hospital, Residential District, Uchiha District, Hyuga Compound, Training Grounds, Village Gates, Forest of Death, Valley of the End |
 
 - `public/js/worlds/world_catalog.js` holds the worlds as deterministic geometry plans plus

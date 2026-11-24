@@ -176,6 +176,25 @@ displacement** (the same bone maths the GPU runs), so a rig that parses but neve
 fails instead of looking fine in a report. Every clip must pose the body at least 2 cm away from the
 bind shape, the six dynamic clips must move across themselves, and the mesh must settle back.
 
+### Source-motion preflight for imported models
+
+A clip count is not motion. Imported GLBs and glTFs can contain a named animation with no channels,
+a one-key pose, multiple keys with identical values, or movement on a non-joint root. Run the
+source-motion auditor before accepting or promoting an imported body:
+
+```sh
+npm run audit:source-motion -- public/models/characters/<slug>/<slug>.glb \
+  --json artifacts/source-motion/<slug>.json
+```
+
+It reads the raw animation accessors (GLB or `.gltf` with external/data buffers), reports duration,
+channel/key counts and measured rotation/translation/scale/morph motion, and fails every clip that
+is `empty`, `static`, or `skeleton-hollow` (motion only on nodes outside the skin). Use
+`--allow-static clip1,clip2` only for a documented static source pose, never to hide an animation
+that should move. `npm run test:source-motion` covers the classifications with self-authored
+fixtures; the Iron Spider source run finds its two preserved static poses and passes when they are
+explicitly waived.
+
 `npm run test:kaze` also verifies **binding** (no `neutral_bone`, no unweighted vertex, every limb
 bone influencing real geometry) and **joint deformation**: each elbow is bent 1.75 rad, each
 shoulder and hip 1.2–1.4 rad, each knee 1.6 rad, and the length change of the mesh's own edges is

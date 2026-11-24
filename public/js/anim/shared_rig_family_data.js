@@ -31,7 +31,7 @@ export const SHARED_RIG_FAMILY = Object.freeze({
     Object.freeze({ name: "Hashirama Senju", key: "hashirama_senju", url: "/models/characters/roster/hashirama_senju.glb" }),
     Object.freeze({ name: "Indiana Jones", key: "indiana_jones", url: "/models/characters/roster/indiana_jones.glb" }),
     Object.freeze({ name: "Iron Man (Tony Stark)", key: "iron_man_tony_stark", url: "/models/characters/roster/iron_man_tony_stark.glb" }),
-    Object.freeze({ name: "Iron Spider", key: "iron_spider", url: "/models/characters/roster/iron_spider.glb" }),
+    Object.freeze({ name: "Iron Spider", key: "iron_spider", url: "/models/characters/iron_spider/iron_spider_source_animated.glb" }),
     Object.freeze({ name: "Jean-Claude Van Damme", key: "jean_claude_van_damme", url: "/models/characters/roster/jean_claude_van_damme.glb" }),
     Object.freeze({ name: "Jotaro Kujo", key: "jotaro_kujo", url: "/models/characters/roster/jotaro_kujo.glb" }),
     Object.freeze({ name: "Kaze", key: "kaze", url: "/models/characters/kaze/kaze.glb" }),
@@ -63,7 +63,7 @@ export const SHARED_RIG_FAMILY = Object.freeze({
     Object.freeze({ name: "The Rock", key: "the_rock", url: "/models/characters/roster/the_rock.glb" }),
     Object.freeze({ name: "Thor", key: "thor", url: "/models/characters/roster/thor.glb" }),
     Object.freeze({ name: "Ursula", key: "ursula", url: "/models/characters/roster/ursula.glb" }),
-    Object.freeze({ name: "Vegeta", key: "vegeta", url: "/models/characters/roster/vegeta.glb" }),
+    Object.freeze({ name: "Vegeta", key: "vegeta", url: "/models/characters/roster/vegeta_ultra_ego.glb" }),
     Object.freeze({ name: "Wolverine (Logan)", key: "wolverine_logan", url: "/models/characters/roster/wolverine_logan.glb" }),
     Object.freeze({ name: "Wonder Woman", key: "wonder_woman", url: "/models/characters/roster/wonder_woman.glb" }),
   ])

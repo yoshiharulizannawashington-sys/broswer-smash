@@ -1,0 +1,59 @@
+{
+  "id": "light_yagami_rigged",
+  "sourceModel": "light yagami from Death note",
+  "sourceUid": "7d0599365ae141f7b0b65cd55d27a06b",
+  "creator": "Shah Bakhat026",
+  "license": "CC Attribution",
+  "sourceFile": "artifacts/asset-fetch/light_yagami/light_yagami.glb",
+  "notes": "PROMOTED Light Yagami body in the stable l_death_note_style slot. Auto-rigged with 19 canonical bones and 25 clips; player-facing identity, moveset and equipment now belong to Light Yagami.",
+  "rig": {
+    "bones": 19,
+    "canonicalSlots": 19,
+    "height": 1.82,
+    "feetY": 0,
+    "vertices": 318006,
+    "unweighted": 0,
+    "maxInfluences": 4,
+    "armLength": 0.3829,
+    "legLength": 0.415,
+    "joints": {
+      "pelvis": 0.0413,
+      "torso": 0.0974,
+      "head": 0.0273,
+      "leftArm": 0.0348,
+      "leftFore": 0.0303,
+      "rightArm": 0.0314,
+      "rightFore": 0.0257,
+      "leftLeg": 0.0625,
+      "leftShin": 0.0256,
+      "rightLeg": 0.05,
+      "rightShin": 0.0256,
+      "spine": 0.1126,
+      "leftClavicle": 0.0676,
+      "rightClavicle": 0.0676,
+      "neck": 0.0535,
+      "leftHand": 0.0103,
+      "rightHand": 0.0069,
+      "leftFoot": 0.0485,
+      "rightFoot": 0.0506
+    },
+    "symmetry": {
+      "leftArm": 0,
+      "leftFore": 0,
+      "leftHand": 0,
+      "leftLeg": 0,
+      "leftShin": 0,
+      "leftFoot": 0
+    }
+  },
+  "validation": "artifacts/rig-batch/validation.json",
+  "stagedAt": "2026-11-10T18:47:44.333Z",
+  "animation": {
+    "clips": 25,
+    "donor": "public/models/characters/roster/thor.glb",
+    "retarget": "scripts/rig-clips-to-body.mjs retarget",
+    "approach": "bind-pose retarget at 30 fps; grounded clips lifted once at the Hips, root motion omitted",
+    "report": "artifacts/rig-batch/animated/light_yagami-retarget.json"
+  },
+  "status": "PROMOTED — live acceptance tracked in docs/ROSTER_INTEGRATION_PROGRESS.md"
+}

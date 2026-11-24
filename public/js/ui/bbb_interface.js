@@ -377,8 +377,8 @@ function mountLoading() {
 
   const nameOf = (index, fallback) => {
     const fighter = fighterAt(index);
-    const source = fighter?.identityKey || fighter?.type || '';
-    return source ? String(source).replace(/_/g, ' ').toUpperCase() : fallback;
+    const source = fighter?.displayName || fighter?.identity || fighter?.identityKey || fighter?.type || '';
+    return source ? String(source).replace(/\s*\([^)]*\)\s*/g, ' ').replace(/_/g, ' ').trim().toUpperCase() : fallback;
   };
   const arenaOf = () => {
     const key = document.querySelector('#mapSelect')?.value || 'valley';
@@ -430,6 +430,9 @@ function mountLoading() {
     if (!visible) return;
     visible = false;
     node.hidden = true;
+    // A real readiness edge, not a timer. main.js defers the entrance until this fires, so the
+    // cinematic cannot play behind the loader on a slow first frame.
+    window.dispatchEvent(new CustomEvent('browsersmash:matchready'));
   }
 
   // Both match entry points (versus and practice) run through these real buttons.

@@ -510,7 +510,7 @@ try {
   // ---- walls stop ultimates ------------------------------------------------------
   const walls = await page.evaluate(() => {
     const api = window.__browserSmashPowersApi();
-    window.__browserSmashSelect.chooseArena('deathstar');
+    window.__browserSmashSelect.chooseArena('hogwarts');
     const layout = window.__browserSmashLayout();
     const block = (layout.blocks || []).find(b => b.top >= 3 && !b.r);
     if (!block) return { found: false };

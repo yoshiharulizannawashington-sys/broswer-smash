@@ -32,7 +32,7 @@ const origin = 'http://127.0.0.1:' + server.address().port;
 
 const checks = [];
 const check = (name, ok, detail = '') => { checks.push({ name, ok: Boolean(ok), detail }); console.log(`CHECK ${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ' · ' + detail : ''}`); };
-const MAPS = ['asgard', 'hogwarts', 'deathstar', 'tournament', 'starktower'];
+const MAPS = ['asgard', 'hogwarts', 'tournament', 'starktower'];
 
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const report = { maps: {} };

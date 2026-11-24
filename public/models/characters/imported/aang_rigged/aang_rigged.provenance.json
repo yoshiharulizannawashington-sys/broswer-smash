@@ -1,0 +1,58 @@
+{
+ "id": "aang_rigged",
+ "sourceModel": "Nickelodeon Kart Racers 3 Aang",
+ "sourceUid": "1e6dc80e72f74437a5604e3fb6ff3b54",
+ "creator": null,
+ "license": null,
+ "sourceFile": "artifacts/asset-fetch/aang/aang.glb",
+ "notes": "Auto-rigged in Blender 4.2.23 by scripts/autorig_batch.py from the supplied unrigged body. 19 canonical bones, 20694 vertices, 0 unweighted, 4 max influences. Staged only: not on the launch roster. 25-clip roster animation set retargeted onto the exact 19-bone rig.",
+ "rig": {
+  "bones": 19,
+  "canonicalSlots": 19,
+  "height": 1.72,
+  "feetY": 0,
+  "vertices": 20694,
+  "unweighted": 0,
+  "maxInfluences": 4,
+  "armLength": 0.4549,
+  "legLength": 0.3379,
+  "joints": {
+   "pelvis": 0.0468,
+   "torso": 0.0661,
+   "head": 0.0251,
+   "leftArm": 0.0197,
+   "leftFore": 0.0238,
+   "rightArm": 0.0197,
+   "rightFore": 0.0238,
+   "leftLeg": 0.031,
+   "leftShin": 0.0129,
+   "rightLeg": 0.0309,
+   "rightShin": 0.0129,
+   "spine": 0.0175,
+   "leftClavicle": 0.0726,
+   "rightClavicle": 0.0726,
+   "neck": 0.0705,
+   "leftHand": 0.0193,
+   "rightHand": 0.0193,
+   "leftFoot": 0.0215,
+   "rightFoot": 0.0215
+  },
+  "symmetry": {
+   "leftArm": 0,
+   "leftFore": 0,
+   "leftHand": 0,
+   "leftLeg": 0,
+   "leftShin": 0,
+   "leftFoot": 0
+  }
+ },
+ "validation": "artifacts/rig-batch/validation.json",
+ "stagedAt": "2026-11-10T18:47:44.358Z",
+ "animation": {
+  "clips": 25,
+  "donor": "public/models/characters/roster/thor.glb",
+  "retarget": "scripts/rig-clips-to-body.mjs retarget --calibrate-arms",
+  "approach": "bind-pose retarget at 30 fps; T-pose upper arms calibrated down before applying donor deltas; grounded clips lifted once at the Hips",
+  "report": "artifacts/rig-batch/animated/aang-calibrated-retarget.json"
+ }
+}

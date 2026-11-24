@@ -114,10 +114,13 @@ try {
   for (let stage = 0; stage < forms.length; stage++) {
     await reset();
     await page.keyboard.press('i');
-    await step(0.5);
+    // FORM.activationLock is 0.62 s (0.45 s gather + settle). The previous 0.5 s sample pressed
+    // K while formLock was still positive, so the special input was swallowed and the test
+    // reported a form-signature failure that belonged to the harness timing.
+    await step(0.8);
     const state = await page.evaluate(() => {
       const f = window.fighters[0];
-      return { active: Boolean(f.transform), label: f.transform?.label || f.transform?.form?.label || null, id: f.transform?.form?.id || null };
+      return { active: Boolean(f.transform), landed: f.transform?.landed === true, formLock: +(f.formLock || 0).toFixed(2), label: f.transform?.label || f.transform?.form?.label || null, id: f.transform?.form?.id || null };
     });
     await page.evaluate(() => {
       window.__browserSmashCalloutHistory = String(document.body.innerText || '');
@@ -137,6 +140,18 @@ try {
     check(`form ${stage + 1} ${form.label}: fires ${label || 'its own signature'}`, announced, `announced=${announced}`);
     await page.evaluate(() => { const f = window.fighters[0]; if (f.transform) f.transform.time = 0; });
     await step(0.3);
+    const afterExit = await page.evaluate(() => {
+      const f = window.fighters[0];
+      return {
+        active: Boolean(f.transform),
+        formLock: +(f.formLock || 0).toFixed(2),
+        special: String(f.specialProfile?.label || ''),
+        formStage: f.formStage ?? null
+      };
+    });
+    check(`form ${stage + 1} ${form.label}: exits and restores the base signature`,
+      afterExit.active === false && /RASENSHURIKEN/.test(afterExit.special.toUpperCase()),
+      JSON.stringify(afterExit));
   }
   console.log('FORMS', JSON.stringify(seen));
   check('no page errors during the signature run', errors.length === 0, errors.slice(0, 2).join(' | '));

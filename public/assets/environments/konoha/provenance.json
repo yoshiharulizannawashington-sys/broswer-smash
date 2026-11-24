@@ -1,0 +1,47 @@
+{
+  "environment": "Konoha imported landmarks",
+  "runtimeAsset": "hokage_landmarks.glb",
+  "runtimeBytes": 13034124,
+  "runtimeTriangles": 99524,
+  "runtimeMeshes": 29,
+  "blenderSource": "assets/blender/environments/konoha/hokage_landmarks.blend",
+  "assembledWith": "scripts/assemble-konoha-landmarks.py + scripts/export-konoha-landmarks.py (Blender 4.2.23 LTS)",
+  "assets": [
+    {
+      "title": "Six Hokage Mountain",
+      "author": "jmartinez20592",
+      "source": "https://sketchfab.com/3d-models/six-hokage-mountain-c9cc3357a6ee46c2bff49c94e409fa99",
+      "uid": "c9cc3357a6ee46c2bff49c94e409fa99",
+      "licence": "CC Attribution (CC BY 4.0)",
+      "attribution": "Six Hokage Mountain by jmartinez20592 on Sketchfab, CC BY 4.0.",
+      "sourceSha256": "2f39525239be16811de5bc19849d409074478e10d04662afff74c143ab804e6e",
+      "sourceFaces": 307686,
+      "runtimeFaces": 95476,
+      "modification": "Joined 558 source parts, per-part collapse-decimated to 32%, normalised to 180 m width, redundant UV sets removed. Modified asset remains CC BY 4.0.",
+      "use": "Static background landmark, outside playable bounds."
+    },
+    {
+      "title": "Hokage Office",
+      "author": "elre",
+      "source": "https://sketchfab.com/3d-models/hokage-office-07512299acb64f40a4b36d63286de7cf",
+      "uid": "07512299acb64f40a4b36d63286de7cf",
+      "licence": "CC Attribution (CC BY 4.0)",
+      "attribution": "Hokage Office by elre on Sketchfab, CC BY 4.0.",
+      "sourceSha256": "097b1313c7fa47b740070e3dfec6eee42e45a66c079420d64926a224a1839197",
+      "sourceFaces": 10739,
+      "runtimeFaces": 4048,
+      "modification": "Main office, two silos and three lamp posts kept; source display base, perimeter wall and trees removed. Normalised to 8 m height. Modified asset remains CC BY 4.0.",
+      "use": "Static background landmark at the north-east village edge."
+    }
+  ],
+  "rejected": [
+    {
+      "title": "Konoha Hidden Leaf Village",
+      "author": "Tigerar1",
+      "uid": "d9830d4348e94e32a9745b8bc130fd19",
+      "licence": "Sketchfab Free Standard",
+      "reason": "Downloaded and rendered from four angles. It is a 193 x 197 m tabletop diorama with a painted sky dome and flat display base; it is not a closed playable environment and mounting it would read as a toy village. Preserved in artifacts/asset-fetch, not shipped."
+    }
+  ],
+  "rightsScope": "The CC BY licences cover the uploaders' models; they do not grant rights to the Naruto franchise or its designs. Treat this as local prototype art and confirm distribution permission separately."
+}

@@ -115,7 +115,7 @@ try {
     check(label, 'camera outside stage geometry', data.inside === false, `inside=${data.inside} cam=${JSON.stringify(data.camera)}`);
     check(label, 'full body on screen', data.bounds.onScreen === true && data.bounds.heightFraction >= 0.5, `height=${data.bounds.heightFraction} onScreen=${data.bounds.onScreen}`);
     check(label, 'body visible through the sightlines', data.head.clear === true && data.torso.clear === true, `head=${data.head.clear} torso=${data.torso.clear}`);
-    check(label, defeat ? 'authored defeat clip owns the body' : 'authored victory clip runs', defeat ? /defeat|die/i.test(data.clip || '') : /victory|win|skill04/i.test(data.clip || ''), `${data.clip} w=${data.weight}`);
+    check(label, defeat ? 'authored defeat clip owns the body' : 'authored victory clip runs', defeat ? /defeat|die/i.test(data.clip || '') : /succ_cam|victory|win/i.test(data.clip || ''), `${data.clip} w=${data.weight}`);
     check(label, defeat ? 'gamma-knuckle stays on the body through the defeat' : 'gamma-knuckle stowed for the victory pose',
       defeat ? data.weapon === true : data.weapon === false, `weapon=${data.weapon} ${data.weaponName || ''}`);
     return data;

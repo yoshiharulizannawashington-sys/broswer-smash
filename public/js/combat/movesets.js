@@ -447,22 +447,22 @@ export const MOVESETS = Object.freeze({
   }),
 
   l_death_note_style: Object.freeze({
-    key: 'l_death_note_style', style: 'Cyborg · traps and prediction',
-    lights: ['Deduction Jab', 'Feint Cross', 'Low Sweep'],
-    heavy: ['Chair Kick', 'Evidence Slam'],
+    key: 'l_death_note_style', style: 'Strategist · calculated traps and counters',
+    lights: ['Pen Jab', 'Feint Cross', 'Low Sweep'],
+    heavy: ['Notebook Slam', 'Forensic Feint'],
     aerial: 'Calculated Finish',
     form: form({
-      id: 'absolute-deduction', label: 'ABSOLUTE DEDUCTION', aura: 'shadow', color: 0xd4d6e0,
+      id: 'keikaku', label: 'KEIKAKU', aura: 'shadow', color: 0xd4d6e0,
       duration: 10, cost: 44, drain: 4, cooldown: 9,
       mods: { speed: 1.08, damage: 1.16, kbs: 1.04, defense: .92, startup: .9, jump: 1 },
-      special: { label: 'DEATH NOTE HEX · DEDUCTION', type: 'psychic', color: 0xf0f0ff, damage: 12, speed: 22, cooldown: 1.05, stun: 1.35, knockback: 1.6 },
-      ultimate: { label: 'FINAL VERDICT · DEDUCTION', damage: 1.22 },
-      note: 'Longer marks, faster traps and better spacing — never a guaranteed kill.'
+      special: { label: 'NAME IN THE NOTEBOOK · KEIKAKU', type: 'psychic', color: 0xf0f0ff, damage: 12, speed: 22, cooldown: 1.05, stun: 1.35, knockback: 1.6 },
+      ultimate: { label: 'JUST AS PLANNED · KEIKAKU', damage: 1.22 },
+      note: 'Marks last longer and counters come out faster; every route still has to be earned.'
     }),
     ultimate: ult({
-      label: 'FINAL VERDICT', behaviour: 'zone', damage: 10, ticks: 3, kbs: 92, launchY: 8,
+      label: 'JUST AS PLANNED', behaviour: 'zone', damage: 10, ticks: 3, kbs: 92, launchY: 8,
       stun: .8, radius: 5.8, range: 20, color: 0xe6e8f2, startup: .7, active: 1.25, recovery: .6,
-      note: 'Marks a zone, sets traps, then triggers an impact inside it. Step out before it lands.'
+      note: 'A marked zone closes the route before the final verdict lands inside it. Step out before it triggers.'
     })
   }),
 
@@ -708,22 +708,22 @@ export const MOVESETS = Object.freeze({
   }),
 
   lord_voldemort: Object.freeze({
-    key: 'lord_voldemort', style: 'Mage · curses and ranged pressure',
-    lights: ['Wand Jab', 'Dark Cross', 'Curse Launcher'],
-    heavy: ['Dark Pulse', 'Forbidden Blast'],
-    aerial: 'Serpent Finish',
+    key: 'lord_voldemort', style: 'Wizard · charms and disarming pressure',
+    lights: ['Wand Jab', 'Disarming Cross', 'Stunning Sweep'],
+    heavy: ['Protego Bash', 'Expelliarmus Lance'],
+    aerial: 'Seeker Finish',
     form: form({
-      id: 'dark-lord-ascendant', label: 'DARK LORD ASCENDANT', aura: 'shadow', color: 0x55ff86,
+      id: 'patronus-charge', label: 'PATRONUS CHARGE', aura: 'holy', color: 0xd8e8ff,
       duration: 9, cost: 48, drain: 5.6, cooldown: 9,
       mods: { speed: 1.04, damage: 1.3, kbs: 1.14, defense: .96, startup: .9, jump: 1 },
-      special: { label: 'AVADA KEDAVRA · ASCENDANT', type: 'curse', color: 0x9dffb8, damage: 30, speed: 38, cooldown: .95, stun: .8, knockback: 9.4 },
-      ultimate: { label: 'THE DARK MARK: FINAL RECKONING · ASCENDANT', damage: 1.28 },
-      note: 'Curses hit harder and further, but defence recovery gets worse and spells cost more.'
+      special: { label: 'EXPECTO PATRONUM · PATRONUS', type: 'magic', color: 0xcfe8ff, damage: 30, speed: 38, cooldown: .95, stun: .8, knockback: 9.4 },
+      ultimate: { label: 'EXPECTO PATRONUM: FINAL LIGHT · PATRONUS', damage: 1.28 },
+      note: 'The patronus burns brighter and holds longer, but the recovery stays real.'
     }),
     ultimate: ult({
-      label: 'THE DARK MARK: FINAL RECKONING', behaviour: 'zone', damage: 11, ticks: 3, kbs: 118,
-      launchY: 8.8, stun: .85, radius: 6.2, range: 21, color: 0x7dffa6, startup: .72, active: 1.3, recovery: .66,
-      note: 'A visible sigil marks the zone before the curse and final blast land inside it.'
+      label: 'EXPECTO PATRONUM: FINAL LIGHT', behaviour: 'zone', damage: 11, ticks: 3, kbs: 118,
+      launchY: 8.8, stun: .85, radius: 6.2, range: 21, color: 0xa8d8ff, startup: .72, active: 1.3, recovery: .66,
+      note: 'A silver guardian marks the zone before the final charge sweeps through it.'
     })
   }),
 
@@ -920,11 +920,11 @@ for (const [name, entry] of Object.entries({
   'the flash (barry allen)': 'the_flash_barry_allen', 'aquaman': 'aquaman',
   'doctor strange': 'doctor_strange', 'arnold schwarzenegger': 'arnold_schwarzenegger',
   'goku': 'goku', 'naruto uzumaki': 'naruto_uzumaki', 'vegeta': 'vegeta', 'saitama': 'saitama',
-  'l (death note style)': 'l_death_note_style', 'all might': 'all_might',
+  'light yagami': 'l_death_note_style', 'l (death note style)': 'l_death_note_style', 'all might': 'all_might',
   'edward elric': 'edward_elric', 'levi ackerman': 'levi_ackerman', 'mario': 'mario',
   'luigi': 'luigi', 'kratos': 'kratos', 'link': 'link', 'master chief': 'master_chief',
   'thor': 'thor', 'aang': 'aang', 'madara uchiha': 'madara_uchiha',
-  'hashirama senju': 'hashirama_senju', 'lord voldemort': 'lord_voldemort',
+  'hashirama senju': 'hashirama_senju', 'harry potter': 'lord_voldemort', 'lord voldemort': 'lord_voldemort',
   'sasuke uchiha': 'sasuke_uchiha', 'edna mode': 'edna_mode',
   'captain jack sparrow': 'captain_jack_sparrow', 'spider-man': 'spider_man',
   'iron spider': 'iron_spider',

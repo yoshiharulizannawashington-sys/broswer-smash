@@ -38,7 +38,7 @@ const occurrences = [...mainSource.matchAll(/applyMap\(/g)].length;
 check('applyMap is declared once and called once (inside the guarded wrapper)',
   occurrences === 2 && mainSource.includes('function applyMap(key){'), `found ${occurrences} occurrences`);
 
-const ARENAS = ['valley', 'finalvalley', 'asgard', 'hogwarts', 'deathstar', 'tournament', 'starktower'];
+const ARENAS = ['valley', 'finalvalley', 'asgard', 'hogwarts', 'tournament', 'starktower'];
 let browser;
 try {
   browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--enable-webgl', '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -72,41 +72,41 @@ try {
   const injected = await page.evaluate(() => {
     window.__injectedSkyOriginal = window.__browserSmashApplySky;
     window.__browserSmashApplySky = () => { throw new Error('injected sky failure'); };
-    window.__browserSmashApplyMap('deathstar');
+    window.__browserSmashApplyMap('tournament');
     const failed = { ...window.__browserSmashApplyMapState, legacy: window.__browserSmashApplyMapError };
     window.__browserSmashApplySky = window.__injectedSkyOriginal;
     delete window.__injectedSkyOriginal;
-    window.__browserSmashApplyMap('deathstar');
+    window.__browserSmashApplyMap('tournament');
     return { failed, recovered: { ...window.__browserSmashApplyMapState }, history: window.__browserSmashApplyMapHistory.slice(-4) };
   });
   const failed = injected.failed;
   check('an injected arena-switch failure is recorded as a failure',
-    failed.ok === false && failed.key === 'deathstar' && /injected sky failure/.test(String(failed.error)),
+    failed.ok === false && failed.key === 'tournament' && /injected sky failure/.test(String(failed.error)),
     JSON.stringify(failed));
   check('the failure carries arena context for diagnosis',
-    String(failed.context || '').includes('deathstar') && String(failed.context || '').includes('injected sky failure'),
+    String(failed.context || '').includes('tournament') && String(failed.context || '').includes('injected sky failure'),
     String(failed.context));
   check('the legacy error hook still reports the failure', /injected sky failure/.test(String(failed.legacy)), String(failed.legacy));
   check('the failure is preserved in the switch history',
     injected.history.some(entry => entry.ok === false && /injected sky failure/.test(String(entry.error))),
     JSON.stringify(injected.history.map(e => ({ key: e.key, ok: e.ok, error: e.error }))));
   check('a later successful switch is NOT reported as failed by the earlier error',
-    injected.recovered.ok === true && injected.recovered.error === null && injected.recovered.key === 'deathstar',
+    injected.recovered.ok === true && injected.recovered.error === null && injected.recovered.key === 'tournament',
     JSON.stringify(injected.recovered));
 
   // ---------------------------------------------------------------- no compounding on repeat switches
   const repeats = [];
   for (let i = 0; i < 3; i++) {
     await page.evaluate(() => window.__browserSmashApplyMap('valley'));
-    repeats.push(await page.evaluate(() => { window.__browserSmashApplyMap('deathstar'); return window.__browserSmashFloorState(); }));
+    repeats.push(await page.evaluate(() => { window.__browserSmashApplyMap('tournament'); return window.__browserSmashFloorState(); }));
   }
   const floorIds = new Set(repeats.map(r => r.uuid));
   const floorColors = new Set(repeats.map(r => r.color));
-  check('repeated Death Star switches reuse one floor material (no compounding)',
+  check('repeated tournament switches reuse one floor material (no compounding)',
     floorIds.size === 1 && floorColors.size === 1, JSON.stringify(repeats.map(r => `${r.uuid}/${r.color}`)));
   const hogwartsFloor = await page.evaluate(() => { window.__browserSmashApplyMap('hogwarts'); return window.__browserSmashFloorState(); });
   check('other arenas keep their own floor material',
-    hogwartsFloor.uuid !== repeats[0].uuid, `hogwarts=${hogwartsFloor.uuid} deathstar=${repeats[0].uuid}`);
+    hogwartsFloor.uuid !== repeats[0].uuid, `hogwarts=${hogwartsFloor.uuid} tournament=${repeats[0].uuid}`);
 
   const unexpected = pageErrors.filter(message => !/injected sky failure/.test(message));
   check('no uncaught page errors during the sweep', unexpected.length === 0, unexpected.slice(0, 2).join(' | '));

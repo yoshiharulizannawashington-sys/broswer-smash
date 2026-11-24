@@ -17,8 +17,10 @@ export const SKY_PRESETS = {
   starktower: { top: '#20365c', horizon: '#f0a269', ground: '#2b2f3a', sun: '#ffcf9c', sunHeight: .4, sunSize: .1 },
   asgard: { top: '#28477e', horizon: '#ffe2a6', ground: '#4a4a52', sun: '#fff4cd', sunHeight: .5, sunSize: .11 },
   hogwarts: { top: '#2b3f63', horizon: '#c8c6c0', ground: '#3c3a33', sun: '#f4ecd6', sunHeight: .6, sunSize: .09 },
-  deathstar: { top: '#1b2230', horizon: '#5b6b82', ground: '#1a2029', sun: '#cfe0ff', sunHeight: .72, sunSize: .07 },
   konoha: { top: '#2e6fb4', horizon: '#e4ecec', ground: '#45583a', sun: '#fff6dd', sunHeight: .62, sunSize: .085 },
+  skyloft: { top: '#2864b8', horizon: '#d7ecff', ground: '#65778a', sun: '#fff3d2', sunHeight: .58, sunSize: .1 },
+  mariokart: { top: '#1f86cf', horizon: '#dff4ff', ground: '#237f82', sun: '#fff8d7', sunHeight: .65, sunSize: .09 },
+  konoha_overlook: { top: '#2e6fb4', horizon: '#e4ecec', ground: '#45583a', sun: '#fff6dd', sunHeight: .58, sunSize: .085 },
   volcano: { top: '#321c22', horizon: '#d8642c', ground: '#241a18', sun: '#ffb070', sunHeight: .38, sunSize: .12 },
   ice: { top: '#3a5f85', horizon: '#dcecf7', ground: '#54697a', sun: '#eaf6ff', sunHeight: .56, sunSize: .1 },
   neon: { top: '#140f2c', horizon: '#7d3fd0', ground: '#1a1428', sun: '#ff6fd2', sunHeight: .46, sunSize: .12 }
@@ -94,12 +96,11 @@ const SKY_HDRI = {
   tournament: '/assets/skies/kloofendal_48d_partly_cloudy_puresky_1k.hdr',
   asgard: '/assets/skies/kloofendal_48d_partly_cloudy_puresky_1k.hdr',
   hogwarts: '/assets/skies/kloofendal_48d_partly_cloudy_puresky_1k.hdr',
-  deathstar: '/assets/skies/kloofendal_48d_partly_cloudy_puresky_1k.hdr'
 };
 // A real HDR sky is photographically exposed, so its diffuse contribution is much dimmer than the
 // generated gradient it replaced. These multipliers restore arena readability per stage without
 // touching the renderer's global exposure (which is driven per theme by `lamp.exposure`).
-const SKY_INTENSITY = { valley: 1.55, tournament: 1.5, asgard: 1.6, hogwarts: 1.5, deathstar: 1.45 };
+const SKY_INTENSITY = { valley: 1.55, tournament: 1.5, asgard: 1.6, hogwarts: 1.5 };
 
 // --- Developer environment A/B --------------------------------------------------------------
 // Three selectable environment sources, used to compare the fallback against the real sky with the

@@ -25,7 +25,7 @@ const CLASS_PATTERNS = {
 // must not receive a matte weave on top of their emissive material.
 // Note: whole words only. A bare /lash/ matched "the_flash_barry_allen Armor" and left
 // The Flash as the one fighter in the roster with no surface detail at all.
-const SKIP = /(eyelash|eyebrow|eye|iris|pupil|glow|energy|emissive|lens|core|beam|flare|hair|fur|beard|tooth|tongue|blade edge|light)/;
+const SKIP = /(eyelash|eyebrow|eye|iris|pupil|glow|energy|emissive|lens|core|beam|flare|hair|fur|beard|tooth|tongue|blade edge|light|outline)/;
 const ARMOR = /(armor|plate|helmet|gauntlet|boot|greave|pauldron|bracer|shoulder|knee|belt|buckle|metal|steel|iron|chrome|visor|mask|shield|gauntlet)/;
 const FABRIC = /(suit|cloth|fabric|tunic|cape|robe|gi |gi$|kimono|wrap|pants|trouser|scarf|skirt|sash|tabard|shirt|jacket|coat|sleeve|hood|undersuit|spandex)/;
 const LEATHER = /(leather|strap|harness|boot shaft|glove|handle|grip|sheath|pouch)/;
@@ -183,9 +183,40 @@ function enhanceMaterial(source) {
   if (cached) return cached;
   const kind = classifyMaterial(source.name);
   if (!kind) { state.enhanced.set(source, source); return source; }
+  // Basic/line/shader materials do not carry the normal-map uniforms that the generated
+  // surface pass writes. Saitama's original Sketchfab body ships MeshBasicMaterial surfaces;
+  // assigning a normal map there made every frame throw in refreshUniformsCommon. Only enhance
+  // lit materials that can actually sample the generated maps.
+  if (!source.isMeshBasicMaterial && !source.isMeshStandardMaterial && !source.isMeshPhysicalMaterial
+    && !source.isMeshLambertMaterial && !source.isMeshPhongMaterial) {
+    state.enhanced.set(source, source);
+    return source;
+  }
   // Materials are shared between the prefab template and every fighter cloned from
   // it, so swap in a clone before touching maps or one fighter would repaint the roster.
-  const material = source.clone();
+  // Some supplied bodies (Saitama's Sketchfab export) ship MeshBasicMaterial, which has no
+  // lighting or normal/roughness uniforms. Promoting those to a lit Standard material keeps the
+  // authored colour and base-colour map while making the generated detail usable; leaving them
+  // basic was why the largest imported body was the only roster entry with no surface detail.
+  const material = source.isMeshBasicMaterial
+    ? new THREE.MeshStandardMaterial({
+      name: source.name,
+      color: source.color?.clone?.() || new THREE.Color(0xffffff),
+      map: source.map || null,
+      alphaMap: source.alphaMap || null,
+      transparent: Boolean(source.transparent),
+      opacity: source.opacity ?? 1,
+      alphaTest: source.alphaTest || 0,
+      side: source.side,
+      vertexColors: Boolean(source.vertexColors),
+      fog: source.fog !== false,
+      depthWrite: source.depthWrite,
+      depthTest: source.depthTest,
+      toneMapped: source.toneMapped,
+      metalness: .04,
+      roughness: .82
+    })
+    : source.clone();
   const maps = pattern(kind);
   if (!material.map) material.map = maps.albedoTexture;
   if (!material.normalMap) {

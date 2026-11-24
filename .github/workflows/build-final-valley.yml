@@ -126,7 +126,6 @@ jobs:
           arena_specs = {
               "asgard": ("Asgardian golden city", 80),
               "helicarrier": ("Helicarrier and Manhattan", 80),
-              "deathstar": ("Two connected Death Star rooms", 80),
               "hogwarts": ("Hogwarts Great Hall", 80),
               "tournament": ("World Martial Arts Tournament", 80),
           }

@@ -10,7 +10,7 @@ You are working in the existing Browser Smash repository, not a new game. Preser
 3. Make those fighters animate, move, fight, and use their signature attacks through the existing game systems.
 4. Generalize the asset pipeline for future roster models.
 5. Improve the world renderer and camera without destabilizing gameplay.
-6. Later integrate large environment packages (New York/Avengers Tower, Hogwarts, Death Star, Valley of the End, and other supplied maps).
+6. Later integrate large environment packages (New York/Avengers Tower, Hogwarts, Konoha, Valley of the End, and other supplied maps).
 
 The pulled-back cinematic camera and high-quality 3D environments are long-term non-negotiable goals, but character integration is the current priority. Do not spend the first pass building every future world.
 
@@ -44,7 +44,6 @@ The repository already contains environment/Blender assets, including:
 - `public/assets/character_weapons.glb`
 - `public/assets/final_valley.glb`
 - `public/assets/arenas/asgard.glb`
-- `public/assets/arenas/deathstar.glb`
 - `public/assets/arenas/helicarrier.glb`
 - `public/assets/arenas/hogwarts.glb`
 - `public/assets/arenas/tournament.glb`
@@ -93,7 +92,7 @@ The current bake script authors procedural starter animations based on rig/bone-
 - Preserve the working direct Three.js renderer. Do not re-enable previously problematic post-processing blindly; verify actual rendering after any pipeline change.
 - Keep cache-busting query versions consistent across main module imports, InputManager dependencies, and both HTML entrypoints when the project requires it.
 - Preserve existing arenas and their procedural content.
-- Later environments should use supplied real assets when available and include terrain/architecture detail, PBR materials, lighting, atmospheric depth, collision proxies, scale/LOD strategy, and performance checks. Future targets include a NYC skyline with a major Avengers Tower landmark, Hogwarts Castle, Death Star interiors/exteriors, and Valley of the End. Do not mislabel a prototype as a finished photorealistic world.
+- Later environments should use supplied real assets when available and include terrain/architecture detail, PBR materials, lighting, atmospheric depth, collision proxies, scale/LOD strategy, and performance checks. Future targets include a NYC skyline with a major Avengers Tower landmark, Hogwarts Castle, Konoha, and Valley of the End. The Death Star is permanently cancelled and archived under `archive/cancelled/death-star/`. Do not mislabel a prototype as a finished photorealistic world.
 - Large map assets should be loaded on demand, not all loaded simultaneously.
 
 ## Safe workflow

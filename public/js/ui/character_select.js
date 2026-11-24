@@ -119,7 +119,7 @@ function hex(color) {
  * @param {(key: string) => void} options.onArena
  * @param {(mode: '1p'|'2p') => void} options.onMode
  */
-export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas = [], worlds = [], rules = {}, difficulty = 'fighter', modes = [], onFighter, onArena, onMode, onRules, onDifficulty } = {}) {
+export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas = [], worlds = [], rules = {}, difficulty = 'fighter', modes = [], onFighter, onArena, onMode, onRules, onDifficulty, displayNameFor = name => name } = {}) {
   const menu = document.querySelector('#menu');
   const panel = menu?.querySelector('.panel') || menu;
   const p1Select = document.querySelector('#p1Character');
@@ -308,7 +308,7 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     return `<button class="bs-card" data-fighter="${name.replace(/"/g, '&quot;')}" data-side-label="P2"
       style="--c:${ARCHETYPE_COLORS[archetype] || '#54eaff'}">
       <span class="bs-no">${number} · ${String(archetype).toUpperCase()}</span>
-      <span class="bs-name">${name}</span>
+      <span class="bs-name">${displayNameFor(name)}</span>
       <span class="bs-tag">${special || 'SIGNATURE MOVE'}</span>
     </button>`;
   }).join('');
@@ -317,14 +317,15 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
   // Per-fighter move list: what the selected fighter's buttons actually do, with the form and
   // ultimate costs from the same data the simulation reads.
   function moveListMarkup(name) {
+    const shown = displayNameFor(name);
     const set = MOVESETS[slugOf(name)];
-    if (!set) return `<div class="bs-note">No moveset data for ${name || 'this fighter'}.</div>`;
+    if (!set) return `<div class="bs-note">No moveset data for ${shown || 'this fighter'}.</div>`;
     const key = label => `<span class="bs-keycap">${label}</span>`;
     const form = set.form;
     const ult = set.ultimate;
     const signature = specials[slugOf(name)]?.label || 'Signature move';
     return `<div>
-      <h4>${String(name).toUpperCase()}</h4>
+      <h4>${String(shown).toUpperCase()}</h4>
       <p><b>LIGHT</b> ${[...set.lights, ...(LIGHT_EXTENSIONS[slugOf(name)] || [])].join(' → ')}</p>
       <p><b>HEAVY</b> ${set.heavy.join(' · ')}</p>
       <p><b>AIR</b> ${set.aerial}</p>
@@ -376,8 +377,8 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     if (ruleHint) ruleHint.textContent = state.mode === '2p'
       ? 'Local two-player match: there is no CPU on the other side, so CPU skill is not used.'
       : 'CPU skill changes how the opponent reads a startup, guards, dodges and spends meter — never its health or damage.';
-    const p1Name = state.p1 || '—';
-    const p2Name = state.p2 || '—';
+    const p1Name = displayNameFor(state.p1) || '—';
+    const p2Name = displayNameFor(state.p2) || '—';
     root.querySelector('[data-slot="p1"]').textContent = p1Name;
     root.querySelector('[data-slot="p2"]').textContent = (state.mode === '2p' ? '' : 'CPU · ') + p2Name;
     root.querySelector('[data-side="p2"]').firstChild.textContent = state.mode === '2p' ? 'PLAYER 2' : 'CPU RIVAL';
@@ -395,7 +396,7 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
         for (const tab of root.querySelectorAll('[data-worldtab]')) tab.classList.toggle('on', tab.dataset.worldtab === state.worldFilter);
       }
     }
-    if (matchline) matchline.innerHTML = `<b>${p1Name}</b> vs <b>${p2Name}</b> · <b>${arenaLabel}</b> · first to 2 rounds · ${state.mode === '2p' ? 'local two-player' : 'solo vs CPU'}`;
+    if (matchline) matchline.innerHTML = `<b>${p1Name}</b> vs <b>${p2Name}</b> · <b>${arenaLabel}</b> · first to ${state.rules.roundsToWin} round${state.rules.roundsToWin === 1 ? '' : 's'} · ${state.rules.roundSeconds}s · ${state.mode === '2p' ? 'local two-player' : 'solo vs CPU'}`;
     for (const badge of root.querySelectorAll('[data-stepbadge]')) badge.classList.toggle('on', Number(badge.dataset.stepbadge) === state.step);
     for (const step of root.querySelectorAll('.bs-step')) step.hidden = Number(step.dataset.step) !== state.step;
     navBack.hidden = state.step === 1;
@@ -409,7 +410,7 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     // The preview follows the side being picked, and only renders while step 1 is on screen.
     const previewName = state.side === 'p1' ? state.p1 : state.p2;
     const previewLabel = root.querySelector('[data-role="previewname"]');
-    if (previewLabel) previewLabel.textContent = String(previewName || '').toUpperCase();
+    if (previewLabel) previewLabel.textContent = String(displayNameFor(previewName) || '').toUpperCase();
     const previewSide = root.querySelector('[data-role="previewside"]');
     if (previewSide) {
       const isP1 = state.side === 'p1';
@@ -421,7 +422,7 @@ export function initCharacterSelect({ roster, specials = {}, themes = {}, arenas
     if (state.step === 1 && !root.hidden) {
       const view = ensurePreview();
       view?.setActive(true);
-      view?.show(slugOf(previewName), previewName);
+      view?.show(slugOf(previewName), displayNameFor(previewName));
     } else {
       preview?.setActive(false);
     }

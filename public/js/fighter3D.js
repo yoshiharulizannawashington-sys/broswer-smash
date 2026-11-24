@@ -17,6 +17,7 @@ import {
 } from './combat/flight.js';
 import { castAbility } from './combat/ability_runtime.js';
 import { lightLabelFor, heavyLabelFor } from './combat/ability_kit.js';
+import { WEAPON_CARRY_IDS } from './anim/weapon_carry.js';
 
 export default class Fighter3D {
   constructor({ name = 'Fighter', model, weight = 85, player = false }) {
@@ -31,6 +32,12 @@ export default class Fighter3D {
     this.wasGrounded = true;
     this.hitstun = 0;
     this.hurtboxRadius = 0.7;
+    // Per-identity height profile (character_scale.js). The constructor default is a neutral
+    // placeholder; main.js applies the real profile before the first simulation step.
+    this.height = 2.05;
+    this.heightScale = 1;
+    this.hurtboxHeight = 1.9;
+    this.cameraHeight = 1.15;
     this.attackQueue = [];
     this.attackBuffer = 0;
     this.hitboxes = [];
@@ -39,6 +46,11 @@ export default class Fighter3D {
     this.facingZ = 0;
     this.aiTimer = 0;
     this.specialCooldown = 0;
+    // Link's bow is a held aim/draw state, not an instant projectile: special raises the bow,
+    // holding draws the arrow, releasing fires it. `release` keeps the prop visible through the
+    // shot pose before the sword and shield return.
+    this.linkBow = { aiming: false, draw: 0, release: 0 };
+    this.bowAiming = false;
     this.grabCooldown = 0;
     this.dodgeTimer = 0;
     this.attackPose = 0;
@@ -84,6 +96,12 @@ export default class Fighter3D {
     this.flightMode = false;
     this.canWebSwing = false;
     this.webSwinging = false;
+    // Iron Spider's four native appendages can be folded against the backpack when the fighter
+    // is not committed to an action. The pose itself is a native-bone overlay; this flag is the
+    // only gameplay state, so the mesh, skeleton and all clips remain untouched.
+    this.ironSpiderStowed = false;
+    // Thor/Sephiroth back-stow flag. Presentation-only; attacks and guards clear it.
+    this.weaponStowed = false;
     this.webSwingAnchor = null;
     this.webSwingLine = null;
     this.webSwingGlowLine = null;
@@ -136,6 +154,48 @@ export default class Fighter3D {
     // test can tell a lost key apart from a body that is not on human input.
     if (typeof window !== 'undefined' && window.__browserSmashInputTrace) {
       window.__browserSmashInputTrace(this, inputs);
+    }
+    // ---- Iron Spider appendage stow / deploy ---------------------------------------------
+    // Stow is a neutral-state presentation: it is refused while the body is committed to a
+    // hitstun, air state, grab or attack, and every attack/jump/dodge deploys first. That keeps
+    // the folded silhouette readable without changing a single hitbox or source clip.
+    if (this.identityKey === 'iron_spider') {
+      const busy = this.hitstun > 0 || this.ko || this.casting
+        || this.grabTarget || this.grabbedBy || this.attackQueue.length > 0
+        || this.flightMode || !this.isGrounded;
+      if (busy) {
+        this.ironSpiderStowed = false;
+      } else if (inputs.stow) {
+        this.ironSpiderStowed = !this.ironSpiderStowed;
+        window.showCombatCallout?.(this.ironSpiderStowed ? 'APPENDAGES STOWED' : 'APPENDAGES DEPLOYED',
+          this.ironSpiderStowed ? '#a9d8ff' : '#ffd36a');
+      }
+      if (this.ironSpiderStowed && (inputs.attack || inputs.special || inputs.special2
+        || inputs.special3 || inputs.special4 || inputs.special5 || inputs.grab
+        || inputs.ultimate || inputs.transform || inputs.jump || inputs.dodge)) {
+        this.ironSpiderStowed = false;
+      }
+    }
+    // ---- weapon carry / stow ------------------------------------------------------------
+    // G is free for these two fighters (it is the web-swing key only on web-capable bodies).
+    // Stowing is refused while committed to an attack, hit, air state or grab; the next combat
+    // input draws the weapon before the pose layer sees the state.
+    if (WEAPON_CARRY_IDS.has(this.identityKey)) {
+      const busy = this.hitstun > 0 || this.ko || this.casting
+        || this.grabTarget || this.grabbedBy || this.attackQueue.length > 0
+        || this.flightMode || !this.isGrounded || this.dodgeTimer > 0 || this.guardBreak > 0;
+      if (busy) {
+        this.weaponStowed = false;
+      } else if (inputs.stow) {
+        this.weaponStowed = !this.weaponStowed;
+        window.showCombatCallout?.(this.weaponStowed ? 'WEAPON STOWED' : 'WEAPON DRAWN',
+          this.weaponStowed ? '#a9c8ff' : '#ffd36a');
+      }
+      if (this.weaponStowed && (inputs.attack || inputs.special || inputs.special2
+        || inputs.special3 || inputs.special4 || inputs.special5 || inputs.ultimate
+        || inputs.transform || inputs.shield || inputs.jump || inputs.dodge)) {
+        this.weaponStowed = false;
+      }
     }
     // ---- grabbed: the victim is held, can struggle, and otherwise cannot act -------------
     if (this.grabbedBy) {
@@ -252,7 +312,7 @@ export default class Fighter3D {
     // The walkable surface under the fighter right now, not the one it stood on last frame.
     // A cached height snapped a fighter that walked off a balcony or teleported a floor down
     // straight back up onto the old floor, which made every multi-floor interior (the Hogwarts
-    // range, the Death Star catwalks) impossible to descend.
+    // range, elevated catwalks) impossible to descend.
     const floor = this.layout
       ? groundHeightAt(this.position.x, this.position.z, this.layout, this.position.y + .08)
       : (this.groundLevel || 0);
@@ -298,11 +358,81 @@ export default class Fighter3D {
       this.position.x = THREE.MathUtils.clamp(this.position.x, this.roamMode ? -125 : -17, this.roamMode ? 125 : 17);
       this.position.z = THREE.MathUtils.clamp(this.position.z, this.roamMode ? -125 : -8, this.roamMode ? 125 : 8);
     }
-    this.velocity.x *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
-    this.velocity.z *= Math.pow(this.isGrounded ? (this.roamMode ? 0.91 : 0.84) : 0.992, dt * 60);
+    // Bleed a little momentum, but not while the movement input is still driving the body: a
+    // 0.91/frame ground drag multiplied against the acceleration target capped sustained speed
+    // around 10.9 m/s, below the 11.5 m/s sprint threshold. Wonder Woman's higher acceleration
+    // just crossed it; Thor and Saitama could select sprint mode but never select the sprint clip.
+    // A light drag still lets knockback and dashes settle without overriding the locomotion profile.
+    const groundDrag = this.isGrounded ? (this.roamMode ? 0.97 : 0.95) : 0.992;
+    this.velocity.x *= Math.pow(groundDrag, dt * 60);
+    this.velocity.z *= Math.pow(groundDrag, dt * 60);
     this.updateProceduralPose(inputs, dt);
     this.updateAttackQueue(dt);
     this.updateHitboxes(dt);
+  }
+
+  /**
+   * Link's bow: raise on press, draw while held, release a real projectile on the button-up.
+   * The arrows are ordinary game projectiles (collision, damage, stun and knockback unchanged);
+   * the only new part is the visible nocked arrow and the draw-scaled shot origin.
+   */
+  updateLinkBow(input, dt) {
+    const bow = this.linkBow;
+    bow.release = Math.max(0, bow.release - dt);
+    const canAim = this.hitstun <= 0 && this.guardBreak <= 0 && !this.ko;
+    const wants = Boolean(input.specialHeld ?? input.special) && canAim;
+    if (wants && this.specialCooldown <= 0 && !bow.aiming) {
+      bow.aiming = true;
+      bow.draw = 0;
+      window.showCombatCallout?.('BOW · DRAW', '#ffe8a6');
+    }
+    if (bow.aiming) {
+      if (wants) bow.draw = Math.min(1, bow.draw + dt * 1.55);
+      else {
+        const draw = bow.draw;
+        bow.aiming = false;
+        bow.release = .22;
+        if (canAim) this.fireLinkArrow(draw);
+        bow.draw = 0;
+      }
+    }
+    this.bowAiming = bow.aiming;
+    const userData = this.model?.userData;
+    if (userData) {
+      const holding = bow.aiming || bow.release > 0;
+      if (userData.linkBow) userData.linkBow.visible = holding;
+      if (userData.linkArrow) {
+        userData.linkArrow.visible = bow.aiming && bow.draw > .035;
+        // Nock sits at the bow's centre and is pulled back along -Z as the string draws.
+        userData.linkArrow.position.z = -.20 * bow.draw;
+      }
+      // The visible bow replaces the sword and shield for the whole draw/release window.
+      if (userData.equippedWeaponRight) userData.equippedWeaponRight.visible = !holding;
+      if (userData.equippedWeaponLeft) userData.equippedWeaponLeft.visible = !holding;
+      if (userData.linkAim) {
+        userData.linkAim.active = bow.aiming;
+        userData.linkAim.draw = bow.draw;
+        userData.linkAim.holding = holding;
+      }
+    }
+  }
+
+  fireLinkArrow(draw = 1) {
+    const profile = this.specialProfile || {};
+    const power = .45 + .55 * THREE.MathUtils.clamp(draw, 0, 1);
+    const spawn = {
+      ...profile, source: 'special', type: 'arrow', originPolicy: 'bow',
+      damage: (profile.damage || 15) * power,
+      speed: (profile.speed || 38) * (.72 + .28 * power)
+    };
+    window.spawnProjectile?.(this, spawn);
+    this.specialCooldown = profile.cooldown || .75;
+    this.attackPose = Math.max(this.attackPose, .8);
+    this.lastBowShot = {
+      at: Math.round((this.t || 0) * 1000), draw: +draw.toFixed(3), damage: spawn.damage,
+      profile: profile.label || 'HERO ARROW'
+    };
+    window.showCombatCallout?.('HERO ARROW', '#ffe8a6');
   }
 
   /**
@@ -328,6 +458,7 @@ export default class Fighter3D {
   }
 
   handleInput(i, dt) {
+    if (this.identityKey === 'link') this.updateLinkBow(i, dt);
     // An authored signature fires on its release frame, not on the key press: the projectile is
     // held for the wind-up the clip actually plays so the beam leaves the palms as they punch,
     // instead of the body gathering energy after the shot has already flown.
@@ -364,6 +495,10 @@ export default class Fighter3D {
     const len = Math.hypot(x, z);
     const nx = len ? x / len : 0;
     const nz = len ? z / len : 0;
+    // The presentation layers read the processed input, not just the resulting velocity: a start
+    // step and a stop brace are anticipations, so they must happen before acceleration/braking
+    // has moved the body. Camera-relative input is already resolved into world x/z here.
+    this.lastInput = { moving: len > 0.05, x: nx, z: nz, run: !!i.run, sprint: !!i.sprint };
     // Per-character locomotion (combat/locomotion.js). This replaced one generic speed table with
     // two hard-coded identity checks (The Flash, Spider-Man) and nothing else: every identity now
     // has its own top speeds, acceleration, braking, air control, jump and reversal commitment.
@@ -374,10 +509,21 @@ export default class Fighter3D {
     // profile instead of borrowing air control from the locomotion table.
     const flying = this.canFly && this.flightMode && this.hitstun <= 0;
     const flightProfile = flying ? flightFor(this) : null;
-    const mode = i.sprint ? 'sprint' : i.run ? 'run' : 'walk';
+    // Shift is the sprint input, but it is also the dash input. Without a ramp the dash ended
+    // already above the sprint speed threshold, so the authored `run` clip was never selected on
+    // a held Shift: the body went dodge -> sprint and the run lane was unreachable. Hold the run
+    // target for a short beat first; a tap still dashes, and a held Shift builds into sprint.
+    const sprintHold = i.sprint ? (this.sprintHold || 0) + dt : 0;
+    this.sprintHold = sprintHold;
+    const mode = i.sprint && sprintHold >= .7 ? 'sprint' : i.run ? 'run' : 'walk';
     const topSpeed = flying
       ? flightSpeed(flightProfile, { boost: i.sprint || i.run }) * (this.transformMods?.speed || 1)
-      : speedTarget(profile, { mode, roam: this.roamMode })*(this.transformMods?.speed||1);
+      : speedTarget(profile, { mode, roam: this.roamMode })*(this.transformMods?.speed||1)*(this.bowAiming?.38:1);
+    // Read-only movement diagnostics for the A1 state probe: names the mode the game selected
+    // and the target it is actually integrating toward, so a clip mismatch cannot be mistaken for
+    // a bad sample.
+    this.lastLocomotion = { mode, topSpeed: +topSpeed.toFixed(2), hold: +sprintHold.toFixed(2),
+      grounded: !!this.isGrounded, hitstun: +(this.hitstun || 0).toFixed(2), speedMod: this.transformMods?.speed || 1 };
     this.moveBlend = THREE.MathUtils.damp(this.moveBlend, len ? 1 : 0, len ? 5.5 : 9, dt);
     this.runBlend = THREE.MathUtils.damp(this.runBlend, len ? (i.sprint ? 1 : i.run ? .65 : .25) : 0, 8, dt);
 
@@ -464,7 +610,7 @@ export default class Fighter3D {
       window.combatAudio?.play?.('dodge', { position: this.position });
     }
 
-    if (i.attack && this.guardBreak <= 0 && !formLocked) {
+    if (i.attack && this.guardBreak <= 0 && !formLocked && !this.bowAiming) {
       // A buffered link has to survive the previous attack's recovery. At this renderer's frame
       // pacing a press can wait most of a second before the next move is allowed to start; keeping
       // only the .62 s attack buffer let the combo window expire in between, so the queued press
@@ -512,7 +658,13 @@ export default class Fighter3D {
       // follow-ups real instead of pressing buttons after the animation ends.
       const current = this.attackQueue[this.attackQueue.length - 1] || null;
       const inRecovery = current ? current.t >= current.end : true;
-      const free = !current || (inRecovery && canCancel(current.id || current.kind, moveId));
+      // An aerial string may cancel out of the previous air attack's recovery window as soon as
+      // its active frames end. Without this, a heavy/fast body lands before the next queued air
+      // press is allowed to start, and the third press resolves as a grounded light instead of the
+      // air finisher. Ground chains keep their existing full-recovery cancel rule.
+      const aerialChain = aerial && current?.aerial === true
+        && canCancel(current.id || current.kind, moveId);
+      const free = !current || ((inRecovery || aerialChain) && canCancel(current.id || current.kind, moveId));
       if (free) {
         this.attackBuffer = 0;
         this.comboStep = nextStep;
@@ -584,7 +736,7 @@ export default class Fighter3D {
       }
     }
 
-    if (i.grab && this.grabCooldown <= 0 && this.attackQueue.length === 0 && this.guardBreak <= 0 && !formLocked) {
+    if (i.grab && this.grabCooldown <= 0 && this.attackQueue.length === 0 && this.guardBreak <= 0 && !formLocked && !this.bowAiming) {
       // Directional throw: the direction held as the grab starts decides where the victim goes.
       this.grabAim = (i.vertical === 1 || i.up) ? 'up' : (i.vertical === -1 || i.down) ? 'down' : 'forward';
       this.attackQueue.push({ ...buildAttack({ moveId: 'grab', fighter: this }), aim: this.grabAim });
@@ -593,7 +745,7 @@ export default class Fighter3D {
       this.activeMoveId = 'grab';
     }
 
-    if (i.special && this.specialCooldown <= 0 && this.guardBreak <= 0 && !formLocked) {
+    if (i.special && this.identityKey !== 'link' && this.specialCooldown <= 0 && this.guardBreak <= 0 && !formLocked) {
       const profile=this.specialProfile||{};
       // A web-slinger's signature is not automatically a projectile. Spider-Man's Web Zip is a
       // dashStrike and must reach the authored-move resolver; otherwise a web identity's signature
@@ -1005,14 +1157,23 @@ export default class Fighter3D {
     victim.position.z = this.position.z + this.facingZ * 1.25;
     const aim = this.grabAim || 'forward';
     const arc = aim === 'up' ? { x: this.facing * 1.1, y: 12.6, z: this.facingZ * 1.1 }
-      : aim === 'down' ? { x: this.facing * 2.4, y: -9.4, z: this.facingZ * 2.4 }
+      : aim === 'down' ? { x: this.facing * 2.4, y: -13.2, z: this.facingZ * 2.4 }
         : { x: this.facing * 6.4, y: 9.4, z: this.facingZ * 6.4 };
+    if (aim === 'down') {
+      // A spike has to be a real hard knockdown, not a downward velocity applied while the body
+      // is already lying on the floor. Lift the victim clear of the ground for the slam and give
+      // them the hitstun the knockdown/get-up state machine requires; the landing then resolves
+      // through the normal floor clamp and get-up clip.
+      victim.position.y = Math.max(victim.position.y, (victim.groundLevel ?? 0) + 1.4);
+      victim.hitstun = 1.15;
+    }
     victim.velocity.set(arc.x, arc.y, arc.z);
     // Recorded so tests and the HUD can read the throw that actually happened, not a velocity
     // that gravity has already changed by the time anyone looks.
     victim.lastThrow = { aim, ...arc, damage: hit.damage || 16, at: this.t };
     victim.lastHitBy = this;
     victim.isGrounded = false;
+    victim.wasLaunched = true;
     window.combatAudio?.play?.('throw', { position: victim.position });
     this.throwChain++;
     this.comboStep = 0;
@@ -1061,13 +1222,22 @@ export default class Fighter3D {
     dir.normalize();
     const reach = a.reach || (a.kind === 'heavy' ? 1.45 : 1.2);
     const target = (window.fighters || []).find(other => other !== this && other.model?.visible !== false);
+    const bodyScale = Math.max(.62, Math.min(1.35, Number(this.heightScale) || 1));
     const verticalTrack = a.aerial && target
-      ? THREE.MathUtils.clamp((target.position.y - this.position.y) * .82, -2, 4) : 0;
-    const height = (a.aerial ? 1.32 : a.launcher ? 1.38 : 1.25) + verticalTrack;
+      ? THREE.MathUtils.clamp((target.position.y - this.position.y) * .82 * bodyScale, -2, 4) : 0;
+    const height = (a.aerial ? 1.32 : a.launcher ? 1.38 : 1.25) * bodyScale + verticalTrack;
     const pos = this.position.clone().add(dir.clone().multiplyScalar(reach)).add(new THREE.Vector3(0, height, 0));
+    // Use the move's own radius rather than a second hard-coded table here. The base radius is
+    // authored at 2.05 m and is scaled by the fighter's actual height, so Mario's hitbox is
+    // smaller than Hulk's instead of both inheriting the same human-sized volume.
+    const radius = Math.max(.2, (Number(a.radius) || 1.2) * bodyScale);
     this.hitboxes.push({
       pos, owner: this, reach, height, facingDir: dir.clone(),
-      radius: a.aerial ? (a.comboStep>=5 ? 2.45 : a.dive ? 1.5 : 2.05) : a.launcher ? 1.48 : a.kind === 'heavy' ? 1.35 : a.kind === 'slash' ? 1.3 : a.kind === 'grab' ? 1.05 : 1.2,
+      radius,
+      // Preserve the queued move's identity on the resolved hitbox. The combat ledger and the
+      // attack presenter have to name the move that actually came out (Amazon Jab vs Godkiller
+      // Slash), not fall back to the generic `melee` kind.
+      moveId: a.id || a.moveId || null, label: a.label || null,
       damage: a.damage, kbs: a.kbs, launchY: a.launchY || 3.4, aerial: !!a.aerial,
       kind:a.kind||'melee',weaponKind:a.weaponKind||this.model?.userData?.weaponKind||'unarmed',identityKey:this.identityKey||'',
       launcher: !!a.launcher, antiAir: !!a.antiAir, dive: !!a.dive, countering: !!a.countering, comboStep: a.comboStep || this.comboStep, lifetime: a.aerial ? .26 : .15, hit: false
@@ -1117,7 +1287,7 @@ export default class Fighter3D {
           h.hit = true;
           // Cover: a swing does not reach through a wall. The line between the two chests is
           // sampled against the stage's solid volumes, so fighting either side of a wall in
-          // the Death Star or a castle corridor cannot land free hits.
+          // a castle corridor cannot land free hits.
           const coveringLayout = other.layout || this.layout;
           if (coveringLayout) {
             const reachLineEnd = other.position.clone().add(new THREE.Vector3(0, 1, 0));

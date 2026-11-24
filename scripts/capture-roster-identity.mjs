@@ -50,11 +50,17 @@ const server = createServer(async (req, res) => {
     }
     const filePath = resolve(root, relative);
     if (filePath !== root && !filePath.startsWith(root + sep)) { res.writeHead(403); res.end('Forbidden'); return; }
+    // Read before writing the response headers: a missing optional asset (favicon, source map)
+    // must not throw after a 200 has been sent, which used to take down the whole capture server.
+    const body = await readFile(filePath);
     // The content type is not optional: a module script served as octet-stream is blocked, and the
     // page then boots without ever defining the preview handle this harness waits for.
     res.writeHead(200, { 'Content-Type': mime[extname(filePath).toLowerCase()] || 'application/octet-stream' });
-    res.end(await readFile(filePath));
-  } catch { res.writeHead(404); res.end('Not found'); }
+    res.end(body);
+  } catch {
+    if (res.headersSent) { res.end(); return; }
+    res.writeHead(404); res.end('Not found');
+  }
 });
 await new Promise(done => server.listen(0, '127.0.0.1', done));
 const origin = 'http://127.0.0.1:' + server.address().port;
@@ -73,6 +79,17 @@ async function runShard(names, shard) {
   page.on('pageerror', error => errors.push(String(error).split('\n')[0]));
   await page.goto(origin + '/index.html', { waitUntil: 'load' });
   await page.waitForFunction(() => Boolean(window.__browserSmashPreview), null, { timeout: 120_000 });
+  // The preview handle exists while the title screen is up, but its panel is display:none and
+  // has a 0x0 canvas. Open the real select screen before measuring or every capture is empty.
+  await page.evaluate(() => {
+    const title = document.querySelector('#menu');
+    // show() adds the hosting class but does not clear the title/result state classes; while
+    // bb-title remains, CSS keeps the select screen display:none and the canvas measures 0x0.
+    if (title) title.classList.remove('hidden', 'bb-title', 'bb-setup', 'bb-result', 'bb-defeat');
+    window.__browserSmashSelect?.show?.();
+    title?.classList.add('bs-select-open');
+  });
+  await page.waitForTimeout(450);
 
   // Strip to the preview surface at its final size before the first model loads: show() frames
   // against the canvas it can see, so the size cannot change afterwards. The sheet's own CSS rules

@@ -207,7 +207,10 @@ export function createCombatPowers({
 
   function signaturePoint(owner, ahead = 0.9, height = 1.15) {
     const facing = Number(owner?.facing) || 1;
-    return new THREE.Vector3(owner.position.x + facing * ahead, owner.position.y + height, owner.position.z);
+    // Ultimate beats originate from this fighter's own chest/hand height, not a universal
+    // 1.15 m point. Edna's effects were appearing over her head; Hulk's were at his waist.
+    const bodyScale = Math.max(.62, Math.min(1.35, Number(owner?.heightScale) || 1));
+    return new THREE.Vector3(owner.position.x + facing * ahead * bodyScale, owner.position.y + height * bodyScale, owner.position.z);
   }
 
   function signatureBeat(record, beat) {

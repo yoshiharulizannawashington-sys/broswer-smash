@@ -1,11 +1,116 @@
-# Naruto Uzumaki: the imported body, end to end
+# Naruto Uzumaki: from imported body to Naruto Sage
 
-Naruto is no longer a repository-generated stand-in. A creator-published model was downloaded, split
-out of its source pack, given textures and a 19-clip animation set on its own skeleton, installed
-through the existing installer and verified in a live match.
+The production `naruto_uzumaki` slot now mounts the supplied **Naruto Sage** mesh on a project-built
+19-bone skeleton. The full 49-clip shinobi set was retargeted onto that skeleton at 30 fps. The
+previous ronildo.facanha body remains the manifest `rollbackUrl`; its import notes are preserved
+below for rollback and provenance.
 
 Rights are recorded in two places and deliberately narrow: [ATTRIBUTIONS.md](../public/ATTRIBUTIONS.md)
 and the `naruto_uzumaki` entry of the character manifest.
+
+## Current production: Naruto Sage (2026-11-11)
+
+| Field | Value |
+| --- | --- |
+| Production file | `public/models/characters/imported/naruto_sage/naruto_sage_animated.glb` |
+| Size / SHA-256 | 1,121,652 B / `1d660ada83b4ef95f0301c2961806e607e4332683176f69f0f49338e9061a90b` |
+| Source | Naruto Sage by ninjatorent13, CC BY 4.0; archive at `artifacts/asset-fetch/161369399a0d4b6e9657023a1bcbfb31/` |
+| Body | 3 skinned meshes, 5,248 vertices, 4,316 triangles, 3 supplied texture maps |
+| Rig | 19 bones, exact canonical names; 0 unweighted vertices; max 4 influences; 1.80 m; feet at Y=0 |
+| Clips | 49/49: 19 body states, 9 reactions, 20 authored strike/form clips, 1 kunai |
+| A1 record | `artifacts/launch-acceptance/report-naruto-a1-readiness.json` — software-pass core + transformed KO/rematch 2/2; hardware open |
+| Rollback | `/models/characters/naruto_uzumaki/naruto_uzumaki.glb` (old 567-bone body) |
+| Build inputs | `artifacts/naruto-sage/naruto_sage_source.glb`, `artifacts/rig-batch/rigged/naruto_sage/naruto_sage.glb`, `artifacts/rig-batch/rigged/naruto_sage/rig-report.json` |
+
+The static Sage source (277,312 B, 5,080 vertices, 4,316 triangles, T-pose, facing -Y) was packed
+to `naruto_sage_source.glb` and auto-rigged with the `naruto_sage` entry in
+`scripts/autorig_batch.py`: shoulder height 0.75 m, hand target `(0.45, 0.75)`, hip 0.47 m, target
+height 1.80 m. The Blender 4.2.23 rig report records 19 bones, zero unweighted vertices, a maximum
+of four influences, 0.0 left/right symmetry error and deform weights on every limb.
+
+### Retarget
+
+`scripts/rig-clips-to-body.mjs` was run for each of the four shinobi source groups with
+`--append --calibrate-arms`. The retargeter now explicitly maps the Rigify `DEF-spine` chain
+(`DEF-spine` -> pelvis, `.001` -> spine, `.003` -> torso, `.004` -> neck, `.005` -> head) and ranks
+`DEF-*` above `ORG-*`, `MCH-*` and `VIS-*`. Every pass reported **19/19 mapped bones and 0 unresolved
+tracks**. The resulting GLB contains all 49 clips, including the authored forms and `Naruto_kunai`.
+
+### Verification
+
+```bash
+node scripts/test-naruto-baked-glb.mjs  # 91 checks
+npm run test:rig-architecture           # 26/26
+npm run test:animation-coverage # 91
+npm run test:rig-solo                   # Naruto 49/49, full lane 134/134
+npm run test:naruto-49-state            # live browser 49/49
+npm run validate:assets
+npm run build
+```
+
+The live match mounted the Sage file at
+`/models/characters/imported/naruto_sage/naruto_sage_animated.glb` with 3 skinned meshes,
+19 bones and `rig.bound: 19` (no missing bones). The reaction, authored-strike and ability reports
+were all `ready` with `missing: []` and 49 clips. Idle played `Naruto_idle`; an input-driven light
+attack played `authored_light1` and returned to idle. The only console error was an unrelated
+missing `favicon.ico`.
+
+The shared transition policy was later exercised on the same Sage body: `run → walk` recorded a
+phase-synced gait blend, a light hit used a `0.045 s` reaction fade, and recovery used the `0.16 s`
+idle blend. The live transition probe details are in
+[ANIMATION_PIPELINE_READINESS.md](ANIMATION_PIPELINE_READINESS.md).
+
+### A1 acceptance — 2026-11-12
+
+A fresh focused live match (`A0_LABEL=naruto-a1`) passed **37/37** checks with no page errors or
+failed requests. The fresh 49-state matrix passed **49/49** with no missing or extra clips; the
+baked GLB gate passed **91/91**; the solo lane passed **49/49** for Naruto and **134/134** overall.
+All runs used the SwiftShader software renderer.
+
+The signature harness now waits out `FORM.activationLock` (0.62 s) and passes **21/21**: all five
+forms transform, fire their own signature, and exit back to base `RASENSHURIKEN`. Keyboard combat
+passes **18/18** (chain, three heavies, CPU motion mapping). The focused `verify-naruto-a1.mjs`
+probe passes **7/7**: walk is `walk` at 5.51; sprint enters the Shift dodge (`Naruto_jump`) and
+settles to grounded `run` at 12.57; `RASENSHURIKEN` launches from `RightHand` with
+`fallback:false` after its authored wind-up; form exit restores `RASENSHURIKEN`; the ultimate
+returns from `casting:ultimate` to idle with meter spent. A0 supplies the unforced knockdown
+(141.71%, 1.159 hitstun, hit → knockdown → get-up), victory, defeat, rematch and second complete
+match.
+
+This is **A1 software-pass core**, not full acceptance. KO/match-end during a transformation or
+ultimate was not separately asserted; hardware-GPU acceptance is unavailable; and full launch
+sign-off remains open. Evidence: `artifacts/launch-acceptance/report-naruto-a1-readiness.json`,
+`artifacts/launch-acceptance/report-naruto-a1.json`, `artifacts/a1-naruto/live-a1-probe.json`,
+`artifacts/a1-naruto/signatures.log`, `artifacts/a1-naruto/keyboard-combat.log` and
+`artifacts/naruto-49-state/report.json`.
+
+### Known limitations
+
+The supplied low-poly garment topology has **352 open boundary edges**, above the inspector's
+budget of 80. `scripts/inspect-character-glb.mjs` therefore exits 1 even though skinning, bones and
+clips pass; this is a source-mesh limitation, not an unweighted-rig failure.
+
+The original `Naruto_defeat` finding was a coat/garment seam collapsing to **0.088x** because the
+auto-rig mixed shoulder and thigh influences into two adjacent coat panels. `npm run fix:naruto-coat`
+rewrites those two connected panels to the torso chain (`Spine`/`Chest`/`Hips`/`Neck`) and verifies
+the mesh, accessor layout and target membership before writing. `npm run test:rig-solo` now passes
+Naruto **49/49** clips, with the former coat collapse cleared and the new worst sampled garment edge
+at **0.155x** against the unchanged 0.15x gate. The repaired coat edge itself measures about
+**0.76x**. The full solo lane is **134/134** body clips.
+
+The live browser pass (`npm run test:naruto-49-state`) mounted the patched Sage GLB, played all
+**49/49** clips on the live 19-bone rig, measured zero unresolved tracks and finite motion, and
+captured a 7 x 7 contact sheet. The defeat clip's worst sampled garment edge is **0.1555x** (a
+shoulder/sleeve fold); the repaired coat edge itself is about **0.76x**. The seam is unobstructed in
+`artifacts/naruto-49-state/defeat-coat.png`. The live pass had no page errors and
+no failed asset requests. The source still has 352 open boundary edges, so the GE topology inspection
+remains a source-mesh limitation; the aggregate solo suite's Hulk lane is now structurally clean but
+its four cinematic/static rows remain non-body entries, not failures.
+
+## Historical: previous imported body (rollback)
+
+> The sections from **1. What was acquired** onward describe the superseded 567-bone body. They are
+> retained because that file is still the rollback and its provenance remains part of the record.
 
 ## 1. What was acquired, and how
 

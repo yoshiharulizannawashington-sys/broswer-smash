@@ -228,8 +228,12 @@ export function buildAttack({
   const end = seconds(startup + active) * windup;
   const total = seconds(startup + active + recovery) * windup;
 
+  // The fighter's body scale is a combat dimension, not only a rendering detail: a 1.3 m
+  // fighter must not inherit the same arm/weapon reach as a 2.45 m one. Clamp the ratio so an
+  // extreme model cannot create an unusable hitbox.
+  const bodyScale = Math.max(.62, Math.min(1.35, Number(fighter?.heightScale) || 1));
   const baseReach = move.reachAbsolute != null ? move.reachAbsolute : style.reach * move.reach;
-  const reach = (baseReach + weaponReachBonus * (aerial ? .62 : 1)) * (moveProfile.reach || 1) + (countering ? .25 : 0);
+  const reach = ((baseReach + weaponReachBonus * (aerial ? .62 : 1)) * (moveProfile.reach || 1) + (countering ? .25 : 0)) * bodyScale;
 
   const damage = move.damage * style.damage
     * (aerial ? 1.12 : 1)
@@ -255,6 +259,7 @@ export function buildAttack({
     reach,
     kbs,
     radius: move.radius,
+    bodyScale,
     aerial,
     launcher: !!move.launcher || (!aerial && countering),
     antiAir,

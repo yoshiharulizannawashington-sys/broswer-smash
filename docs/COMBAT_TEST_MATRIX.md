@@ -119,13 +119,13 @@ Status legend: **PASS** · **FAIL** · **PARTIAL** · **NOT RUN** · **NOT IMPLE
 | F5 | Releasing flight lands | grounded at y ≤ 0.01 | matched | PASS |
 | F6 | Fighter placed inside a wall is ejected | outside volume | matched | PASS |
 | F7 | Flight into a wall with the stick held | no penetration | — | PARTIAL (covered by F6 + arena collision checks, not scripted as a flight input) |
-| F8 | Walk/run/jump/land on two real maps | working | `test:gameplay`, `test:explore`, mechanics on Valley + Death Star | PASS |
+| F8 | Walk/run/jump/land on two real maps | working | `test:gameplay`, `test:explore`, mechanics on Valley + Hogwarts | PASS |
 
 ## 9. Projectiles and invulnerability (browser)
 
 | # | Test | Expected | Actual | Status |
 | --- | --- | --- | --- | --- |
-| R1 | Wall in line of fire detected | clear spawn, solid ahead | matched (Death Star) | PASS |
+| R1 | Wall in line of fire detected | clear spawn, solid ahead | matched (Hogwarts) | PASS |
 | R2 | Shot destroyed by geometry | live +1 then removed | 1 → 0 | PASS |
 | R3 | Invulnerable fighter not damaged by a shot | 0 damage | 0 | PASS |
 | R4 | Same shot lands after the window | > 0 | matched | PASS |
@@ -166,7 +166,7 @@ Status legend: **PASS** · **FAIL** · **PARTIAL** · **NOT RUN** · **NOT IMPLE
 | `npm run test:gameplay` | PASS — 48 checks |
 | `npm run test:explore` | PASS — 49 assertions |
 | `npm run test:mechanics` | PASS — 74 assertions |
-| `npm run test:worlds` | PASS — 47,329 assertions across 60 battle locations (block counts unchanged) |
+| `npm run test:worlds` | PASS — 47,329 assertions across 65 battle locations (block counts unchanged) |
 | `npm run test:worlds:browser` | NOT RUN this pass (818-check suite, skipped) |
 | `npm run test:smoke` | NOT RUN this pass |
 | `npm run audit:roster` | NOT RUN this pass |
@@ -248,7 +248,7 @@ that suite (pure data checks, or the live game in headless Chromium) unless stat
 | U10 | Caster regains control when it ends | `casting = null` | null | PASS |
 | U11 | Interrupted before connecting refunds the meter | 100 back | 100 | PASS |
 | U12 | Interrupted ultimate deals no damage | 0 | 0 | PASS |
-| U13 | A wall between fighters blocks the ultimate | `landed:false`, 0 damage | yes (Death Star block) | PASS |
+| U13 | A wall between fighters blocks the ultimate | `landed:false`, 0 damage | yes (Hogwarts block) | PASS |
 | U14 | Cover is detected by the wall query | true | true | PASS |
 | U15 | An ultimate does not feed its own meter | caster unchanged | unchanged (victim still earns) | PASS |
 | U16 | Transformed variant changes label, damage and colour | all three | yes | PASS |
@@ -286,7 +286,7 @@ that suite (pure data checks, or the live game in headless Chromium) unless stat
 | `npm run test:combat` | PASS — 394 checks |
 | `npm run test:gameplay` | PASS — 48 checks |
 | `npm run test:explore` | PASS — 49 assertions |
-| `npm run test:worlds` | PASS — 47,329 assertions across 60 battle locations |
+| `npm run test:worlds` | PASS — 47,329 assertions across 65 battle locations |
 | `node scripts/test-stage-feel.mjs` | PASS — 138 checks across 4 stages (run before the final meter tweak; mechanics + movesets were re-run after) |
 | `node scripts/test-rig.mjs` | PASS — 31/31 |
 | `node scripts/test-iron-spider.mjs` | PASS — 33 checks |
@@ -334,7 +334,7 @@ Commands run for this pass:
 | `bash scripts/run-browser-test.sh scripts/test-gameplay.mjs` | PASS — 48 checks |
 | `bash scripts/run-browser-test.sh scripts/test-explore.mjs` | PASS — 49 assertions |
 | `npm run test:combat` | PASS — 394 checks |
-| `npm run test:worlds` | PASS — 47,329 assertions, 60 battle locations |
+| `npm run test:worlds` | PASS — 47,329 assertions, 65 battle locations |
 | `npm run validate:assets` | PASS — fallbacks confirmed for goku / iron_man / iron_spider |
 | `bash scripts/run-browser-test.sh scripts/probe-boot.mjs` | PASS — no errors through boot, free roam, match, form and ultimate |
 
@@ -381,7 +381,7 @@ Commands run for this pass:
 | `bash scripts/run-browser-test.sh scripts/test-explore.mjs` | PASS — 49 assertions |
 | `bash scripts/run-browser-test.sh scripts/probe-boot.mjs` | PASS — zero page/console errors through boot, roam, match, form, ultimate |
 | `npm run test:combat` | PASS — 394 checks |
-| `npm run test:worlds` | PASS — 47,329 assertions over 60 battle locations |
+| `npm run test:worlds` | PASS — 47,329 assertions over 65 battle locations |
 | `npm run validate:assets` | PASS — 3 optional assets missing, fallbacks confirmed |
 | `npm run test:worlds:browser` | NOT RUN this pass |
 | `npm run test:smoke` | NOT RUN this pass |

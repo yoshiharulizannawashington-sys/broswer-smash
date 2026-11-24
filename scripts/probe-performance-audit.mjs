@@ -158,7 +158,7 @@ try {
 
   // ---- world switching ---------------------------------------------------
   report.worlds = [];
-  for (const key of ['hogwarts', 'deathstar', 'asgard', 'finalvalley', 'valley']) {
+  for (const key of ['hogwarts', 'asgard', 'finalvalley', 'valley']) {
     await page.evaluate(map => {
       const select = document.querySelector('#mapSelect');
       if (!select) return false;

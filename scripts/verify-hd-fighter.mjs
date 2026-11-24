@@ -204,7 +204,9 @@ try {
   check('body carries real texture images', body.texturedMaterials > 0 && body.uniqueTextures > 0, JSON.stringify({ texturedMaterials: body.texturedMaterials, uniqueTextures: body.uniqueTextures }));
   check('body has animation clips wired', (body.clips.length + body.clipsFromModel.length) > 0, JSON.stringify({ clips: body.clips.slice(0, 6), model: body.clipsFromModel.slice(0, 6) }));
   check('body stands on its own origin', body.feetY == null || Math.abs(body.feetY) < 0.2, JSON.stringify({ feetY: body.feetY, height: body.height }));
-  check('a hit lands on the imported body in a real match', after.percent > combat.before, JSON.stringify(after));
+  // `after` is read after the deliberate KO/reset below, so it can legitimately be back at 0.
+  // The landed-hit check must use the percent captured immediately around the real attack.
+  check('a hit lands on the imported body in a real match', combat.after > combat.before, JSON.stringify({ combat, after }));
   check('walk state plays the imported walk clip', walkState.action === 'walk', JSON.stringify(walkState.clips));
   check('run state plays the imported run clip', runState.action === 'run', JSON.stringify(runState.clips));
   check('no page errors', errors.length === 0, errors.join(' | '));

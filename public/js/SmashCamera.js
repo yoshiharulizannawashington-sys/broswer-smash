@@ -58,6 +58,9 @@ export default class SmashCamera {
     // Some rooms are wider than they are deep, so the default camera side (+Z) leaves no
     // room to pull back. A stage can turn the shot along its own long axis instead.
     this.stageYaw = 0;
+    // A landmark stage can open the duel lens toward the skyline. Kept separate from the normal
+    // overhead camera so the other worlds keep their tested framing.
+    this.stageSkyline = false;
     // Reused by the composition solver to project candidate framing into screen space.
     this._probeCamera = new THREE.PerspectiveCamera(46, 1.6, 0.1, 600);
     // Solid volumes the camera must stay out of on large world stages (see setStageBounds).
@@ -188,11 +191,14 @@ export default class SmashCamera {
   /** 0 = close overhead duel framing; ~.18 = pulled-back view for a large arena. */
   setStageTilt(value, scale = 1) {
     this.stageTilt = THREE.MathUtils.clamp(value || 0, 0, .26);
-    this.stageScale = THREE.MathUtils.clamp(scale || 1, 1, 1.8);
+    this.stageScale = THREE.MathUtils.clamp(scale || 1, 1, 3.2);
   }
 
   /** Rotate the pulled-back shot around the fighters, for rooms that are wider than deep. */
   setStageYaw(value) { this.stageYaw = Number.isFinite(value) ? value : 0; }
+
+  /** Open the overhead shot toward a distant skyline landmark. */
+  setStageSkyline(value) { this.stageSkyline = Boolean(value); }
 
   /**
    * Clear line from a candidate camera position to a fighter's chest.
@@ -1330,7 +1336,11 @@ export default class SmashCamera {
       stageFloor, 42) * this.zoom * (1 - this._focusZoom());
     // Look down steeply enough to read as an overhead fighting camera, but not so steeply
     // that a standing fighter is foreshortened into a stub - and lower still on world stages.
-    const elevation = THREE.MathUtils.clamp(.8 - spread * .1 - this.stageTilt, .5, .8);
+    // Landmark stages drop the lens further so the skyline enters above the playable geometry;
+    // the floor prevents a level shot that would turn the duel into a street-level profile.
+    const skylineDrop = this.stageSkyline ? .38 : 0;
+    const elevationFloor = this.stageSkyline ? .16 : .5;
+    const elevation = THREE.MathUtils.clamp(.8 - spread * .1 - this.stageTilt - skylineDrop, elevationFloor, .8);
     const horizontal = reach * Math.sqrt(Math.max(0, 1 - elevation * elevation));
     this.framing.distance = reach;
     this.framing.angle = elevation;
@@ -1373,7 +1383,10 @@ export default class SmashCamera {
     const altitudeLift = THREE.MathUtils.clamp(altitude * .72, 0, 34);
 
     if (mode === 'overhead') {
-      const shot = this._composedShot(a, b, dt);
+      // Landmark stages keep the authored skyline shot: the composition solver is tuned to dodge
+      // foreground geometry, which here pulled the lens onto the fighters and lost the tower. The
+      // generic collision pass below still keeps the shot out of solids.
+      const shot = this.stageSkyline ? this.overheadFraming(a, b) : this._composedShot(a, b, dt);
       this.positionTarget.set(shot.x, shot.y, shot.z);
       this.lookTarget.set(shot.lookX, shot.lookY, shot.lookZ);
     } else if (mode === 'explore') {
@@ -1596,6 +1609,9 @@ export default class SmashCamera {
     // Free roam is a walk-around lens: a narrower duel FOV turned a street into a close-up of
     // the fighter's back, so explore opens out to show the world they are walking through.
     let targetFov = mode === 'explore' ? 54 : mode === 'third-person' ? 48 + spread * 4 : 38 + spread * 12 + (this.zoom - 1) * 4;
+    // Landmark stages need a few degrees more width so a tower left of the playable skyline
+    // is inside the frame without pushing the duel camera to an extreme FOV.
+    if (this.stageSkyline) targetFov += 9;
     if (this.framing.capped) {
       const reach = Math.max(2, this.positionTarget.distanceTo(this.lookTarget));
       const halfSpan = distance * .5 + 1.8;

@@ -183,6 +183,10 @@ try {
   check('real gameplay produces a match result', round.ended === true && round.menuHidden === false, JSON.stringify({ ended: round.ended, menuHidden: round.menuHidden, p1: round.state?.trace?.length }));
   check('the result is delivered through the API callback', Boolean(round.result) && /VICTORY|DEFEAT|DRAW/.test(round.result.text), JSON.stringify(round.result && { text: round.result.text, winner: round.result.winner }));
   check('the results screen is still rendered for the player', /VICTORY|DEFEAT|DRAW/i.test(round.text), round.text.slice(0, 100));
+  const resultLine = round.state?.trace?.find(entry => entry.where === 'result-line');
+  check('match end speaks an authored character win/lose line', Boolean(resultLine)
+    && ['win', 'lose'].includes(resultLine.bank) && String(resultLine.text || '').length > 0,
+  JSON.stringify(resultLine));
 
   // Rematch through the API after the result.
   const rematch = await page.evaluate(() => {
